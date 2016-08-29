@@ -65,7 +65,7 @@ extensions.extend([Extension("q2_su.foo",
                              libraries=['bitarr'])])
 
 #from Cython.Compiler.Options import directive_defaults
-
+#
 #directive_defaults['linetrace'] = True
 #directive_defaults['binding'] = True
 

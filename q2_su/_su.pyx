@@ -1,6 +1,5 @@
 # cython: boundscheck=False, wraparound=False, cdivision=True, linetrace=False
 from libc.stdlib cimport malloc, free
-#from cython.parallel cimport parallel, prange
 cimport numpy as np
 import numpy as np
 
@@ -25,43 +24,61 @@ cdef print_ba(BIT_ARRAY* bitarr):
     print(result)
 
 
-#cpdef np.ndarray _unweighted_unifrac(object table, BP tree):
 def _unweighted_unifrac(object table, BP tree):
-    cdef dict otu_index
-    cdef np.ndarray otu_ids
-    cdef int i
-    cdef int j
-    cdef int k
-    cdef int node
-    cdef int shift_idx
-    cdef int shift
-    
-    cdef np.double_t[:, :] agg_total
-    cdef np.double_t[:, :] agg_unique
-    cdef np.double_t[:, :] result
+    """Compute unweighted unifrac on all samples in the table
+
+    Parameters
+    ----------
+    table : h5py.File instance
+        The BIOM table
+    tree : BP
+        The phylogenetic tree
+
+    Returns
+    -------
+    np.ndarray
+        A Distance matrix where the rows are in index order with the sample
+        IDs in the BIOM table (i.e., 'samples/ids')
+    """
+    cdef int i  # general loop variable
+    cdef int bit_idx  # index offset of a set bit
+    cdef int k  # loop variable for the kth postorder node
+    cdef int node  # the index of the node in the tree
+    cdef int shift_idx  # sample corresponding to a rotated bit vector
+    cdef int shift  # a loop iterator for each shift
+   
+    # aggregation of total and unique branch length
+    cdef np.double_t[:, ::1] agg_total
+    cdef np.double_t[:, ::1] agg_unique
+
+    # a memoryview for the result
+    cdef np.double_t[:, ::1] result
+
+    # cache the length for the edge to avoid multiple fn calls to the tree
     cdef np.double_t length
 
-    cdef BIT_ARRAY** state_arrays
-    cdef BIT_ARRAY* current_state_p
-    cdef BIT_ARRAY* rolled
-    cdef BIT_ARRAY* total
-    cdef BIT_ARRAY* unique
-    cdef BitArrayStack stack
-    cdef BIT_ARRAY** occupancy_map  # node -> state_array, wonder if this can be done smarter
-    cdef bit_index_t* set_bits;
-    cdef bit_index_t n_set_bits;
+    # a lot of bit arrays
+    cdef BIT_ARRAY** state_arrays  # preallocated structure of bit arrays
+    cdef Py_ssize_t n_state_arrays = 1024  # the number to preallocate
+    cdef BIT_ARRAY* current_state_p  # the current nodes state array
+    cdef BIT_ARRAY* rolled  # the state array which is shifted
+    cdef BIT_ARRAY* total   # the state array representing "total" increments
+    cdef BIT_ARRAY* unique  # the state array representing "unique" increments
+    cdef BitArrayStack stack  # a stack tracking "free" bit arrays
+    cdef BIT_ARRAY** occupancy_map  # node -> state_array
 
-    cdef Py_ssize_t state_array_idx = 0
-    cdef Py_ssize_t state_arrays_in_use = 0
-    cdef Py_ssize_t n_state_arrays = 1024
-    
-    cdef Py_ssize_t n_samples;
-    cdef int[:] obs_nz
-    cdef int indices_start
+    # inner loop optimization: get all set bits at once in total
+    cdef bit_index_t* set_bits  # the positions of set bits
+    cdef bit_index_t n_set_bits  # the number of set bits
+
+    # table details
+    cdef dict otu_index  # a map of the OTU name -> offset in biom table
+    cdef Py_ssize_t n_samples  # the number of samples in the table 
+    cdef np.ndarray otu_ids  # the OTU IDs in the table
     cdef object indices = table['observation/matrix/indices']
     cdef object indptr = table['observation/matrix/indptr']
-    cdef np.double_t observed_bit
 
+    # setup our matrices
     n_samples = len(table['sample/ids'])
     agg_total = np.zeros((n_samples, n_samples), dtype=np.double)
     agg_unique = np.zeros((n_samples, n_samples), dtype=np.double)
@@ -87,6 +104,7 @@ def _unweighted_unifrac(object table, BP tree):
         state_arrays[i] = bit_array_create(n_samples)
         push(&stack, state_arrays[i])
 
+    # create a few more bit arrays which will be reused
     rolled = bit_array_create(n_samples)
     total = bit_array_create(n_samples)
     unique = bit_array_create(n_samples)
@@ -96,12 +114,10 @@ def _unweighted_unifrac(object table, BP tree):
     if not occupancy_map:
         raise MemoryError()
 
-
- #   with nogil, parallel():
-    # local set_bits
+    # this array holds the index positions of all set bits to avoid iterating
+    # bit_array_get_bit calls
     set_bits = <bit_index_t*>malloc(n_samples * sizeof(bit_index_t))
 
-    #for k in prange(1, len(tree), schedule='guided'):  # do not include root as there is no parent
     for k in range(1, len(tree)):  # do not include root as there is no parent
         node = tree.postorderselect(k)
         length = <np.double_t>tree.length(node)
@@ -125,21 +141,14 @@ def _unweighted_unifrac(object table, BP tree):
             bit_array_or(total, current_bit_array_p, rolled)
             bit_array_xor(unique, current_bit_array_p, rolled)
            
-            
             n_set_bits = bit_array_get_bits(total, n_samples - shift, set_bits, n_samples)
             for i in range(n_set_bits):
-                j = set_bits[i]
-                shift_idx = (j + shift) % n_samples
-                agg_total[j, shift_idx] += length
-                agg_unique[j, shift_idx] += (length * bit_array_get_bit(unique, j))
+                bit_idx = set_bits[i]
+                shift_idx = (bit_idx + shift) % n_samples
+                agg_total[bit_idx, shift_idx] += length
+                agg_unique[bit_idx, shift_idx] += (length * bit_array_get_bit(unique, bit_idx))
 
-            #for i in range(n_samples - shift):
-                #if bit_array_get_bit(total, i):
-                #    shift_idx = (i + shift) % n_samples
-                #    agg_total[i, shift_idx] += length
-                #    agg_unique[i, shift_idx] += (length * bit_array_get_bit(unique, i))
-    free(set_bits)
-
+    # compute U
     for i in range(n_samples):
         for j in range(i + 1, n_samples):
             result[i, j] = agg_unique[i, j] / agg_total[i, j]
@@ -148,6 +157,8 @@ def _unweighted_unifrac(object table, BP tree):
     # free all the memory
     for i in range(n_state_arrays):
         bit_array_free(state_arrays[i])
+    
+    free(set_bits)
     free(state_arrays)
     free(rolled)
     free(total)
