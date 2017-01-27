@@ -1,17 +1,8 @@
 sudo: required
 language: python
 
-# adapted from https://gist.github.com/cotsog/3ce84675af0d74438d91
-script:
-  - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
-  - gcc --version
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - gcc-5
-    - g++-5
+compiler:
+  - clang
 
 env:
   - PYTHON_VERSION=3.5
@@ -21,6 +12,8 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - sudo apt-get install libhdf5-serial-dev hdf5-tools >/dev/null
+  - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
+  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
 install:
   - conda create --yes -n test-env python=$PYTHON_VERSION nose flake8
   - source activate test-env
