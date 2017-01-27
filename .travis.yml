@@ -12,7 +12,7 @@ install:
   - conda create --yes -n test-env python=$PYTHON_VERSION nose flake8
   - source activate test-env
   - conda install --yes -c bioconda biom-format scikit-bio
-  - pip install https://github.com/qiime2/qiime2/archive/master.zip https://github.com/qiime2/q2-types/archive/master.zip https://github.com/qiime2/q2cli/archive/master.zip https://github.com/qiime2/q2-diversity/archive/master.zip
+  - pip install https://github.com/qiime2/qiime2/archive/master.zip https://github.com/qiime2/q2-types/archive/master.zip https://github.com/qiime2/q2cli/archive/master.zip https://github.com/qiime2/q2-diversity/archive/master.zip https://github.com/qiime2/q2-feature-table/archive/master.zip
   - git clone https://github.com/qiime2/q2lint
   - pushd sucpp; make main; popd
   - sudo cp ssu /usr/bin/
