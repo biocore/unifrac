@@ -3,10 +3,14 @@ from libc.stdlib cimport malloc, free
 
 cimport numpy as np
 import numpy as np
+import numpy.testing as npt
+import scipy.sparse as ss
+import h5py
 from bp import parse_newick, BP
 
 from q2_su._su cimport (_set_leaf_state, _set_nonleaf_state, BitArrayStack,
-                        init_stack, push, pop)
+                        init_stack, push, pop) 
+from q2_su._su import _unweighted_unifrac
 from q2_su._ba cimport (bit_array_create, bit_array_free, bit_array_set_bit,
                         bit_array_get_bit, bit_array_cmp, BIT_ARRAY, 
                         bit_array_set_bits, bit_array_length, bit_array_to_str)
@@ -100,3 +104,28 @@ class StateUniFracTests(TestCase):
         free(stack.the_stack)
         bit_array_free(exp)
         free(occupancy)
+
+    def test_unweighted_unifrac(self):
+        # expected result pulled from skbio:
+        # https://github.com/biocore/scikit-bio/blob/0.5.0/skbio/diversity/tests/test_driver.py#L514
+        tree = parse_newick('((O1:0.25, O2:0.50):0.25, O3:0.75)root;')
+        table_data = ss.csc_matrix([[1, 5],
+                                    [2, 3], 
+                                    [0, 1]]).astype(float)
+        sids = list('ABC')
+        oids = ['O1', 'O2']
+        
+        # create an in-memory HDF5 file so we don't have to muck with tempfiles
+        table = h5py.File('ignored', driver='core', backing_store=False)
+        table['observation/ids'] = oids
+        table['sample/ids'] = sids
+        table['observation/matrix/data'] = table_data.data
+        table['observation/matrix/indices'] = table_data.indices
+        table['observation/matrix/indptr'] = table_data.indptr
+        
+        expected_data = np.asarray([[0.0, 0.0, 0.25],
+                                    [0.0, 0.0, 0.25],
+                                    [0.25, 0.25, 0.0]])
+
+        obs = _unweighted_unifrac(table, tree)
+        npt.assert_almost_equal(obs, expected_data)
