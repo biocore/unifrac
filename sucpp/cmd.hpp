@@ -1,6 +1,8 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
+
 class InputParser{
 	/* this object was shamelessly adapted from
 	   http://stackoverflow.com/a/868894
