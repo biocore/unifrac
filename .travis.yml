@@ -15,8 +15,7 @@ before_install:
   - sudo sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sudo sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
 install:
-  - which h5c++
-  - pushd sucpp; make main; popd
+  - pushd sucpp; make test main; popd
   - sudo cp ssu /usr/bin/
   - conda create --yes -n test-env python=$PYTHON_VERSION nose flake8
   - source activate test-env
@@ -25,7 +24,7 @@ install:
   - git clone https://github.com/qiime2/q2lint
   - pip install . 
 script:
-  - pushd sucpp; make test; popd;
+  - ./sucpp/test_su
   - flake8 q2_state_unifrac setup.py
   - python q2lint/q2lint.py
   - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result.qza
