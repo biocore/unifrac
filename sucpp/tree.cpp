@@ -7,10 +7,12 @@ BPTree::BPTree(std::string newick) {
     openclose = std::vector<uint32_t>();
     lengths = std::vector<double>();
     names = std::vector<std::string>();
+    excess = std::vector<uint32_t>();
+
     select_0_index = std::vector<uint32_t>();
     select_1_index = std::vector<uint32_t>();
     structure = std::vector<bool>();
-    structure.reserve(500000);
+    structure.reserve(500000);  // a fair sized tree... avoid reallocs, and its not _that_ much waste if this is wrong
 
     // three pass for parse. not ideal, but easier to map from IOW code    
     newick_to_bp(newick);
@@ -21,32 +23,173 @@ BPTree::BPTree(std::string newick) {
     names.resize(nparens);
     select_0_index.resize(nparens / 2);
     select_1_index.resize(nparens / 2);
+    excess.resize(nparens);
 
     structure_to_openclose();
     newick_to_metadata(newick);
-    index_select();
+    index_and_cache();
 }
+
+BPTree::BPTree(std::vector<bool> input_structure, std::vector<double> input_lengths, std::vector<std::string> input_names) {
+    structure = input_structure;
+    lengths = input_lengths;
+    names = input_names;
+    
+    nparens = structure.size();
+
+    openclose = std::vector<uint32_t>();
+    select_0_index = std::vector<uint32_t>();
+    select_1_index = std::vector<uint32_t>();
+    openclose.resize(nparens);
+    select_0_index.resize(nparens / 2);
+    select_1_index.resize(nparens / 2);
+    excess.resize(nparens);
+
+    structure_to_openclose();
+    index_and_cache();
+}
+
+BPTree BPTree::mask(std::vector<bool> topology_mask, std::vector<double> in_lengths) {
+    
+    std::vector<bool> new_structure = std::vector<bool>();
+    std::vector<double> new_lengths = std::vector<double>();
+    std::vector<std::string> new_names = std::vector<std::string>();
+
+    uint32_t count = 0;
+    for(auto i = topology_mask.begin(); i != topology_mask.end(); i++) {
+        if(*i)
+            count++;
+    }
+
+    new_structure.resize(count);
+    new_lengths.resize(count);
+    new_names.resize(count);
+
+    auto mask_it = topology_mask.begin();
+    auto base_it = this->structure.begin();
+    uint32_t new_idx = 0;
+    uint32_t old_idx = 0;
+    for(; mask_it != topology_mask.end(); mask_it++, base_it++, old_idx++) {
+        if(*mask_it) {
+            new_structure[new_idx] = this->structure[old_idx];
+            new_lengths[new_idx] = in_lengths[old_idx];
+            new_names[new_idx] = this->names[old_idx];
+            new_idx++;
+        }
+    }
+    
+    return BPTree::BPTree(new_structure, new_lengths, new_names);
+}
+
+BPTree BPTree::shear(std::unordered_set<std::string> to_keep) {
+    std::vector<bool> shearmask = std::vector<bool>(this->nparens);
+    int32_t p;
+
+	for(unsigned int i = 0; i < this->nparens; i++) {
+        if(this->isleaf(i) && to_keep.count(this->names[i]) > 0) {
+            shearmask[i] = true;
+            shearmask[i+1] = true;
+
+            p = this->parent(i);
+            while(p != -1 && !shearmask[p]) {
+                shearmask[p] = true;
+                shearmask[this->close(p)] = true;
+                p = this->parent(p);
+            }
+        }
+    }
+    return this->mask(shearmask, this->lengths);
+}
+
+BPTree BPTree::collapse() {
+    std::vector<bool> collapsemask = std::vector<bool>(this->nparens);
+    std::vector<double> new_lengths = std::vector<double>(this->lengths);
+
+    uint32_t current, first, last;
+
+    for(uint32_t i = 0; i < this->nparens / 2; i++) {
+        current = this->preorderselect(i);
+        
+        if(this->isleaf(current)) {
+            collapsemask[current] = true;
+            collapsemask[this->close(current)] = true;
+        } else {
+            first = this->leftchild(current);
+            last = this->rightchild(current);
+
+            if(first == last) {
+                new_lengths[first] = new_lengths[first] + new_lengths[current];
+            } else {
+                collapsemask[current] = true;
+                collapsemask[this->close(current)] = true;
+            }
+        }
+    }
+
+    return this->mask(collapsemask, new_lengths);
+}
+   /*
+        mask = bit_array_create(self.B.size)
+        bit_array_set_bit(mask, self.root())
+        bit_array_set_bit(mask, self.close(self.root()))
+
+        new_lengths = self._lengths.copy()
+        new_lengths_ptr = <DOUBLE_t*>new_lengths.data
+
+        with nogil:
+            for i in range(n):
+                current = self.preorderselect(i)
+
+                if self.isleaf(current):
+                    bit_array_set_bit(mask, current)
+                    bit_array_set_bit(mask, self.close(current))
+                else:
+                    first = self.fchild(current)
+                    last = self.lchild(current)
+
+                    if first == last:
+                        new_lengths_ptr[first] = new_lengths_ptr[first] + \
+                                new_lengths_ptr[current]
+                    else:
+                        bit_array_set_bit(mask, current)
+                        bit_array_set_bit(mask, self.close(current))
+
+        new_bp = self._mask_from_self(mask, new_lengths)
+        bit_array_free(mask)
+        return new_bp
+*/ 
+
 
 BPTree::~BPTree() {
-    //bit_array_free(B);
 }
 
-void BPTree::index_select() {
+void BPTree::index_and_cache() {
+    // should probably do the open/close in here too
     unsigned int idx = 0;
     auto i = structure.begin();
     auto k0 = select_0_index.begin();
     auto k1 = select_1_index.begin();
+    auto e_it = excess.begin();
+    unsigned int e = 0;  
 
     for(; i != structure.end(); i++, idx++ ) {
-        if(*i) 
+        if(*i) {
             *(k1++) = idx;
-        else
+            *(e_it++) = ++e;
+        }
+        else {
             *(k0++) = idx;
+            *(e_it++) = --e;
+        }
     }
 }
 
 uint32_t BPTree::postorderselect(uint32_t k) { 
     return open(select_0_index[k]);
+}
+
+uint32_t BPTree::preorderselect(uint32_t k) {
+    return select_1_index[k];
 }
 
 inline uint32_t BPTree::open(uint32_t i) {
@@ -86,6 +229,26 @@ uint32_t BPTree::rightsibling(uint32_t i) {
         return position;
     else 
         return 0;
+}
+
+int32_t BPTree::parent(uint32_t i) {
+    return enclose(i);
+}
+
+int32_t BPTree::enclose(uint32_t i) {
+    if(structure[i])
+        return bwd(i, -2) + 1;
+    else
+        return bwd(i - 1, -2) + 1; 
+}
+
+int32_t BPTree::bwd(uint32_t i, int d) {
+    int32_t target_excess = excess[i] + d;
+    for(int current_idx = i - 1; current_idx >= 0; current_idx--) {
+        if(excess[current_idx] == target_excess)
+            return current_idx;
+    }
+    return -1;
 }
 
 void BPTree::newick_to_bp(std::string newick) {
@@ -262,3 +425,4 @@ std::vector<bool> BPTree::get_structure() {
 std::vector<uint32_t> BPTree::get_openclose() {
     return openclose;
 }
+

@@ -4,6 +4,7 @@
 using namespace H5;
 using namespace su;
 
+/* datasets defined by the BIOM 2.x spec */ 
 const std::string OBS_INDPTR = std::string("/observation/matrix/indptr");
 const std::string OBS_INDICES = std::string("/observation/matrix/indices");
 const std::string OBS_DATA = std::string("/observation/matrix/data");
@@ -17,11 +18,13 @@ const std::string SAMPLE_IDS = std::string("/sample/ids");
 biom::biom(std::string filename) {
     file = H5File(filename, H5F_ACC_RDONLY);
 
+    /* establish the datasets */
     obs_indices = file.openDataSet(OBS_INDICES.c_str());
     obs_data = file.openDataSet(OBS_DATA.c_str());
     sample_indices = file.openDataSet(SAMPLE_INDICES.c_str());
     sample_data = file.openDataSet(SAMPLE_DATA.c_str());
     
+    /* cache IDs and indptr */
     sample_ids = std::vector<std::string>();
     obs_ids = std::vector<std::string>();
     sample_indptr = std::vector<uint32_t>();
@@ -32,15 +35,21 @@ biom::biom(std::string filename) {
     load_indptr(OBS_INDPTR.c_str(), obs_indptr);    
     load_indptr(SAMPLE_INDPTR.c_str(), sample_indptr);    
 
+    /* cache shape and nnz info */
     n_samples = sample_ids.size();
     n_obs = obs_ids.size();
     set_nnz();
 
+    /* define reusable temporary arrays
+     *
+     * NOT THREAD SAFE
+     */
     tmp_obs_indices = (uint32_t*)malloc(sizeof(uint32_t) * n_samples);
     tmp_sample_indices = (uint32_t*)malloc(sizeof(uint32_t) * n_obs);
     tmp_obs_data = (double*)malloc(sizeof(double) * n_samples);
     tmp_sample_data = (double*)malloc(sizeof(double) * n_obs);
 
+    /* define a mapping between an ID and its corresponding offset */
     obs_id_index = std::unordered_map<std::string, uint32_t>();
     sample_id_index = std::unordered_map<std::string, uint32_t>();
 
@@ -49,6 +58,7 @@ biom::biom(std::string filename) {
 }
 
 biom::~biom() {
+    /* free the reusable arrays */
     free(tmp_obs_indices);
     free(tmp_sample_indices);
     free(tmp_obs_data);
@@ -73,6 +83,7 @@ void biom::load_ids(const char *path, std::vector<std::string> &ids) {
     hsize_t dims[1];
     dataspace.getSimpleExtentDims(dims, NULL);
 
+    /* the IDs are a dataset of variable length strings */
     char **dataout = (char**)malloc(sizeof(char*) * dims[0]);
     ds_ids.read((void*)dataout, dtype);
 
@@ -107,8 +118,9 @@ void biom::create_id_index(std::vector<std::string> &ids,
                            std::unordered_map<std::string, uint32_t> &map) {
     uint32_t count = 0;
     map.reserve(ids.size());
-    for(auto i = ids.begin(); i != ids.end(); i++, count++)
+    for(auto i = ids.begin(); i != ids.end(); i++, count++) {
         map[*i] = count;
+    }
 }
 
 
@@ -116,6 +128,7 @@ void biom::get_obs_data(std::string id, double* out) {
     uint32_t idx = obs_id_index.at(id);
     uint32_t start = obs_indptr[idx];
     uint32_t end = obs_indptr[idx + 1];
+ 
     hsize_t count[1] = {end - start};
     hsize_t offset[1] = {start};
 

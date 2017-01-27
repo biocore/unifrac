@@ -162,6 +162,9 @@ void unweighted_unifrac(std::vector<double*> &dm_stripes,
             bool u = bool_embedded[j];
             bool v = bool_embedded[j + stripe + 1];
                
+            //bool u = embedded_proportions[j] > 0;
+            //bool v = embedded_proportions[j + stripe + 1] > 0;
+            
             dm_stripe[j] += (u ^ v) * length;
             dm_stripe_total[j] += (u | v) * length;
         }
@@ -182,7 +185,6 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
             func = &unnormalized_weighted_unifrac;
             break;
     }
-    
     PropStack propstack(table.n_samples);
 
     uint32_t node;
@@ -203,7 +205,7 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
         for(unsigned int i = 0; i < ((table.n_samples + 1) / 2); i++) 
             dm_stripes_total[i] = (double*)calloc(sizeof(double), table.n_samples);
     } 
-
+    
     for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];

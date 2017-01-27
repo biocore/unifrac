@@ -3,6 +3,7 @@
 #include "biom.hpp"
 #include "unifrac.hpp"
 #include <cmath>
+#include <unordered_set>
 
 /*
  * test harness adapted from 
@@ -74,9 +75,9 @@ std::vector<std::string> _string_array_to_vector(std::string *arr, unsigned int 
 }
 
 bool vec_almost_equal(std::vector<double> a, std::vector<double> b) {
-    if(a.size() != b.size())
+    if(a.size() != b.size()) {
         return false;
-
+    }
     for(unsigned int i = 0; i < a.size(); i++) {
         if(!(fabs(a[i] - b[i]) < 0.000001)) {  // sufficient given the tests
             return false;
@@ -130,6 +131,115 @@ void test_bptree_constructor_simple() {
     exp_lengths.push_back(1.0);
     exp_lengths.push_back(0.0);
     exp_lengths.push_back(2.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(0.0);
+
+    ASSERT(tree.nparens == exp_nparens);
+    ASSERT(tree.get_structure() == exp_structure);
+    ASSERT(tree.get_openclose() == exp_openclose);
+    ASSERT(tree.lengths == exp_lengths);
+    ASSERT(tree.names == exp_names);
+
+    SUITE_END();
+}
+
+void test_bptree_constructor_from_existing() {
+    SUITE_START("bptree constructor from_existing");
+                                //01234567
+                                //11101000
+    su::BPTree existing = su::BPTree("(('123:foo; bar':1,b:2)c);");
+    su::BPTree tree = su::BPTree(existing.get_structure(), existing.lengths, existing.names);
+
+    unsigned int exp_nparens = 8;
+
+    std::vector<bool> exp_structure;
+    exp_structure.push_back(true);
+    exp_structure.push_back(true);
+    exp_structure.push_back(true);
+    exp_structure.push_back(false);
+    exp_structure.push_back(true);
+    exp_structure.push_back(false);
+    exp_structure.push_back(false);
+    exp_structure.push_back(false);
+
+    std::vector<uint32_t> exp_openclose;
+    exp_openclose.push_back(7);
+    exp_openclose.push_back(6);
+    exp_openclose.push_back(3);
+    exp_openclose.push_back(2);
+    exp_openclose.push_back(5);
+    exp_openclose.push_back(4);
+    exp_openclose.push_back(1);
+    exp_openclose.push_back(0);
+
+    std::vector<std::string> exp_names;
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string("c"));
+    exp_names.push_back(std::string("123:foo; bar"));
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string("b"));
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string());
+
+    std::vector<double> exp_lengths;
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(1.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(2.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(0.0);
+
+    ASSERT(tree.nparens == exp_nparens);
+    ASSERT(tree.get_structure() == exp_structure);
+    ASSERT(tree.get_openclose() == exp_openclose);
+    ASSERT(tree.lengths == exp_lengths);
+    ASSERT(tree.names == exp_names);
+
+    SUITE_END();
+}
+
+void test_bptree_mask() {
+    SUITE_START("bptree mask");
+                                //01234567
+                                //11101000
+                                //111000
+    std::vector<bool> mask = {true, true, true, true, false, false, true, true};
+    su::BPTree base = su::BPTree("(('123:foo; bar':1,b:2)c);");
+    su::BPTree tree = base.mask(mask, base.lengths);
+    unsigned int exp_nparens = 6;
+
+    std::vector<bool> exp_structure;
+    exp_structure.push_back(true);
+    exp_structure.push_back(true);
+    exp_structure.push_back(true);
+    exp_structure.push_back(false);
+    exp_structure.push_back(false);
+    exp_structure.push_back(false);
+
+    std::vector<uint32_t> exp_openclose;
+    exp_openclose.push_back(5);
+    exp_openclose.push_back(4);
+    exp_openclose.push_back(3);
+    exp_openclose.push_back(2);
+    exp_openclose.push_back(1);
+    exp_openclose.push_back(0);
+
+    std::vector<std::string> exp_names;
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string("c"));
+    exp_names.push_back(std::string("123:foo; bar"));
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string());
+    exp_names.push_back(std::string());
+
+    std::vector<double> exp_lengths;
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(0.0);
+    exp_lengths.push_back(1.0);
     exp_lengths.push_back(0.0);
     exp_lengths.push_back(0.0);
     exp_lengths.push_back(0.0);
@@ -257,6 +367,44 @@ void test_bptree_postorder() {
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
     std::vector<uint32_t> obs_v = _uint32_array_to_vector(obs, tree.nparens / 2);
     
+    ASSERT(obs_v == exp_v);
+    SUITE_END();
+}
+
+void test_bptree_preorder() {
+    SUITE_START("preorderselect");
+    
+    // fig1 from https://www.dcc.uchile.cl/~gnavarro/ps/tcs16.2.pdf
+    su::BPTree tree = su::BPTree("((3,4,(6)5)2,7,((10,100)9)8)1;");
+    uint32_t exp[] = {0, 1, 2, 4, 6, 7, 11, 13, 14, 15, 17};
+    uint32_t obs[tree.nparens / 2];
+    
+    for(int i = 0; i < (tree.nparens / 2); i++)
+        obs[i] = tree.preorderselect(i);
+
+    std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
+    std::vector<uint32_t> obs_v = _uint32_array_to_vector(obs, tree.nparens / 2);
+    
+    ASSERT(obs_v == exp_v);
+    SUITE_END();
+}
+
+void test_bptree_parent() {
+    SUITE_START("parent");
+    
+    // fig1 from https://www.dcc.uchile.cl/~gnavarro/ps/tcs16.2.pdf
+    su::BPTree tree = su::BPTree("((3,4,(6)5)2,7,((10,100)9)8)1;");
+    uint32_t exp[] = {0, 1, 1, 1, 1, 1, 6, 6, 1, 0, 0, 0, 0, 13, 14, 14, 14, 14, 13, 0};
+    
+    // all the -2 and +1 garbage is to avoid testing the root.
+    uint32_t obs[tree.nparens - 2];
+    
+    for(int i = 0; i < (tree.nparens) - 2; i++)
+        obs[i] = tree.parent(i+1);
+
+    std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens - 2);
+    std::vector<uint32_t> obs_v = _uint32_array_to_vector(obs, tree.nparens - 2);
+   
     ASSERT(obs_v == exp_v);
     SUITE_END();
 }
@@ -598,16 +746,80 @@ void test_normalized_weighted_unifrac() {
     }
     SUITE_END();
 }
-void test_bptree_shear() {
-    SUITE_START("test bptree shear");
-    ASSERT(false);
+
+void test_bptree_shear_simple() {
+    SUITE_START("test bptree shear simple");
+    su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
+ 
+    // simple
+    std::unordered_set<std::string> to_keep = {"4", "6", "7", "10", "11"};	
+    
+    uint32_t exp_nparens = 20;
+    std::vector<bool> exp_structure = {true, true, true, false, true, true, false, false, false, true, 
+                                       false, true, true, true, false, true, false, false, false, false};
+    std::vector<std::string> exp_names = {"r", "2", "4", "", "5", "6", "", "", "", "7", "", "8", "9", "10", "", 
+                                          "11", "", "", "", ""};
+    std::vector<double> exp_lengths = {0, 1, 3, 0, 4, 5, 0, 0, 0, 6, 0, 7, 8, 9, 0, 10, 0, 0, 0, 0};
+
+    su::BPTree obs = tree.shear(to_keep);
+    ASSERT(obs.get_structure() == exp_structure);
+    ASSERT(exp_nparens == obs.nparens);
+    ASSERT(vec_almost_equal(exp_lengths, obs.lengths));
+    ASSERT(obs.names == exp_names);
     SUITE_END();
 }
 
-void test_bptree_collapse() {
-    SUITE_START("test bptree collapse");
-    ASSERT(false);
+void test_bptree_shear_deep() {
+    SUITE_START("test bptree shear deep");
+    su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
+ 
+    // deep
+    std::unordered_set<std::string> to_keep = {"10", "11"};	
+    
+    uint32_t exp_nparens = 10;
+    std::vector<bool> exp_structure = {true, true, true, true, false, true, false, false, false, false};
+    std::vector<std::string> exp_names = {"r", "8", "9", "10", "", "11", "", "", "", ""};
+    std::vector<double> exp_lengths = {0, 7, 8, 9, 0, 10, 0, 0, 0, 0};
+
+    su::BPTree obs = tree.shear(to_keep);
+    ASSERT(exp_nparens == obs.nparens);
+    ASSERT(obs.get_structure() == exp_structure);
+    ASSERT(vec_almost_equal(exp_lengths, obs.lengths));
+    ASSERT(obs.names == exp_names);
     SUITE_END();
+}
+
+
+void test_bptree_collapse_simple() {
+    SUITE_START("test bptree collapse simple");
+    su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
+    
+    uint32_t exp_nparens = 18;
+    std::vector<bool> exp_structure = {true, true, true, false, true, false, true, false, false, 
+                                       true, false, true, true, false, true, false, false, false};
+    std::vector<std::string> exp_names = {"r", "2", "3", "", "4", "", "6", "", "", "7", "", "9", "10", "", "11", "", "", ""};
+    std::vector<double> exp_lengths = {0, 1, 2, 0, 3, 0, 9, 0, 0, 6, 0, 15, 9, 0, 10, 0, 0, 0};
+
+    su::BPTree obs = tree.collapse();
+
+    ASSERT(obs.get_structure() == exp_structure);
+    ASSERT(exp_nparens == obs.nparens);
+    ASSERT(vec_almost_equal(exp_lengths, obs.lengths));
+    ASSERT(obs.names == exp_names);
+    SUITE_END();
+}
+
+void test_bptree_collapse_edge() {
+    SUITE_START("test bptree collapse edge case against root");
+
+    su::BPTree tree = su::BPTree("((a),b)r;");
+    su::BPTree exp = su::BPTree("(a,b)r;");
+    su::BPTree obs = tree.collapse();
+    ASSERT(obs.get_structure() == exp.get_structure());
+    ASSERT(obs.names == exp.names);
+    ASSERT(vec_almost_equal(obs.lengths, exp.lengths));
+
+	SUITE_END();
 }
 
 void test_unifrac_sample_counts() {
@@ -622,16 +834,22 @@ void test_unifrac_sample_counts() {
 
 int main(int argc, char** argv) {
     test_bptree_constructor_simple();
+    test_bptree_constructor_from_existing();
     test_bptree_constructor_single_descendent();
     test_bptree_constructor_complex();
     test_bptree_constructor_semicolon();
     test_bptree_constructor_edgecases();
     test_bptree_postorder();
+    test_bptree_preorder();
+    test_bptree_parent();
     test_bptree_leftchild();
     test_bptree_rightchild();
     test_bptree_rightsibling();
-    test_bptree_shear();
-    test_bptree_collapse();
+    test_bptree_mask();
+    test_bptree_shear_simple();
+    test_bptree_shear_deep();
+    test_bptree_collapse_simple();
+    test_bptree_collapse_edge();
 
     test_biom_constructor();
     test_biom_get_obs_data();
