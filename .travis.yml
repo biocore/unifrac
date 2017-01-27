@@ -12,8 +12,8 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - sudo apt-get install libhdf5-serial-dev hdf5-tools >/dev/null
-  - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
-  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
+  - sudo sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
+  - sudo sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
 install:
   - conda create --yes -n test-env python=$PYTHON_VERSION nose flake8
   - source activate test-env
