@@ -17,7 +17,7 @@ install:
   - export PATH=`pwd`:$PATH
   - pip install . 
 script:
-  - nosetests
+  - pushd; make test; popd;
   - flake8 q2_state_unifrac setup.py
   - python q2lint/q2lint.py
   - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix result.qza
