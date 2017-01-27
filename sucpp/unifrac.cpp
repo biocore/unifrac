@@ -3,6 +3,7 @@
 #include "unifrac.hpp"
 #include <unordered_map>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace su;
 
