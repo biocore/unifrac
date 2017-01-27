@@ -4,6 +4,7 @@
 #include "unifrac.hpp"
 #include <cmath>
 #include <unordered_set>
+#include <string.h>
 
 /*
  * test harness adapted from 
