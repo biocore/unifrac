@@ -9,8 +9,8 @@
 from setuptools import setup, find_packages
 import os
 
-if not os.path.exists('su'):
-    raise IOError("It does not appear that 'su' is available")
+if not os.path.exists('ssu'):
+    raise IOError("It does not appear that 'ssu' is available")
 
 setup(
     name="q2-state-unifrac",
@@ -19,7 +19,7 @@ setup(
     install_requires=['qiime2 == 2017.2.*',
                       'q2-types == 2017.2.*',
                       'scikit-bio >= 0.5.1, < 0.6.0',
-                      'biom-format >= 2.1.5, < 2.2.0']
+                      'biom-format >= 2.1.5, < 2.2.0'],
     author="Daniel McDonald",
     author_email="wasade@gmail.com",
     url="https://github.com/wasade/q2-state-unifrac",
