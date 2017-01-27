@@ -1,7 +1,18 @@
-sudo: true
+sudo: required
 language: python
-compiler:
-  - clang
+
+# adapted from https://gist.github.com/cotsog/3ce84675af0d74438d91
+script:
+  - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+  - gcc --version
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-5
+    - g++-5
+
 env:
   - PYTHON_VERSION=3.5
 before_install:
