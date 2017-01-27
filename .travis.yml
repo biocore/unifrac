@@ -1,5 +1,7 @@
 sudo: true
 language: python
+compiler:
+  - clang
 env:
   - PYTHON_VERSION=3.5
 before_install:
