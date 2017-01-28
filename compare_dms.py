@@ -8,9 +8,10 @@
 import qiime2
 import sys
 import skbio
-
+import numpy as np
 
 a = qiime2.Artifact.load(sys.argv[1]).view(skbio.DistanceMatrix)
 b = qiime2.Artifact.load(sys.argv[2]).view(skbio.DistanceMatrix)
 
-assert a == b
+assert np.all(a.ids == b.ids)
+assert np.allclose(a.data, b.data)
