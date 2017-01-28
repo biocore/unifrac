@@ -1,10 +1,15 @@
+# ----------------------------------------------------------------------------
+# Copyright (c) 2016-2017, QIIME 2 development team.
+#
+# Distributed under the terms of the Modified BSD License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# ----------------------------------------------------------------------------
 import os
 import subprocess
 import shutil
 import tempfile
 
-import h5py
-import biom
 import skbio
 from q2_types.feature_table import BIOMV210Format
 from q2_types.tree import NewickFormat
@@ -26,7 +31,7 @@ def _run(table_fp, tree_fp, output_fp, method):
 
 
 def unweighted(table: BIOMV210Format,
-               phylogeny: NewickFormat )-> skbio.DistanceMatrix:
+               phylogeny: NewickFormat)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -36,7 +41,7 @@ def unweighted(table: BIOMV210Format,
 
 
 def weighted_normalized(table: BIOMV210Format,
-                        phylogeny: NewickFormat )-> skbio.DistanceMatrix:
+                        phylogeny: NewickFormat)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -46,7 +51,7 @@ def weighted_normalized(table: BIOMV210Format,
 
 
 def weighted_unnormalized(table: BIOMV210Format,
-                          phylogeny: NewickFormat )-> skbio.DistanceMatrix:
+                          phylogeny: NewickFormat)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:

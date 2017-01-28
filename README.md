@@ -1,5 +1,7 @@
 # q2-state-unifrac
 
+[![Build Status](https://travis-ci.org/wasade/q2-state-unifrac.svg?branch=master)](https://travis-ci.org/wasade/q2-state-unifrac)
+
 An implementation of the strided state UniFrac algorithm (manuscript in prep).
 
 # Install

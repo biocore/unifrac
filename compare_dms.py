@@ -5,13 +5,13 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
+import qiime2
+import sys
+import skbio
+import numpy as np
 
-import pkg_resources
+a = qiime2.Artifact.load(sys.argv[1]).view(skbio.DistanceMatrix)
+b = qiime2.Artifact.load(sys.argv[2]).view(skbio.DistanceMatrix)
 
-from q2_state_unifrac._methods import (unweighted,
-                                       weighted_normalized,
-                                       weighted_unnormalized)
-
-
-__version__ = pkg_resources.get_distribution('q2-state-unifrac').version
-__all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized']
+assert np.all(a.ids == b.ids)
+assert np.allclose(a.data, b.data)

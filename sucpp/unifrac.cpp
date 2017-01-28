@@ -3,6 +3,7 @@
 #include "unifrac.hpp"
 #include <unordered_map>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace su;
 
@@ -148,6 +149,9 @@ void unweighted_unifrac(std::vector<double*> &dm_stripes,
                         uint32_t n_samples) {
     double *dm_stripe;
     double *dm_stripe_total;
+    
+    // TODO: variable length stack allocated arrays are frowned upon so should
+    // just malloc this
     bool bool_embedded[n_samples * 2];
 
     for(unsigned int i = 0; i < n_samples * 2; i++)
