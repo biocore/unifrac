@@ -18,6 +18,7 @@ setup(
     packages=find_packages(),
     install_requires=['qiime2 == 2017.2.*',
                       'q2-types == 2017.2.*',
+                      'q2-feature-table == 2017.2.*',
                       'scikit-bio >= 0.5.1, < 0.6.0',
                       'biom-format >= 2.1.5, < 2.2.0'],
     author="Daniel McDonald",
