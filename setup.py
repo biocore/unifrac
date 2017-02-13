@@ -14,7 +14,7 @@ if not os.path.exists('ssu'):
 
 setup(
     name="q2-state-unifrac",
-    version="2017.1.0.dev0",
+    version="2017.2.0",
     packages=find_packages(),
     install_requires=['qiime2 == 2017.2.*',
                       'q2-types == 2017.2.*',
