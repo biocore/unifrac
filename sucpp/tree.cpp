@@ -78,7 +78,7 @@ BPTree BPTree::mask(std::vector<bool> topology_mask, std::vector<double> in_leng
         }
     }
     
-    return BPTree::BPTree(new_structure, new_lengths, new_names);
+    return BPTree(new_structure, new_lengths, new_names);
 }
 
 BPTree BPTree::shear(std::unordered_set<std::string> to_keep) {
@@ -346,7 +346,7 @@ void BPTree::newick_to_metadata(std::string newick) {
             // puts us on the corresponding closing parenthesis
             structure_idx += lag;
             lag = 0;
-
+            
             open_idx = open(structure_idx);
             set_node_metadata(open_idx, token);
             // std::cout << structure_idx << " <-> " << open_idx << " " << token << std::endl;
@@ -393,6 +393,10 @@ std::string BPTree::tokenize(std::string::iterator &start, const std::string::it
     do {
         c = *start;
         start++;
+        
+        if(c == '\n') {
+            continue;
+        }
 
         isquote = (c == '"' || c == '\'');
         
