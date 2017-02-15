@@ -78,7 +78,7 @@ BPTree BPTree::mask(std::vector<bool> topology_mask, std::vector<double> in_leng
         }
     }
     
-    return BPTree::BPTree(new_structure, new_lengths, new_names);
+    return BPTree(new_structure, new_lengths, new_names);
 }
 
 BPTree BPTree::shear(std::unordered_set<std::string> to_keep) {
