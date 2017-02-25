@@ -691,10 +691,11 @@ void test_unnormalized_weighted_unifrac() {
                         { 1.14285714,  2.66666667,  3.25      ,  1.33333333,  0.        , 2.        },
                         { 1.07142857,  1.83333333,  1.75      ,  1.        ,  2.        , 0.        }};
     double **obs;
-
+    
+    std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    obs = su::unifrac(table, tree, su::weighted_unnormalized);
+    obs = su::unifrac(table, tree, su::weighted_unnormalized, threads);
     for(unsigned int i = 0; i < 6; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(obs[i][j] - exp[i][j]) < 0.000001);
@@ -715,9 +716,10 @@ void test_unweighted_unifrac() {
                         { 0.5       ,  0.6       ,  0.85714286,  0.33333333,  0.        , 0.6       },
                         { 0.2       ,  0.33333333,  0.42857143,  0.4       ,  0.6       , 0.        }};
     double **obs;
+    std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    obs = su::unifrac(table, tree, su::unweighted);
+    obs = su::unifrac(table, tree, su::unweighted, threads);
     for(unsigned int i = 0; i < 6; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(obs[i][j] - exp[i][j]) < 0.000001);
@@ -736,9 +738,10 @@ void test_normalized_weighted_unifrac() {
                         { 0.28571429,  0.66666667,  0.86666667,  0.33333333,  0.        , 0.5       },
                         { 0.26785714,  0.45833333,  0.46666667,  0.25      ,  0.5       , 0.        }};
     double **obs;
+    std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    obs = su::unifrac(table, tree, su::weighted_normalized);
+    obs = su::unifrac(table, tree, su::weighted_normalized, threads);
     for(unsigned int i = 0; i < 6; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(obs[i][j] - exp[i][j]) < 0.000001);

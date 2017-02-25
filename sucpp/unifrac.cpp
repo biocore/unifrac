@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <stdlib.h>
 #include <math.h>
+#include <algorithm>
 
 using namespace su;
 
@@ -99,17 +100,16 @@ double* su::get_sample_counts(biom &table) {
     return sample_counts;
 }
 
-void unnormalized_weighted_unifrac(std::vector<double*> &dm_stripes, 
-                                   std::vector<double*> &dm_stripes_total,
-                                   double* embedded_proportions, 
-                                   double length, 
-                                   uint32_t n_samples) {
+void _unnormalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
+                                         std::vector<double*> &dm_stripes_total,
+                                         double* embedded_proportions,
+                                         double length,
+                                         uint32_t n_samples,
+                                         unsigned int start,
+                                         unsigned int stop) {
     double *dm_stripe;
-
-    //point of thread
-    for(unsigned int stripe = 0; stripe < dm_stripes.size(); stripe++) {
+    for(unsigned int stripe=start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
-        
         for(unsigned int j = 0; j < n_samples; j++) {
             double u = embedded_proportions[j];
             double v = embedded_proportions[j + stripe + 1];
@@ -119,16 +119,18 @@ void unnormalized_weighted_unifrac(std::vector<double*> &dm_stripes,
     }
 }
 
-void normalized_weighted_unifrac(std::vector<double*> &dm_stripes, 
-                                 std::vector<double*> &dm_stripes_total,
-                                 double* embedded_proportions, 
-                                 double length, 
-                                 uint32_t n_samples) {
+void _normalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
+                                       std::vector<double*> &dm_stripes_total,
+                                       double* embedded_proportions, 
+                                       double length, 
+                                       uint32_t n_samples,
+                                       unsigned int start,
+                                       unsigned int stop) {
     double *dm_stripe;
     double *dm_stripe_total;
 
     // point of thread
-    for(unsigned int stripe = 0; stripe < dm_stripes.size(); stripe++) {
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
@@ -142,11 +144,13 @@ void normalized_weighted_unifrac(std::vector<double*> &dm_stripes,
     }
 }
 
-void unweighted_unifrac(std::vector<double*> &dm_stripes, 
+void _unweighted_unifrac_task(std::vector<double*> &dm_stripes, 
                         std::vector<double*> &dm_stripes_total,
                         double* embedded_proportions, 
                         double length, 
-                        uint32_t n_samples) {
+                        uint32_t n_samples,
+                        unsigned int start,
+                        unsigned int stop) {
     double *dm_stripe;
     double *dm_stripe_total;
     
@@ -158,7 +162,7 @@ void unweighted_unifrac(std::vector<double*> &dm_stripes,
         bool_embedded[i] = embedded_proportions[i] > 0;
 
     // point of thread
-    for(unsigned int stripe = 0; stripe < dm_stripes.size(); stripe++) {
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
@@ -175,18 +179,18 @@ void unweighted_unifrac(std::vector<double*> &dm_stripes,
     }
 }
 // should return a DistanceMatrix...
-double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
-    void (*func)(std::vector<double*>&, std::vector<double*>&, double*, double, uint32_t);
+double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vector<std::thread> &threads) {
+    void (*func)(std::vector<double*>&, std::vector<double*>&, double*, double, uint32_t, unsigned int, unsigned int);
 
     switch(unifrac_method) {
         case unweighted:
-            func = &unweighted_unifrac;
+            func = &_unweighted_unifrac_task;
             break;
         case weighted_normalized:
-            func = &normalized_weighted_unifrac;
+            func = &_normalized_weighted_unifrac_task;
             break;
         case weighted_unnormalized:
-            func = &unnormalized_weighted_unifrac;
+            func = &_unnormalized_weighted_unifrac_task;
             break;
     }
     PropStack propstack(table.n_samples);
@@ -270,7 +274,26 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
          */
 
         // each stripe (or partial stripe) can be farmed out to opencl or other
-        func(dm_stripes, dm_stripes_total, embedded_proportions, length, table.n_samples);
+        //func(dm_stripes, dm_stripes_total, threads, embedded_proportions, length, table.n_samples);
+        unsigned int chunksize = dm_stripes.size() / threads.size();
+        unsigned int start = 0;
+        unsigned int chunkend = 0;
+        unsigned int end = dm_stripes.size();
+        for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+            chunkend = std::min(start + chunksize, end);
+            threads[threadid] = std::thread(func,
+                                            std::ref(dm_stripes),
+                                            std::ref(dm_stripes_total),
+                                            std::ref(embedded_proportions),
+                                            length,
+                                            table.n_samples,
+                                            start,
+                                            chunkend);
+            start = chunkend;
+        }
+        for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+            threads[threadid].join();
+        }
     }
     double **dm_unique;
     double **dm_total;

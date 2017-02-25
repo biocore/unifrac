@@ -6,6 +6,7 @@
 #include "biom.hpp"
 #include "unifrac.hpp"
 #include "cmd.hpp"
+#include <thread>
 
 void usage() {
     std::cout << "ya, you know, make this" << std::endl;
@@ -22,11 +23,14 @@ int main(int argc, char **argv){
         usage();
         return EXIT_SUCCESS;
     }
-
+    
+    unsigned int nthreads;
     const std::string &table_filename = input.getCmdOption("-i");
     const std::string &tree_filename = input.getCmdOption("-t");
     const std::string &output_filename = input.getCmdOption("-o");
     const std::string &method_string = input.getCmdOption("-m");
+    const std::string &nthreads_arg = input.getCmdOption("-n");
+
     su::Method method;
 
     if(table_filename.empty()) {
@@ -47,6 +51,11 @@ int main(int argc, char **argv){
         err("method missing");
         return EXIT_FAILURE;
     }
+    if(nthreads_arg.empty()) {
+        nthreads = 1;
+    } else {
+        nthreads = atoi(nthreads_arg.c_str());
+    }
     
     if(method_string == "unweighted") 
         method = su::unweighted;
@@ -54,6 +63,8 @@ int main(int argc, char **argv){
         method = su::weighted_normalized;
     else if(method_string == "weighted_unnormalized")
         method = su::weighted_unnormalized;
+    else if(method_string == "parallel_weighted_unnormalized")
+        method = su::parallel_weighted_unnormalized;
     else {
         err("Unknown method " + method_string);
         return EXIT_FAILURE;
@@ -66,7 +77,9 @@ int main(int argc, char **argv){
     
     std::unordered_set<std::string> to_keep(table.obs_ids.begin(), table.obs_ids.end());
     su::BPTree tree_sheared = tree.shear(to_keep).collapse();
-    double **dm = unifrac(table, tree_sheared, method);
+
+    std::vector<std::thread> threads(nthreads);
+    double **dm = unifrac(table, tree_sheared, method, threads);
 
     std::ofstream output;
     output.open(output_filename);
