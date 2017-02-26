@@ -1,5 +1,6 @@
 #include "tree.hpp"
 #include <stack>
+#include <algorithm>
 
 using namespace su;
 
