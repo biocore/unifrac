@@ -1,8 +1,9 @@
 sudo: required
+dist: trusty
 language: python
 
 compiler:
-  - clang
+  - gcc
 
 env:
   - PYTHON_VERSION=3.5
