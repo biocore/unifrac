@@ -40,8 +40,9 @@ script:
   - pushd sucpp; ./test_su; popd
   - flake8 q2_state_unifrac setup.py
   - python q2lint/q2lint.py
-  - ssu
+  - ./ssu
   - for i in $(find ./ -maxdepth 1 -name 'core*' -print); do gdb $(pwd)/ssu core* -ex "thread apply all bt" -ex "set pagination 0" -batch; done;
+  - ls -lrt
   - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result.qza --verbose
   - qiime diversity beta-phylogenetic --p-metric unweighted_unifrac --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix sk_result.qza
   - python compare_dms.py ssu_result.qza sk_result.qza
