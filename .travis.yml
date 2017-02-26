@@ -15,14 +15,10 @@ env:
   - PYTHON_VERSION=3.5
 before_install:
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
- - ulimit -c
- - ulimit -a -S
- - ulimit -a -H
- - cat /proc/sys/kernel/core_pattern
- #- cat /etc/default/apport
- #- service --status-all || true
- #- initctl list || true
-
+  - ulimit -c
+  - ulimit -a -S
+  - ulimit -a -H
+  - cat /proc/sys/kernel/core_pattern
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
