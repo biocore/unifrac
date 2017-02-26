@@ -19,9 +19,9 @@ before_install:
  - ulimit -a -S
  - ulimit -a -H
  - cat /proc/sys/kernel/core_pattern
- - cat /etc/default/apport
- - service --status-all || true
- - initctl list || true
+ #- cat /etc/default/apport
+ #- service --status-all || true
+ #- initctl list || true
 
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
