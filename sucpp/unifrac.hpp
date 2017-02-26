@@ -4,7 +4,7 @@
 #include <thread>
 
 namespace su {
-    enum Method {unweighted, weighted_normalized, weighted_unnormalized, parallel_weighted_unnormalized};
+    enum Method {unweighted, weighted_normalized, weighted_unnormalized};
 
     class PropStack {
         private:
