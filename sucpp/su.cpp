@@ -23,7 +23,24 @@ int main(int argc, char **argv){
         usage();
         return EXIT_SUCCESS;
     }
-    
+
+    if(!input.cmdOptionExists("-i")) {
+        usage();
+        return EXIT_SUCCESS;
+    } 
+    if(!input.cmdOptionExists("-t")) {
+        usage();
+        return EXIT_SUCCESS;
+    } 
+    if(!input.cmdOptionExists("-o")) {
+        usage();
+        return EXIT_SUCCESS;
+    } 
+    if(!input.cmdOptionExists("-m")) {
+        usage();
+        return EXIT_SUCCESS;
+    } 
+
     unsigned int nthreads;
     const std::string &table_filename = input.getCmdOption("-i");
     const std::string &tree_filename = input.getCmdOption("-t");
