@@ -64,7 +64,7 @@ int main(int argc, char **argv){
     else if(method_string == "weighted_unnormalized")
         method = su::weighted_unnormalized;
     else {
-        err("Unknown method " + method_string);
+        err("Unknown method");
         return EXIT_FAILURE;
     }
 
