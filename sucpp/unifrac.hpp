@@ -1,6 +1,7 @@
 #include <stack>
 #include <vector>
 #include <unordered_map>
+#include <thread>
 
 namespace su {
     enum Method {unweighted, weighted_normalized, weighted_unnormalized};
@@ -19,7 +20,7 @@ namespace su {
     };
 
     double* get_sample_counts(biom &table);
-    double** unifrac(biom &table, BPTree &tree, Method unifrac_method);
+    double** unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vector<std::thread> &threads);
     double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
     void set_proportions(double* props, 
                          BPTree &tree, uint32_t node, 

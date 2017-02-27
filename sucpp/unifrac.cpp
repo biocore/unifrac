@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <stdlib.h>
 #include <math.h>
+#include <algorithm>
+#include <thread>
 
 using namespace su;
 
@@ -99,17 +101,16 @@ double* su::get_sample_counts(biom &table) {
     return sample_counts;
 }
 
-void unnormalized_weighted_unifrac(std::vector<double*> &dm_stripes, 
-                                   std::vector<double*> &dm_stripes_total,
-                                   double* embedded_proportions, 
-                                   double length, 
-                                   uint32_t n_samples) {
+void _unnormalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
+                                         std::vector<double*> &dm_stripes_total,
+                                         double* embedded_proportions,
+                                         double length,
+                                         uint32_t n_samples,
+                                         unsigned int start,
+                                         unsigned int stop) {
     double *dm_stripe;
-
-    //point of thread
-    for(unsigned int stripe = 0; stripe < dm_stripes.size(); stripe++) {
+    for(unsigned int stripe=start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
-        
         for(unsigned int j = 0; j < n_samples; j++) {
             double u = embedded_proportions[j];
             double v = embedded_proportions[j + stripe + 1];
@@ -119,16 +120,18 @@ void unnormalized_weighted_unifrac(std::vector<double*> &dm_stripes,
     }
 }
 
-void normalized_weighted_unifrac(std::vector<double*> &dm_stripes, 
-                                 std::vector<double*> &dm_stripes_total,
-                                 double* embedded_proportions, 
-                                 double length, 
-                                 uint32_t n_samples) {
+void _normalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
+                                       std::vector<double*> &dm_stripes_total,
+                                       double* embedded_proportions, 
+                                       double length, 
+                                       uint32_t n_samples,
+                                       unsigned int start,
+                                       unsigned int stop) {
     double *dm_stripe;
     double *dm_stripe_total;
 
     // point of thread
-    for(unsigned int stripe = 0; stripe < dm_stripes.size(); stripe++) {
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
@@ -142,11 +145,13 @@ void normalized_weighted_unifrac(std::vector<double*> &dm_stripes,
     }
 }
 
-void unweighted_unifrac(std::vector<double*> &dm_stripes, 
+void _unweighted_unifrac_task(std::vector<double*> &dm_stripes, 
                         std::vector<double*> &dm_stripes_total,
                         double* embedded_proportions, 
                         double length, 
-                        uint32_t n_samples) {
+                        uint32_t n_samples,
+                        unsigned int start,
+                        unsigned int stop) {
     double *dm_stripe;
     double *dm_stripe_total;
     
@@ -158,7 +163,7 @@ void unweighted_unifrac(std::vector<double*> &dm_stripes,
         bool_embedded[i] = embedded_proportions[i] > 0;
 
     // point of thread
-    for(unsigned int stripe = 0; stripe < dm_stripes.size(); stripe++) {
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
@@ -175,25 +180,28 @@ void unweighted_unifrac(std::vector<double*> &dm_stripes,
     }
 }
 // should return a DistanceMatrix...
-double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
-    void (*func)(std::vector<double*>&, std::vector<double*>&, double*, double, uint32_t);
+double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vector<std::thread> &threads) {
+    void (*func)(std::vector<double*>&, std::vector<double*>&, double*, double, uint32_t, unsigned int, unsigned int);
 
     switch(unifrac_method) {
         case unweighted:
-            func = &unweighted_unifrac;
+            func = &_unweighted_unifrac_task;
             break;
         case weighted_normalized:
-            func = &normalized_weighted_unifrac;
+            func = &_normalized_weighted_unifrac_task;
             break;
         case weighted_unnormalized:
-            func = &unnormalized_weighted_unifrac;
+            func = &_unnormalized_weighted_unifrac_task;
             break;
     }
     PropStack propstack(table.n_samples);
 
     uint32_t node;
     double *node_proportions;
-    double *embedded_proportions = (double*)malloc(sizeof(double) * table.n_samples * 2);
+    //double *embedded_proportions = (double*)malloc(sizeof(double) * table.n_samples * 2);
+    double **embedded_proportions = (double**)malloc(sizeof(double*) * 2);
+    embedded_proportions[0] = (double*)malloc(sizeof(double) * table.n_samples * 2);
+    embedded_proportions[1] = (double*)malloc(sizeof(double) * table.n_samples * 2);
     double *sample_counts = get_sample_counts(table);
 
     // the effect of this is to reserve (ceil(n_samples / 2))
@@ -209,7 +217,20 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
         for(unsigned int i = 0; i < ((table.n_samples + 1) / 2); i++) 
             dm_stripes_total[i] = (double*)calloc(sizeof(double), table.n_samples);
     } 
-    
+   
+    unsigned int chunksize = dm_stripes.size() / threads.size();
+    unsigned int start = 0;
+    unsigned int end = dm_stripes.size();
+    unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * threads.size());
+    unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * threads.size());
+    for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+        starts[threadid] = start;
+        ends[threadid] = start + chunksize;
+        start = start + chunksize;
+    }
+    // the last thread gets any trailing bits
+    ends[threads.size() - 1] = end;
+
     for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
@@ -217,11 +238,15 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
         if(node == 0) // root
             break;
 
-        // a prefetch can happen here in a separate thread while opencl or other
-        // compute happens below
-        node_proportions = propstack.pop(node);
-        set_proportions(node_proportions, tree, node, table, propstack, sample_counts);
-        embed_proportions(embedded_proportions, node_proportions, table.n_samples);
+        std::thread prefetcher = std::thread([&] () {
+
+            // a prefetch can happen here in a separate thread while opencl or other
+            // compute happens below
+            node_proportions = propstack.pop(node);
+            set_proportions(node_proportions, tree, node, table, propstack, sample_counts);
+            embed_proportions(embedded_proportions[k % 2], node_proportions, table.n_samples);
+        });
+
         // barrier for a prefetch
 
         /*
@@ -270,7 +295,25 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
          */
 
         // each stripe (or partial stripe) can be farmed out to opencl or other
-        func(dm_stripes, dm_stripes_total, embedded_proportions, length, table.n_samples);
+        //func(dm_stripes, dm_stripes_total, threads, embedded_proportions, length, table.n_samples);
+        prefetcher.join();
+        for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+            if(threads[threadid].joinable())
+                threads[threadid].join();
+        }
+        for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+            threads[threadid] = std::thread(func,
+                                            std::ref(dm_stripes),
+                                            std::ref(dm_stripes_total),
+                                            std::ref(embedded_proportions[k % 2]),
+                                            length,
+                                            table.n_samples,
+                                            starts[threadid],
+                                            ends[threadid]);
+        }
+    }
+    for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+        threads[threadid].join();
     }
     double **dm_unique;
     double **dm_total;
@@ -287,6 +330,8 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method) {
         }
     }
 
+    free(embedded_proportions[0]);
+    free(embedded_proportions[1]);
     free(embedded_proportions);
     free(sample_counts);
     for(unsigned int i = 0; i < n_rotations; i++) {

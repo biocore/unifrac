@@ -19,7 +19,7 @@ class InputParser{
             if (itr != this->tokens.end() && ++itr != this->tokens.end()){
                 return *itr;
             }
-            return {};
+            return empty;
         }
         /// @author iain
         bool cmdOptionExists(const std::string &option) const{
@@ -28,4 +28,5 @@ class InputParser{
         }
     private:
         std::vector <std::string> tokens;
+        const std::string empty;
 };
