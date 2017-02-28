@@ -238,16 +238,9 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vect
         if(node == 0) // root
             break;
 
-        std::thread prefetcher = std::thread([&] () {
-
-            // a prefetch can happen here in a separate thread while opencl or other
-            // compute happens below
-            node_proportions = propstack.pop(node);
-            set_proportions(node_proportions, tree, node, table, propstack, sample_counts);
-            embed_proportions(embedded_proportions[k % 2], node_proportions, table.n_samples);
-        });
-
-        // barrier for a prefetch
+        node_proportions = propstack.pop(node);
+        set_proportions(node_proportions, tree, node, table, propstack, sample_counts);
+        embed_proportions(embedded_proportions[k % 2], node_proportions, table.n_samples);
 
         /*
          * The values in the example vectors correspond to index positions of an 
@@ -293,15 +286,10 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vect
          * We end up performing N / 2 redundant calculations on the last stripe 
          * (see C) but that is small over large N.  
          */
-
-        // each stripe (or partial stripe) can be farmed out to opencl or other
-        //func(dm_stripes, dm_stripes_total, threads, embedded_proportions, length, table.n_samples);
-        prefetcher.join();
         for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
             if(threads[threadid].joinable())
                 threads[threadid].join();
-        }
-        for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
+
             threads[threadid] = std::thread(func,
                                             std::ref(dm_stripes),
                                             std::ref(dm_stripes_total),
