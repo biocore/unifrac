@@ -64,6 +64,7 @@ double* PropStack::pop(uint32_t node) {
 }
 
 double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
+    // would be better to just do striped_to_condensed_form
     double **dm;
     dm = (double**)malloc(sizeof(double*) * n);
     for(unsigned int i = 0; i < n; i++) {
@@ -88,19 +89,59 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     return dm;
 }
 
-double* su::get_sample_counts(biom &table) {
-    double *sample = (double*)malloc(sizeof(double) * table.n_obs);
-    double *sample_counts = (double*)calloc(sizeof(double), table.n_samples);
-    for(unsigned int i = 0; i < table.n_samples; i++) {
-        table.get_sample_data(table.sample_ids[i], sample);
-        for(unsigned int j = 0; j < table.n_obs; j++) {
-            sample_counts[i] += sample[j];
+double** su::deconvolute_stripes_transpose(std::vector<double*> &stripes, uint32_t n) {
+    // would be better to just do striped_to_condensed_form
+    double **dm;
+    dm = (double**)malloc(sizeof(double*) * n);
+    for(unsigned int i = 0; i < n; i++) {
+        dm[i] = (double*)malloc(sizeof(double) * n);
+        dm[i][i] = 0;
+    }
+
+    for(unsigned int i = 0; i < n; i++) {
+        double *vec = stripes[i];
+        unsigned int k = 0;
+        for(unsigned int col = i + 1; col < n; col++) {
+            if(col < n) {
+                dm[i][col] = vec[col];
+                dm[col][i] = vec[col];
+            } //else {
+              //  dm[col][i] = vec[k];
+              //  dm[row][col % n] = vec[k];
+            //}
+            //k++;
         }
     }
-    free(sample);
-    return sample_counts;
+    return dm;
 }
 
+void _unnormalized_weighted_unifrac_transpose_task(std::vector<double*> &dm_stripes, 
+                                         std::vector<double*> &dm_stripes_total,
+                                         double* embedded_proportions,
+                                         double length,
+                                         uint32_t n_samples,
+                                         unsigned int start,
+                                         unsigned int stop) {
+    double *dm_stripe;
+    /* if striptes are transposed, then
+     * for(unsigned int i = start; i < stop; i++) {
+     *     u = proportions[i];
+     *     stride_transpose = strides[i];
+     *     for(unsigned int j = start + 1; j < n_samples; j++) {
+     *         v = proportions[j];
+     *         stride_transpose[j] += (u ^ v) * length
+     */
+
+    for(unsigned int stripe=start; stripe < stop; stripe++) {
+        double u = embedded_proportions[stripe];
+        double *st = dm_stripes[stripe];
+
+        for(unsigned int j = stripe + 1; j < n_samples; j++) {
+            double v = embedded_proportions[j];
+            st[j] += fabs(u - v) * length;
+        }
+    }
+}
 void _unnormalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
                                          std::vector<double*> &dm_stripes_total,
                                          double* embedded_proportions,
@@ -162,26 +203,60 @@ void _unweighted_unifrac_task(std::vector<double*> &dm_stripes,
     for(unsigned int i = 0; i < n_samples * 2; i++)
         bool_embedded[i] = embedded_proportions[i] > 0;
 
-    // point of thread
     for(unsigned int stripe = start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
         for(unsigned int j = 0; j < n_samples; j++) {
             bool u = bool_embedded[j];
+
+            // can avoid embedding with
+            // v = bool_embedded[(j + stripe + 1) % n_samples]
+            // but modulus is expensive. can also be expressed as
+            // v = bool_embedded[min(0, j + stripe + 1 - n_samples)]
+            // ...or we just precompute an index such that v = bool_embedded[v_idx[j]]
+            //
             bool v = bool_embedded[j + stripe + 1];
-               
-            //bool u = embedded_proportions[j] > 0;
-            //bool v = embedded_proportions[j + stripe + 1] > 0;
             
             dm_stripe[j] += (u ^ v) * length;
             dm_stripe_total[j] += (u | v) * length;
         }
     }
 }
-// should return a DistanceMatrix...
-double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vector<std::thread> &threads) {
-    void (*func)(std::vector<double*>&, std::vector<double*>&, double*, double, uint32_t, unsigned int, unsigned int);
+
+
+void progressbar(float progress) {
+	// from http://stackoverflow.com/a/14539953
+    //
+    // could encapsulate into a classs for displaying time elapsed etc
+	int barWidth = 70;
+    std::cout << "[";
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
+}
+
+void su::unifrac(biom &table,
+                 BPTree &tree, 
+                 Method unifrac_method,
+                 std::vector<double*> &dm_stripes,
+                 std::vector<double*> &dm_stripes_total,
+                 unsigned int start, 
+                 unsigned int end, 
+                 unsigned int tid) {
+
+    void (*func)(std::vector<double*>&,  // dm_stripes
+                 std::vector<double*>&,  // dm_stripes_total
+                 double*,                // embedded_proportions
+                 double,                 // length
+                 uint32_t,               // number of samples
+                 unsigned int,           // stripe start
+                 unsigned int);          // stripe stop
 
     switch(unifrac_method) {
         case unweighted:
@@ -193,53 +268,31 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vect
         case weighted_unnormalized:
             func = &_unnormalized_weighted_unifrac_task;
             break;
+        case weighted_unnormalized_transpose:
+            func = &_unnormalized_weighted_unifrac_transpose_task;
+            break;
     }
     PropStack propstack(table.n_samples);
 
     uint32_t node;
     double *node_proportions;
-    //double *embedded_proportions = (double*)malloc(sizeof(double) * table.n_samples * 2);
     double **embedded_proportions = (double**)malloc(sizeof(double*) * 2);
     embedded_proportions[0] = (double*)malloc(sizeof(double) * table.n_samples * 2);
     embedded_proportions[1] = (double*)malloc(sizeof(double) * table.n_samples * 2);
-    double *sample_counts = get_sample_counts(table);
 
     // the effect of this is to reserve (ceil(n_samples / 2))
-    uint32_t n_rotations = (table.n_samples + 1) / 2;
-    std::vector<double*> dm_stripes(n_rotations);
-    std::vector<double*> dm_stripes_total(n_rotations);
     double length;
+    //uint32_t n_rotations = end - start;
 
-    for(unsigned int i = 0; i < ((table.n_samples + 1) / 2); i++)
-        dm_stripes[i] = (double*)calloc(sizeof(double), table.n_samples);
-    
-    if(unifrac_method == weighted_normalized || unifrac_method == unweighted) {
-        for(unsigned int i = 0; i < ((table.n_samples + 1) / 2); i++) 
-            dm_stripes_total[i] = (double*)calloc(sizeof(double), table.n_samples);
-    } 
-   
-    unsigned int chunksize = dm_stripes.size() / threads.size();
-    unsigned int start = 0;
-    unsigned int end = dm_stripes.size();
-    unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * threads.size());
-    unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * threads.size());
-    for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
-        starts[threadid] = start;
-        ends[threadid] = start + chunksize;
-        start = start + chunksize;
-    }
-    // the last thread gets any trailing bits
-    ends[threads.size() - 1] = end;
-
-    for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
+    // - 1 to avoid root   
+    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
 
-        if(node == 0) // root
-            break;
-
+        // optional: embed this block into a prefetch thread. very easy. double buffer
+        // already established for embedded_proportions
         node_proportions = propstack.pop(node);
-        set_proportions(node_proportions, tree, node, table, propstack, sample_counts);
+        set_proportions(node_proportions, tree, node, table, propstack);
         embed_proportions(embedded_proportions[k % 2], node_proportions, table.n_samples);
 
         /*
@@ -286,66 +339,36 @@ double** su::unifrac(biom &table, BPTree &tree, Method unifrac_method, std::vect
          * We end up performing N / 2 redundant calculations on the last stripe 
          * (see C) but that is small over large N.  
          */
-        for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
-            if(threads[threadid].joinable())
-                threads[threadid].join();
-
-            threads[threadid] = std::thread(func,
-                                            std::ref(dm_stripes),
-                                            std::ref(dm_stripes_total),
-                                            std::ref(embedded_proportions[k % 2]),
-                                            length,
-                                            table.n_samples,
-                                            starts[threadid],
-                                            ends[threadid]);
-        }
+        func(dm_stripes, dm_stripes_total, embedded_proportions[k % 2], length, 
+             table.n_samples, start, end);
+        
+        // should make this compile-time support
+        //if((tid == 0) && ((k % 1000) == 0))
+ 	    //    progressbar((float)k / (float)(tree.nparens / 2));       
     }
-    for(unsigned int threadid = 0; threadid < threads.size(); threadid++) {
-        threads[threadid].join();
-    }
-    double **dm_unique;
-    double **dm_total;
-    dm_unique = deconvolute_stripes(dm_stripes, table.n_samples);
     
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted) {
-        dm_total = deconvolute_stripes(dm_stripes_total, table.n_samples);
-        for(unsigned int row = 0; row < table.n_samples; row++) {
-            for(unsigned int col = row + 1; col < table.n_samples; col++) {
-                dm_unique[row][col] = dm_unique[row][col] / dm_total[row][col];
-                dm_unique[col][row] = dm_unique[row][col];
+        for(unsigned int i = start; i < end; i++) {
+            for(unsigned int j = 0; j < table.n_samples; j++) {
+                dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
             }
-           free(dm_total[row]); 
         }
     }
-
+    
     free(embedded_proportions[0]);
     free(embedded_proportions[1]);
     free(embedded_proportions);
-    free(sample_counts);
-    for(unsigned int i = 0; i < n_rotations; i++) {
-        free(dm_stripes[i]);
-        if(unifrac_method == weighted_normalized || unifrac_method == unweighted) 
-            free(dm_stripes_total[i]);
-    }
-
-    return dm_unique; 
-    /*
-     * deconvolute the stripes
-     */
-
-    //return dm;
 }
 
 void su::set_proportions(double* props, 
                          BPTree &tree, 
                          uint32_t node, 
                          biom &table, 
-                         PropStack &ps, 
-                         double *sample_counts) {
+                         PropStack &ps) {
     if(tree.isleaf(node)) {
        table.get_obs_data(tree.names[node], props);
        for(unsigned int i = 0; i < table.n_samples; i++)
-           props[i] = props[i] / sample_counts[i];
+           props[i] = props[i] / table.sample_counts[i];
 
     } else {
         unsigned int current = tree.leftchild(node);
@@ -365,5 +388,26 @@ void su::set_proportions(double* props,
             current = tree.rightsibling(current);
         }
     }    
+}
+
+std::vector<double*> su::make_strides(unsigned int n_samples) {
+    uint32_t n_rotations = (n_samples + 1) / 2;
+    std::vector<double*> dm_stripes(n_rotations);
+
+    for(unsigned int i = 0; i < n_rotations; i++)
+        dm_stripes[i] = (double*)calloc(sizeof(double), n_samples);
+    
+    return dm_stripes;
+}
+
+std::vector<double*> su::make_strides_transpose(unsigned int n_samples) {
+    uint32_t n_rotations = (n_samples + 1) / 2;
+    //std::vector<double*> dm_stripes(n_rotations);
+    std::vector<double*> dm_stripes(n_samples);
+    //for(unsigned int i = 0; i < n_rotations; i++)
+    for(unsigned int i = 0; i < n_samples; i++)
+        dm_stripes[i] = (double*)calloc(sizeof(double), n_samples);
+    
+    return dm_stripes;
 }
 

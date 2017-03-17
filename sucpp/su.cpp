@@ -80,6 +80,8 @@ int main(int argc, char **argv){
         method = su::weighted_normalized;
     else if(method_string == "weighted_unnormalized")
         method = su::weighted_unnormalized;
+    else if(method_string == "weighted_unnormalized_transpose")
+        method = su::weighted_unnormalized_transpose;
     else {
         err("Unknown method");
         return EXIT_FAILURE;
@@ -93,8 +95,46 @@ int main(int argc, char **argv){
     std::unordered_set<std::string> to_keep(table.obs_ids.begin(), table.obs_ids.end());
     su::BPTree tree_sheared = tree.shear(to_keep).collapse();
 
+    //std::vector<double*> dm_stripes = su::make_strides_transpose(table.n_samples);
+    //std::vector<double*> dm_stripes_total = su::make_strides_transpose(table.n_samples);
+    std::vector<double*> dm_stripes = su::make_strides(table.n_samples);
+    std::vector<double*> dm_stripes_total = su::make_strides(table.n_samples);
+
+    unsigned int chunksize = dm_stripes.size() / nthreads;
+    unsigned int start = 0;
+    unsigned int end = dm_stripes.size();
+    unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
+    unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
     std::vector<std::thread> threads(nthreads);
-    double **dm = unifrac(table, tree_sheared, method, threads);
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        starts[tid] = start;
+        ends[tid] = start + chunksize;
+        start = start + chunksize;
+    }
+    // the last thread gets any trailing bits
+    ends[threads.size() - 1] = end;
+    
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid] = std::thread(su::unifrac, 
+                                   std::ref(table),
+                                   std::ref(tree_sheared), 
+                                   method, 
+                                   std::ref(dm_stripes), 
+                                   std::ref(dm_stripes_total), 
+                                   starts[tid], 
+                                   ends[tid], 
+                                   tid);
+    }
+
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid].join();
+    }
+    
+    free(starts);
+    free(ends);
+
+    double **dm = su::deconvolute_stripes(dm_stripes, table.n_samples);
+    //double **dm = su::deconvolute_stripes_transpose(dm_stripes, table.n_samples);
 
     std::ofstream output;
     output.open(output_filename);
@@ -108,5 +148,13 @@ int main(int argc, char **argv){
             output << std::setprecision(16) << "\t" << dm[i][j];
         output << std::endl;
     }
+    unsigned int n_rotations = (table.n_samples + 1) / 2;
+    //for(unsigned int i = 0; i < n_rotations; i++)
+    //    free(dm_stripes[i]);
+    
+    //if(method == su::weighted_normalized || method == su::unweighted) {
+    //    for(unsigned int i = 0; i < n_rotations; i++)
+    //        free(dm_stripes_total[i]);
+    //}
     return EXIT_SUCCESS;
 }

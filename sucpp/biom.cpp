@@ -1,4 +1,6 @@
+#include <cstdlib>
 #include <iostream>
+#include <stdio.h>
 #include "biom.hpp"
 
 using namespace H5;
@@ -40,29 +42,39 @@ biom::biom(std::string filename) {
     n_obs = obs_ids.size();
     set_nnz();
 
-    /* define reusable temporary arrays
-     *
-     * NOT THREAD SAFE
-     */
-    tmp_obs_indices = (uint32_t*)malloc(sizeof(uint32_t) * n_samples);
-    tmp_sample_indices = (uint32_t*)malloc(sizeof(uint32_t) * n_obs);
-    tmp_obs_data = (double*)malloc(sizeof(double) * n_samples);
-    tmp_sample_data = (double*)malloc(sizeof(double) * n_obs);
-
     /* define a mapping between an ID and its corresponding offset */
     obs_id_index = std::unordered_map<std::string, uint32_t>();
     sample_id_index = std::unordered_map<std::string, uint32_t>();
 
     create_id_index(obs_ids, obs_id_index);
     create_id_index(sample_ids, sample_id_index);
+
+    /* load obs sparse data */
+    obs_indices_resident = (uint32_t**)malloc(sizeof(uint32_t**) * n_obs);
+    obs_data_resident = (double**)malloc(sizeof(double**) * n_obs);
+    obs_counts_resident = (unsigned int*)malloc(sizeof(unsigned int) * n_obs);
+    uint32_t *current_indices = NULL;
+    double *current_data = NULL;
+    for(unsigned int i = 0; i < obs_ids.size(); i++)  {
+        std::string id_ = obs_ids[i];
+        unsigned int n = get_obs_data_direct(id_, current_indices, current_data);
+        obs_counts_resident[i] = n;
+        obs_indices_resident[i] = current_indices;
+        obs_data_resident[i] = current_data;
+    }
+    sample_counts = get_sample_counts();
 }
 
 biom::~biom() {
-    /* free the reusable arrays */
-    free(tmp_obs_indices);
-    free(tmp_sample_indices);
-    free(tmp_obs_data);
-    free(tmp_sample_data);
+    /*
+    for(int i = 0; i < n_obs; i++) {
+        free(obs_indices_resident[i]);
+        free(obs_data_resident[i]);
+    }
+    free(obs_indices_resident);
+    free(obs_data_resident);
+    free(obs_counts_resident);
+    */
 }
 
 void biom::set_nnz() {
@@ -123,12 +135,11 @@ void biom::create_id_index(std::vector<std::string> &ids,
     }
 }
 
-
-void biom::get_obs_data(std::string id, double* out) {
+unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out) {
     uint32_t idx = obs_id_index.at(id);
     uint32_t start = obs_indptr[idx];
     uint32_t end = obs_indptr[idx + 1];
- 
+    
     hsize_t count[1] = {end - start};
     hsize_t offset[1] = {start};
 
@@ -144,20 +155,31 @@ void biom::get_obs_data(std::string id, double* out) {
     indices_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
     data_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
 
+    current_indices_out = (uint32_t*)malloc(sizeof(uint32_t) * count[0]);
+    current_data_out = (double*)malloc(sizeof(double) * count[0]);
+
+    obs_indices.read((void*)current_indices_out, indices_dtype, indices_memspace, indices_dataspace);
+    obs_data.read((void*)current_data_out, data_dtype, data_memspace, data_dataspace);
+    
+    return count[0];
+}
+
+void biom::get_obs_data(std::string id, double* out) {
+    uint32_t idx = obs_id_index.at(id);
+    unsigned int count = obs_counts_resident[idx];
+    uint32_t *indices = obs_indices_resident[idx];
+    double *data = obs_data_resident[idx];
+
     // reset our output buffer
     for(unsigned int i = 0; i < n_samples; i++)
         out[i] = 0.0;
     
-    // NOT THREAD SAFE due to use of tmp_obs_*.
-    obs_indices.read((void*)tmp_obs_indices, indices_dtype, indices_memspace, indices_dataspace);
-    obs_data.read((void*)tmp_obs_data, data_dtype, data_memspace, data_dataspace);
-
-    for(unsigned int i = 0; i < count[0]; i++) {
-        out[tmp_obs_indices[i]] = tmp_obs_data[i];
+    for(unsigned int i = 0; i < count; i++) {
+        out[indices[i]] = data[i];
     }
 }
 
-void biom::get_sample_data(std::string id, double* out) {
+unsigned int biom::get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out) {
     uint32_t idx = sample_id_index.at(id);
     uint32_t start = sample_indptr[idx];
     uint32_t end = sample_indptr[idx + 1];
@@ -177,15 +199,26 @@ void biom::get_sample_data(std::string id, double* out) {
     indices_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
     data_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
 
-    // reset our output buffer
-    for(unsigned int i = 0; i < n_obs; i++)
-        out[i] = 0.0;
-    
-    // NOT THREAD SAFE due to use of tmp_sample_*. 
-    sample_indices.read((void*)tmp_sample_indices, indices_dtype, indices_memspace, indices_dataspace);
-    sample_data.read((void*)tmp_sample_data, data_dtype, data_memspace, data_dataspace);
+    current_indices_out = (uint32_t*)malloc(sizeof(uint32_t) * count[0]);
+    current_data_out = (double*)malloc(sizeof(double) * count[0]);
 
-    for(unsigned int i = 0; i < count[0]; i++) {
-        out[tmp_sample_indices[i]] = tmp_sample_data[i];
+    sample_indices.read((void*)current_indices_out, indices_dtype, indices_memspace, indices_dataspace);
+    sample_data.read((void*)current_data_out, data_dtype, data_memspace, data_dataspace);
+
+    return count[0];
+}
+
+double* biom::get_sample_counts() {
+    double *sample_counts = (double*)calloc(sizeof(double), n_samples);
+    for(unsigned int i = 0; i < n_obs; i++) {
+        unsigned int count = obs_counts_resident[i];
+        uint32_t *indices = obs_indices_resident[i];
+        double *data = obs_data_resident[i];
+        for(unsigned int j = 0; j < count; j++) {
+            uint32_t index = indices[j];
+            double datum = data[j];
+            sample_counts[index] += datum;
+        }
     }
+    return sample_counts;
 }

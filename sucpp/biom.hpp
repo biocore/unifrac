@@ -17,6 +17,7 @@ namespace su {
             uint32_t n_samples;  // the number of samples
             uint32_t n_obs;      // the number of observations
             uint32_t nnz;        // the total number of nonzero entries
+            double *sample_counts;
 
             /* default constructor
              *
@@ -46,7 +47,7 @@ namespace su {
              *      Values of an index position [0, n_samples) which do not
              *      have data will be zero'd.
              */
-            void get_sample_data(std::string id, double* out);
+            //void get_sample_data(std::string id, double* out);
         private:
             /* retain DataSet handles within the HDF5 file */
             H5::DataSet obs_indices;
@@ -54,17 +55,18 @@ namespace su {
             H5::DataSet obs_data;
             H5::DataSet sample_data;
             H5::H5File file;
-            
-            /* At construction, these arrays are allocated to avoid 
-             * reallocations everytime a vector is requested. They represent
-             * both compressed sparse indices and data for both axes.
-             *
-             * NOTE: these are not assured to be thread-safe
-             */
-            uint32_t *tmp_obs_indices;
+            uint32_t **obs_indices_resident;
+            double **obs_data_resident;
+            unsigned int *obs_counts_resident;
+
             uint32_t *tmp_sample_indices;
-            double *tmp_obs_data;
-            double *tmp_sample_data;
+            double *tmp_sample_data; 
+            uint32_t *tmp_obs_indices;
+            double *tmp_obs_data; 
+
+            unsigned int get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
+            unsigned int get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
+            double* get_sample_counts();
 
             /* At construction, lookups mapping IDs -> index position within an
              * axis are defined
