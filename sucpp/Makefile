@@ -14,7 +14,7 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT)
+CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) -mavx
 
 test: tree.o test_su.cpp biom.o unifrac.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o 

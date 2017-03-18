@@ -706,41 +706,6 @@ void test_unweighted_unifrac() {
     SUITE_END();
 }
 
-void test_unnormalized_weighted_unifrac_transpose() {
-    SUITE_START("test unnormalized weighted unifrac transpose");
-    double **obs;
-    std::vector<std::thread> threads(1);
-    su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
-    su::biom table = su::biom("test.biom");
-    
-    std::vector<double*> exp;
-    double stride1[] = {0.,  1.52380952,  2.17857143,  1.9047619 ,  1.14285714, 1.07142857};
-    double stride2[] = {0.,  0.,  1.25      ,  2.66666667,  2.66666667, 1.83333333};
-    double stride3[] = {0.,  0., 0.,  2.75      ,  3.25      , 1.75};
-    double stride4[] = {0., 0., 0., 0., 0.        ,  1.33333333, 1.};
-    double stride5[] = {0., 0., 0., 0., 0., 0.        , 2.};
-    double stride6[] = {0., 0., 0., 0., 0., 0.        , 0.};
-    exp.push_back(stride1);
-    exp.push_back(stride2);
-    exp.push_back(stride3);
-    exp.push_back(stride4);
-    exp.push_back(stride5);
-    exp.push_back(stride6);
-
-    std::vector<double*> strides = su::make_strides_transpose(6);
-    std::vector<double*> strides_total = su::make_strides_transpose(6);
-    
-    su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, 0, 6, 0);
-    for(unsigned int i = 0; i < 6; i++) {
-        for(unsigned int j = 0; j < 6; j++) {
-            std::cout << strides[i][j] << " " << exp[i][j] << std::endl;
-            ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
-        }
-        free(strides[i]);
-    }
-    SUITE_END();
-}
-
 void test_normalized_weighted_unifrac() {
     SUITE_START("test normalized weighted unifrac");
     double **obs;
@@ -892,7 +857,6 @@ int main(int argc, char** argv) {
     test_unnormalized_weighted_unifrac();
     test_normalized_weighted_unifrac();
     test_unifrac_sample_counts();
-    test_unnormalized_weighted_unifrac_transpose();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);

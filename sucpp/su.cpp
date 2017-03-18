@@ -80,8 +80,6 @@ int main(int argc, char **argv){
         method = su::weighted_normalized;
     else if(method_string == "weighted_unnormalized")
         method = su::weighted_unnormalized;
-    else if(method_string == "weighted_unnormalized_transpose")
-        method = su::weighted_unnormalized_transpose;
     else {
         err("Unknown method");
         return EXIT_FAILURE;
@@ -95,8 +93,6 @@ int main(int argc, char **argv){
     std::unordered_set<std::string> to_keep(table.obs_ids.begin(), table.obs_ids.end());
     su::BPTree tree_sheared = tree.shear(to_keep).collapse();
 
-    //std::vector<double*> dm_stripes = su::make_strides_transpose(table.n_samples);
-    //std::vector<double*> dm_stripes_total = su::make_strides_transpose(table.n_samples);
     std::vector<double*> dm_stripes = su::make_strides(table.n_samples);
     std::vector<double*> dm_stripes_total = su::make_strides(table.n_samples);
 
@@ -134,7 +130,6 @@ int main(int argc, char **argv){
     free(ends);
 
     double **dm = su::deconvolute_stripes(dm_stripes, table.n_samples);
-    //double **dm = su::deconvolute_stripes_transpose(dm_stripes, table.n_samples);
 
     std::ofstream output;
     output.open(output_filename);
@@ -149,12 +144,12 @@ int main(int argc, char **argv){
         output << std::endl;
     }
     unsigned int n_rotations = (table.n_samples + 1) / 2;
-    //for(unsigned int i = 0; i < n_rotations; i++)
-    //    free(dm_stripes[i]);
+    for(unsigned int i = 0; i < n_rotations; i++)
+        free(dm_stripes[i]);
     
-    //if(method == su::weighted_normalized || method == su::unweighted) {
-    //    for(unsigned int i = 0; i < n_rotations; i++)
-    //        free(dm_stripes_total[i]);
-    //}
+    if(method == su::weighted_normalized || method == su::unweighted) {
+        for(unsigned int i = 0; i < n_rotations; i++)
+            free(dm_stripes_total[i]);
+    }
     return EXIT_SUCCESS;
 }

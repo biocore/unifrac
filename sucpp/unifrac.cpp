@@ -89,59 +89,6 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     return dm;
 }
 
-double** su::deconvolute_stripes_transpose(std::vector<double*> &stripes, uint32_t n) {
-    // would be better to just do striped_to_condensed_form
-    double **dm;
-    dm = (double**)malloc(sizeof(double*) * n);
-    for(unsigned int i = 0; i < n; i++) {
-        dm[i] = (double*)malloc(sizeof(double) * n);
-        dm[i][i] = 0;
-    }
-
-    for(unsigned int i = 0; i < n; i++) {
-        double *vec = stripes[i];
-        unsigned int k = 0;
-        for(unsigned int col = i + 1; col < n; col++) {
-            if(col < n) {
-                dm[i][col] = vec[col];
-                dm[col][i] = vec[col];
-            } //else {
-              //  dm[col][i] = vec[k];
-              //  dm[row][col % n] = vec[k];
-            //}
-            //k++;
-        }
-    }
-    return dm;
-}
-
-void _unnormalized_weighted_unifrac_transpose_task(std::vector<double*> &dm_stripes, 
-                                         std::vector<double*> &dm_stripes_total,
-                                         double* embedded_proportions,
-                                         double length,
-                                         uint32_t n_samples,
-                                         unsigned int start,
-                                         unsigned int stop) {
-    double *dm_stripe;
-    /* if striptes are transposed, then
-     * for(unsigned int i = start; i < stop; i++) {
-     *     u = proportions[i];
-     *     stride_transpose = strides[i];
-     *     for(unsigned int j = start + 1; j < n_samples; j++) {
-     *         v = proportions[j];
-     *         stride_transpose[j] += (u ^ v) * length
-     */
-
-    for(unsigned int stripe=start; stripe < stop; stripe++) {
-        double u = embedded_proportions[stripe];
-        double *st = dm_stripes[stripe];
-
-        for(unsigned int j = stripe + 1; j < n_samples; j++) {
-            double v = embedded_proportions[j];
-            st[j] += fabs(u - v) * length;
-        }
-    }
-}
 void _unnormalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
                                          std::vector<double*> &dm_stripes_total,
                                          double* embedded_proportions,
@@ -267,9 +214,6 @@ void su::unifrac(biom &table,
             break;
         case weighted_unnormalized:
             func = &_unnormalized_weighted_unifrac_task;
-            break;
-        case weighted_unnormalized_transpose:
-            func = &_unnormalized_weighted_unifrac_transpose_task;
             break;
     }
     PropStack propstack(table.n_samples);
@@ -399,15 +343,3 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
     
     return dm_stripes;
 }
-
-std::vector<double*> su::make_strides_transpose(unsigned int n_samples) {
-    uint32_t n_rotations = (n_samples + 1) / 2;
-    //std::vector<double*> dm_stripes(n_rotations);
-    std::vector<double*> dm_stripes(n_samples);
-    //for(unsigned int i = 0; i < n_rotations; i++)
-    for(unsigned int i = 0; i < n_samples; i++)
-        dm_stripes[i] = (double*)calloc(sizeof(double), n_samples);
-    
-    return dm_stripes;
-}
-
