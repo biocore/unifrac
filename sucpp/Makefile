@@ -19,7 +19,7 @@ CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
 else
-	AVX2 := $(shell grep "^flags" | head -n 1 | grep -c avx2)
+	AVX2 := $(shell grep "^flags" /proc/cpuinfo | head -n 1 | grep -c avx2)
 endif
 
 ifeq ($(AVX2),1)
