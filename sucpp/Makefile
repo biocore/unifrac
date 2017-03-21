@@ -14,7 +14,13 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) -mavx
+ifeq ($(shell sysctl -a | grep -c AVX2), 1)
+	INST = -mavx2
+else
+	INST = -mavx
+endif
+
+CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) $(INST) -mfma 
 
 test: tree.o test_su.cpp biom.o unifrac.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o 

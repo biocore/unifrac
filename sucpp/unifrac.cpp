@@ -2,7 +2,7 @@
 #include "biom.hpp"
 #include "unifrac.hpp"
 #include <unordered_map>
-#include <stdlib.h>
+#include <cstdlib>
 #include <math.h>
 #include <algorithm>
 #include <thread>
@@ -52,7 +52,7 @@ double* PropStack::pop(uint32_t node) {
      */
     double *vec;
     if(prop_stack.empty()) {
-        vec = (double*)malloc(sizeof(double) * defaultsize);
+        posix_memalign((void **)&vec, 32, sizeof(double) * defaultsize);
     }
     else {
         vec = prop_stack.top();
@@ -89,28 +89,88 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     return dm;
 }
 
-void _unnormalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
-                                         std::vector<double*> &dm_stripes_total,
-                                         double* embedded_proportions,
+void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                         std::vector<double*> &__restrict__ dm_stripes_total,
+                                         double* __restrict__ embedded_proportions,
                                          double length,
                                          uint32_t n_samples,
                                          unsigned int start,
                                          unsigned int stop) {
     double *dm_stripe;
-    for(unsigned int stripe=start; stripe < stop; stripe++) {
+    int j;
+    //__m256d ymm0, ymm1; 
+    for(int stripe=start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
-        for(unsigned int j = 0; j < n_samples; j++) {
-            double u = embedded_proportions[j];
-            double v = embedded_proportions[j + stripe + 1];
-                
-            dm_stripe[j] += fabs(u - v) * length;
+
+        /* intrinsics yield about a 2x reduction in runtime on llvm. they
+         * were not effective on linux gcc 4.9.1 or 4.9.2. it is unclear
+         * if they would be effective on other versions of gcc.
+         *
+         * one reason they help is that these for loops are not easily
+         * autovectorizable. using the intrinsics effectively gets around
+         * this. ...although, it also appears that loop unrolling works.
+         *
+         * it may make sense to revisit the inclusion of intriniscs, however
+         * support must be tested at compile time, so it's rather annoying
+         * at the moment. basically, we can't assume the presence of avx2.
+         */
+        //for(j = 0; j < n_samples / 4; j++) {
+        //    int offset = j * 4;
+        //    ymm0 = _mm256_sub_pd(_mm256_load_pd(embedded_proportions + offset),
+        //                         _mm256_load_pd(embedded_proportions + (offset + stripe + 1))); // u - v
+        //    ymm1 = _mm256_sub_pd(_mm256_set1_pd(0.0),
+        //                         ymm0); // 0.0 - (u - v)
+        //    ymm0 = _mm256_max_pd(ymm0, ymm1);  // abs(u - v)
+        //    ymm0 = _mm256_fmadd_pd(ymm0,
+        //                            _mm256_set1_pd(length),
+        //                           _mm256_load_pd(dm_stripe + offset));  // fused mutiply add, dm_stripe[offset] += (abs(u - v) * length)
+        //    _mm256_store_pd(dm_stripe + offset, ymm0);  //store
+        //}
+
+        //if((n_samples % 4) != 0) {
+        //    for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+        //        double u = embedded_proportions[k];
+        //        ////double v = alt_proportions[j];
+        //        double v = embedded_proportions[k + stripe + 1];
+        //        dm_stripe[k] += fabs(u - v) * length;
+        //    }
+        //}
+        
+        //for(int k = 0; k < n_samples; k++) {
+        //    double u = embedded_proportions[k];
+        //    double v = embedded_proportions[k + stripe + 1];
+        //    dm_stripe[k] += fabs(u - v) * length;
+        //}
+        for(j = 0; j < n_samples / 4; j++) {
+            int k = j * 4;
+            double u1 = embedded_proportions[k];
+            double u2 = embedded_proportions[k + 1];
+            double u3 = embedded_proportions[k + 2];
+            double u4 = embedded_proportions[k + 3];
+            double v1 = embedded_proportions[k + stripe + 1];
+            double v2 = embedded_proportions[k + stripe + 2];
+            double v3 = embedded_proportions[k + stripe + 3];
+            double v4 = embedded_proportions[k + stripe + 4];
+            dm_stripe[k] += fabs(u1 - v1) * length;
+            dm_stripe[k + 1] += fabs(u2 - v2) * length;
+            dm_stripe[k + 2] += fabs(u3 - v3) * length;
+            dm_stripe[k + 3] += fabs(u4 - v4) * length;
+        }
+
+        if((n_samples % 4) != 0) {
+            for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+                double u = embedded_proportions[k];
+                ////double v = alt_proportions[j];
+                double v = embedded_proportions[k + stripe + 1];
+                dm_stripe[k] += fabs(u - v) * length;
+            }
         }
     }
 }
 
-void _normalized_weighted_unifrac_task(std::vector<double*> &dm_stripes, 
-                                       std::vector<double*> &dm_stripes_total,
-                                       double* embedded_proportions, 
+void _normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                       std::vector<double*> &__restrict__ dm_stripes_total,
+                                       double* __restrict__ embedded_proportions, 
                                        double length, 
                                        uint32_t n_samples,
                                        unsigned int start,
@@ -123,51 +183,98 @@ void _normalized_weighted_unifrac_task(std::vector<double*> &dm_stripes,
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < n_samples; j++) {
-            double u = embedded_proportions[j];
-            double v = embedded_proportions[j + stripe + 1];
+        for(unsigned int j = 0; j < n_samples / 4; j++) {
+            int k = j * 4;
+            double u1 = embedded_proportions[k];
+            double u2 = embedded_proportions[k + 1];
+            double u3 = embedded_proportions[k + 2];
+            double u4 = embedded_proportions[k + 3];
+         
+            double v1 = embedded_proportions[k + stripe + 1];
+            double v2 = embedded_proportions[k + stripe + 2];
+            double v3 = embedded_proportions[k + stripe + 3];
+            double v4 = embedded_proportions[k + stripe + 4];
                
-            dm_stripe[j] += fabs(u - v) * length;
-            dm_stripe_total[j] += fabs(u + v) * length;
+            dm_stripe[k] += fabs(u1 - v1) * length;
+            dm_stripe[k + 1] += fabs(u2 - v2) * length;
+            dm_stripe[k + 2] += fabs(u3 - v3) * length;
+            dm_stripe[k + 3] += fabs(u4 - v4) * length;
+
+            dm_stripe_total[k] += fabs(u1 + v1) * length;
+            dm_stripe_total[k + 1] += fabs(u2 + v2) * length;
+            dm_stripe_total[k + 2] += fabs(u3 + v3) * length;
+            dm_stripe_total[k + 3] += fabs(u4 + v4) * length;
         }
+
+        if((n_samples % 4) != 0) {
+            for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+                double u = embedded_proportions[k];
+                double v = embedded_proportions[k + stripe + 1];
+                   
+                dm_stripe[k] += fabs(u - v) * length;
+                dm_stripe_total[k] += fabs(u + v) * length;
+            }
+        }
+        //for(int k = 0; k < n_samples; k++) {
+        //    double u = embedded_proportions[k];
+        //    double v = embedded_proportions[k + stripe + 1];
+        //       
+        //    dm_stripe[k] += fabs(u - v) * length;
+        //    dm_stripe_total[k] += fabs(u + v) * length;
+        //}
     }
 }
 
-void _unweighted_unifrac_task(std::vector<double*> &dm_stripes, 
-                        std::vector<double*> &dm_stripes_total,
-                        double* embedded_proportions, 
-                        double length, 
-                        uint32_t n_samples,
-                        unsigned int start,
-                        unsigned int stop) {
+void _unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                              std::vector<double*> &__restrict__ dm_stripes_total,
+                              double* __restrict__ embedded_proportions, 
+                              double length,  
+                              uint32_t n_samples,
+                              unsigned int start,
+                              unsigned int stop) {
     double *dm_stripe;
     double *dm_stripe_total;
     
-    // TODO: variable length stack allocated arrays are frowned upon so should
-    // just malloc this
-    bool bool_embedded[n_samples * 2];
-
-    for(unsigned int i = 0; i < n_samples * 2; i++)
-        bool_embedded[i] = embedded_proportions[i] > 0;
-
-    for(unsigned int stripe = start; stripe < stop; stripe++) {
+    for(int stripe = start; stripe < stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < n_samples; j++) {
-            bool u = bool_embedded[j];
+        for(int j = 0; j < n_samples / 4; j++) {
+            int32_t u1 = embedded_proportions[j] > 0;
+            int32_t u2 = embedded_proportions[j + 1] > 0;
+            int32_t u3 = embedded_proportions[j + 2] > 0;
+            int32_t u4 = embedded_proportions[j + 3] > 0;
+            int32_t v1 = embedded_proportions[j + stripe + 1] > 0;
+            int32_t v2 = embedded_proportions[j + stripe + 2] > 0;
+            int32_t v3 = embedded_proportions[j + stripe + 3] > 0;
+            int32_t v4 = embedded_proportions[j + stripe + 4] > 0;
 
-            // can avoid embedding with
-            // v = bool_embedded[(j + stripe + 1) % n_samples]
-            // but modulus is expensive. can also be expressed as
-            // v = bool_embedded[min(0, j + stripe + 1 - n_samples)]
-            // ...or we just precompute an index such that v = bool_embedded[v_idx[j]]
-            //
-            bool v = bool_embedded[j + stripe + 1];
-            
-            dm_stripe[j] += (u ^ v) * length;
-            dm_stripe_total[j] += (u | v) * length;
+            dm_stripe[j] += (u1 ^ v1) * length;
+            dm_stripe[j + 1] += (u2 ^ v2) * length;
+            dm_stripe[j + 2] += (u3 ^ v3) * length;
+            dm_stripe[j + 3] += (u4 ^ v4) * length;
+            dm_stripe_total[j] += (u1 | v1) * length;
+            dm_stripe_total[j + 1] += (u2 | v2) * length;
+            dm_stripe_total[j + 2] += (u3 | v3) * length;
+            dm_stripe_total[j + 3] += (u4 | v4) * length;
         }
+        
+        if((n_samples % 4) != 0) {
+            for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+                int32_t u = embedded_proportions[k] > 0;
+                int32_t v = embedded_proportions[k + stripe + 1] > 0;
+
+                dm_stripe[k] += (u ^ v) * length;
+                dm_stripe_total[k] += (u | v) * length;
+            }
+        }
+        //for(int j = 0; j < n_samples; j++) {
+        //    bool u = embedded_proportions[j];
+        //    bool v = embedded_proportions[j + stripe + 1];
+
+        //    dm_stripe[j] += (u ^ v) * length;
+        //    dm_stripe_total[j] += (u | v) * length;
+        //}
     }
 }
 
@@ -220,13 +327,11 @@ void su::unifrac(biom &table,
 
     uint32_t node;
     double *node_proportions;
-    double **embedded_proportions = (double**)malloc(sizeof(double*) * 2);
-    embedded_proportions[0] = (double*)malloc(sizeof(double) * table.n_samples * 2);
-    embedded_proportions[1] = (double*)malloc(sizeof(double) * table.n_samples * 2);
+    double *embedded_proportions; 
+	posix_memalign((void **)&embedded_proportions, 32, sizeof(double) * table.n_samples * 2);
 
     // the effect of this is to reserve (ceil(n_samples / 2))
     double length;
-    //uint32_t n_rotations = end - start;
 
     // - 1 to avoid root   
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
@@ -237,7 +342,7 @@ void su::unifrac(biom &table,
         // already established for embedded_proportions
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
-        embed_proportions(embedded_proportions[k % 2], node_proportions, table.n_samples);
+        embed_proportions(embedded_proportions, node_proportions, table.n_samples);
 
         /*
          * The values in the example vectors correspond to index positions of an 
@@ -283,7 +388,7 @@ void su::unifrac(biom &table,
          * We end up performing N / 2 redundant calculations on the last stripe 
          * (see C) but that is small over large N.  
          */
-        func(dm_stripes, dm_stripes_total, embedded_proportions[k % 2], length, 
+        func(dm_stripes, dm_stripes_total, embedded_proportions, length, 
              table.n_samples, start, end);
         
         // should make this compile-time support
@@ -299,8 +404,6 @@ void su::unifrac(biom &table,
         }
     }
     
-    free(embedded_proportions[0]);
-    free(embedded_proportions[1]);
     free(embedded_proportions);
 }
 
@@ -338,8 +441,13 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
     uint32_t n_rotations = (n_samples + 1) / 2;
     std::vector<double*> dm_stripes(n_rotations);
 
-    for(unsigned int i = 0; i < n_rotations; i++)
-        dm_stripes[i] = (double*)calloc(sizeof(double), n_samples);
-    
+    for(unsigned int i = 0; i < n_rotations; i++) {
+        double* tmp;
+        posix_memalign((void **)&tmp, 32, sizeof(double) * n_samples);
+        for(int j = 0; j < n_samples; j++)
+            tmp[j] = 0.0;
+        dm_stripes[i] = tmp;
+        //dm_stripes[i] = (double*)calloc(sizeof(double), n_samples);
+    }    
     return dm_stripes;
 }

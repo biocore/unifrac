@@ -27,6 +27,14 @@ namespace su {
                  unsigned int start, 
                  unsigned int end, 
                  unsigned int tid);
+    void unweighted_unifrac(biom &table,
+                 BPTree &tree, 
+                 Method unifrac_method,
+                 std::vector<double*> &dm_stripes,
+                 std::vector<double*> &dm_stripes_total,
+                 unsigned int start, 
+                 unsigned int end, 
+                 unsigned int tid);
     double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
     void set_proportions(double* props, 
                          BPTree &tree, uint32_t node, 
