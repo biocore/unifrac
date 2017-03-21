@@ -1,6 +1,6 @@
 CXX := h5c++
 
-PLATFORM := $(shell uname)
+PLATFORM := $(shell uname -s)
 COMPILER := $(shell ($(CXX) -v 2>&1) | tr A-Z a-z )
 
 ifdef DEBUG
@@ -14,13 +14,20 @@ else
 	endif
 endif
 
-ifeq ($(shell sysctl -a | grep -c AVX2), 1)
-	INST = -mavx2
+CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma 
+
+ifeq ($(PLATFORM),Darwin)
+	AVX2 := $(shell sysctl -a | grep -c AVX2)
 else
-	INST = -mavx
+	AVX2 := $(shell grep "^flags" | head -n 1 | grep -c avx2)
 endif
 
-CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) $(INST) -mfma 
+ifeq ($(AVX2),1)
+	CPPFLAGS += -mavx2
+else
+	CPPFLAGS += -mavx
+endif
+
 
 test: tree.o test_su.cpp biom.o unifrac.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o 
