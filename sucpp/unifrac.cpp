@@ -240,23 +240,24 @@ void _unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes,
         dm_stripe_total = dm_stripes_total[stripe];
 
         for(int j = 0; j < n_samples / 4; j++) {
-            int32_t u1 = embedded_proportions[j] > 0;
-            int32_t u2 = embedded_proportions[j + 1] > 0;
-            int32_t u3 = embedded_proportions[j + 2] > 0;
-            int32_t u4 = embedded_proportions[j + 3] > 0;
-            int32_t v1 = embedded_proportions[j + stripe + 1] > 0;
-            int32_t v2 = embedded_proportions[j + stripe + 2] > 0;
-            int32_t v3 = embedded_proportions[j + stripe + 3] > 0;
-            int32_t v4 = embedded_proportions[j + stripe + 4] > 0;
+            int k = j * 4;
+            int32_t u1 = embedded_proportions[k] > 0;
+            int32_t u2 = embedded_proportions[k + 1] > 0;
+            int32_t u3 = embedded_proportions[k + 2] > 0;
+            int32_t u4 = embedded_proportions[k + 3] > 0;
+            int32_t v1 = embedded_proportions[k + stripe + 1] > 0;
+            int32_t v2 = embedded_proportions[k + stripe + 2] > 0;
+            int32_t v3 = embedded_proportions[k + stripe + 3] > 0;
+            int32_t v4 = embedded_proportions[k + stripe + 4] > 0;
 
-            dm_stripe[j] += (u1 ^ v1) * length;
-            dm_stripe[j + 1] += (u2 ^ v2) * length;
-            dm_stripe[j + 2] += (u3 ^ v3) * length;
-            dm_stripe[j + 3] += (u4 ^ v4) * length;
-            dm_stripe_total[j] += (u1 | v1) * length;
-            dm_stripe_total[j + 1] += (u2 | v2) * length;
-            dm_stripe_total[j + 2] += (u3 | v3) * length;
-            dm_stripe_total[j + 3] += (u4 | v4) * length;
+            dm_stripe[k] += (u1 ^ v1) * length;
+            dm_stripe[k + 1] += (u2 ^ v2) * length;
+            dm_stripe[k + 2] += (u3 ^ v3) * length;
+            dm_stripe[k + 3] += (u4 ^ v4) * length;
+            dm_stripe_total[k] += (u1 | v1) * length;
+            dm_stripe_total[k + 1] += (u2 | v2) * length;
+            dm_stripe_total[k + 2] += (u3 | v3) * length;
+            dm_stripe_total[k + 3] += (u4 | v4) * length;
         }
         
         if((n_samples % 4) != 0) {
