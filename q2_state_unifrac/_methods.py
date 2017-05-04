@@ -38,7 +38,8 @@ def unweighted(table: BIOMV210Format,
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
-        _run(str(table), str(phylogeny), output_fp, threads, 'unweighted')
+        _run(str(table), str(phylogeny), output_fp, str(threads),
+             'unweighted')
         return skbio.DistanceMatrix.read(output_fp)
 
 
@@ -49,7 +50,7 @@ def weighted_normalized(table: BIOMV210Format,
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
-        _run(str(table), str(phylogeny), output_fp, threads,
+        _run(str(table), str(phylogeny), output_fp, str(threads),
              'weighted_normalized')
         return skbio.DistanceMatrix.read(output_fp)
 
@@ -61,6 +62,6 @@ def weighted_unnormalized(table: BIOMV210Format,
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
-        _run(str(table), str(phylogeny), output_fp, threads,
+        _run(str(table), str(phylogeny), output_fp, str(threads),
              'weighted_unnormalized')
         return skbio.DistanceMatrix.read(output_fp)
