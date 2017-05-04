@@ -20,41 +20,47 @@ def _sanity():
         raise ValueError("ssu does not appear in $PATH")
 
 
-def _run(table_fp, tree_fp, output_fp, method):
+def _run(table_fp, tree_fp, output_fp, threads, method):
     cmd = ['ssu',
            '-i', table_fp,
            '-t', tree_fp,
            '-o', output_fp,
+           '-n', threads,
            '-m', method]
 
     subprocess.run(cmd, check=True)
 
 
 def unweighted(table: BIOMV210Format,
-               phylogeny: NewickFormat)-> skbio.DistanceMatrix:
+               phylogeny: NewickFormat,
+               threads: int=1)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
-        _run(str(table), str(phylogeny), output_fp, 'unweighted')
+        _run(str(table), str(phylogeny), output_fp, threads, 'unweighted')
         return skbio.DistanceMatrix.read(output_fp)
 
 
 def weighted_normalized(table: BIOMV210Format,
-                        phylogeny: NewickFormat)-> skbio.DistanceMatrix:
+                        phylogeny: NewickFormat,
+                        threads: int=1)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
-        _run(str(table), str(phylogeny), output_fp, 'weighted_normalized')
+        _run(str(table), str(phylogeny), output_fp, threads,
+             'weighted_normalized')
         return skbio.DistanceMatrix.read(output_fp)
 
 
 def weighted_unnormalized(table: BIOMV210Format,
-                          phylogeny: NewickFormat)-> skbio.DistanceMatrix:
+                          phylogeny: NewickFormat,
+                          threads: int=1)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
-        _run(str(table), str(phylogeny), output_fp, 'weighted_unnormalized')
+        _run(str(table), str(phylogeny), output_fp, threads,
+             'weighted_unnormalized')
         return skbio.DistanceMatrix.read(output_fp)
