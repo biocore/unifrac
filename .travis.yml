@@ -12,10 +12,11 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION nose flake8
+  - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge hdf5 h5py
+  - conda install --yes flake8 nose
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - git clone https://github.com/qiime2/q2lint
