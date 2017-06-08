@@ -28,6 +28,7 @@ def compile_ssu():
     if ret != 0:
         raise Exception('Error compiling ssu!')
 
+
 class PostBuildCommand(install):
     """Post-installation for development mode."""
     def run(self):
@@ -44,6 +45,7 @@ class PostDevelopCommand(develop):
         self.execute(compile_ssu, [], 'Compiling SSU')
         self.copy_file(os.path.join(SUCPP, 'ssu'),
                        os.path.join(self.install_libbase, 'q2_state_unifrac/'))
+
 
 setup(
     name="q2-state-unifrac",

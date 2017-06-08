@@ -7,7 +7,6 @@
 # ----------------------------------------------------------------------------
 import os
 import subprocess
-import shutil
 import tempfile
 
 import skbio
@@ -17,6 +16,7 @@ from q2_types.tree import NewickFormat
 from pkg_resources import resource_exists, Requirement, resource_filename
 
 ARGS = (Requirement.parse('q2_state_unifrac'), 'q2_state_unifrac/ssu')
+
 
 def _sanity():
     if not resource_exists(*ARGS):
