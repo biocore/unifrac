@@ -12,6 +12,9 @@ stack can be found [here](https://support.hdfgroup.org/HDF5/Tutor/compile.html).
 
 Assuming `h5c++` is in your path, the following should work:
 
-    cd sucpp
-    make main  # this will copy the su binary to the parent directory
     pip install -e . 
+
+**Note**: if you are using `conda` we recommend installing HDF5 using the
+`conda-forge` channel, for example:
+
+    conda install -c conda-forge hdf5
