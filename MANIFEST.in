@@ -1,0 +1,15 @@
+graft q2_state_unifrac
+
+include sucpp/*.biom
+include sucpp/*.tre
+
+include sucpp/*.hpp
+include sucpp/*.cpp
+include sucpp/*.sh
+include sucpp/Makefile
+
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .git
+global-exclude *.so
+global-exclude .*.swp
