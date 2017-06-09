@@ -21,7 +21,6 @@ test: tree.o test_su.cpp biom.o unifrac.o
 
 main: tree.o biom.o unifrac.o cmd.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o
-	cp ssu ../
 
 ocltest: opencl.o
 	clang++ -framework OpenCL opencl.cpp -c
@@ -31,4 +30,4 @@ ocltest: opencl.o
 	$(CXX) $(CPPFLAGS) -static -c $< -o $@
 
 clean:
-	rm *.o
+	rm *.o ssu

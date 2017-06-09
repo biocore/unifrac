@@ -7,21 +7,24 @@
 # ----------------------------------------------------------------------------
 import os
 import subprocess
-import shutil
 import tempfile
 
 import skbio
 from q2_types.feature_table import BIOMV210Format
 from q2_types.tree import NewickFormat
 
+from pkg_resources import resource_exists, Requirement, resource_filename
+
+ARGS = (Requirement.parse('q2_state_unifrac'), 'q2_state_unifrac/ssu')
+
 
 def _sanity():
-    if shutil.which('ssu') is None:
-        raise ValueError("ssu does not appear in $PATH")
+    if not resource_exists(*ARGS):
+        raise ValueError("ssu could not be located!")
 
 
 def _run(table_fp, tree_fp, output_fp, method):
-    cmd = ['ssu',
+    cmd = [resource_filename(*ARGS),
            '-i', table_fp,
            '-t', tree_fp,
            '-o', output_fp,

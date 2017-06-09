@@ -11,20 +11,17 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
-  - sudo apt-get install libhdf5-serial-dev hdf5-tools >/dev/null
-  - sudo sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
-  - sudo sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
 install:
-  - pushd sucpp; make test main; popd
-  - sudo cp ssu /usr/bin/
-  - conda create --yes -n test-env python=$PYTHON_VERSION nose flake8
+  - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
-  - conda install --yes -c bioconda biom-format scikit-bio
-  - pip install https://github.com/qiime2/qiime2/archive/2017.2.0.zip https://github.com/qiime2/q2-types/archive/2017.2.0.zip https://github.com/qiime2/q2cli/archive/2017.2.0.zip http://github.com/qiime2/q2templates/archive/2017.2.0.zip https://github.com/qiime2/q2-feature-table/archive/2017.2.0.zip https://github.com/qiime2/q2-diversity/archive/2017.2.0.zip 
+  # needed for the hdf5 dev tools
+  - conda install --yes -c conda-forge hdf5 h5py
+  - conda install --yes flake8 nose
+  - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
+  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - git clone https://github.com/qiime2/q2lint
   - pip install . 
 script:
-  - pushd sucpp; ./test_su; popd
   - flake8 q2_state_unifrac setup.py
   - python q2lint/q2lint.py
   - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result.qza
