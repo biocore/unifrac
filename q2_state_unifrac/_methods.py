@@ -23,7 +23,7 @@ def _sanity():
         raise ValueError("ssu could not be located!")
 
 
-def _run(table_fp, tree_fp, output_fp, method):
+def _run(table_fp, tree_fp, output_fp, threads, method):
     cmd = [resource_filename(*ARGS),
            '-i', table_fp,
            '-t', tree_fp,

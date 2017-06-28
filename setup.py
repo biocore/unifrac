@@ -23,6 +23,11 @@ def compile_ssu():
     # clean the target
     subprocess.call(['make', 'clean'], cwd=SUCPP)
 
+    cmd = ['make', 'test']
+    ret = subprocess.call(cmd, cwd=SUCPP)
+    if ret != 0:
+        raise Exception('Error compiling ssu!')
+
     cmd = ['make', 'main']
     ret = subprocess.call(cmd, cwd=SUCPP)
     if ret != 0:
