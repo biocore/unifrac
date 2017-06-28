@@ -318,7 +318,6 @@ void su::unifrac(biom &table,
     // bind self to a cpu (http://bytefreaks.net/programming-2/cc-set-affinity-to-threads-example-code)
     // note: comments adapted from the noted URL
 #if defined(__linux__)
-    cpu_set_t cpuset;
     const pthread_t pid = pthread_self();
     
     cpu_set_t cpuset; // cpu_set_t: This data set is a bitset where each bit represents a CPU.
