@@ -87,3 +87,11 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# vim
+*.swp
+*.swo
+*~
+
+# ssu
+sucpp/ssu
