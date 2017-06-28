@@ -7,6 +7,31 @@
 #include <algorithm>
 #include <thread>
 
+#if defined(__linux__)
+    #include <sched.h>
+    #include <pthread.h>
+    // block below from http://bytefreaks.net/programming-2/cc-set-affinity-to-threads-example-code
+    // note: comments adapted from the noted URL
+    #include <errno.h>
+     
+    // The <errno.h> header file defines the integer variable errno, which is set by system calls and some library functions in the event of an error to indicate what went wrong.
+    #define print_error_then_terminate(en, msg) \
+      do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+    #define print_perror_then_terminate(msg) \
+      do { perror(msg); exit(EXIT_FAILURE); } while (0)
+     
+      struct thread_info {
+     
+        pthread_t thread_id; // ID returned by pthread_create()
+        int core_id; // Core ID we want this pthread to set its affinity to
+      };
+ 
+#define SUCCESS_MSG "Successfully set thread %lu to affinity to CPU %d\n"
+#define FAILURE_MSG "Failed to set thread %lu to affinity to CPU %d\n"
+// end block
+#endif
+
+
 using namespace su;
 
 
@@ -160,7 +185,6 @@ void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_s
         if((n_samples % 4) != 0) {
             for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
                 double u = embedded_proportions[k];
-                ////double v = alt_proportions[j];
                 double v = embedded_proportions[k + stripe + 1];
                 dm_stripe[k] += fabs(u - v) * length;
             }
@@ -215,13 +239,6 @@ void _normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_str
                 dm_stripe_total[k] += fabs(u + v) * length;
             }
         }
-        //for(int k = 0; k < n_samples; k++) {
-        //    double u = embedded_proportions[k];
-        //    double v = embedded_proportions[k + stripe + 1];
-        //       
-        //    dm_stripe[k] += fabs(u - v) * length;
-        //    dm_stripe_total[k] += fabs(u + v) * length;
-        //}
     }
 }
 
@@ -269,13 +286,6 @@ void _unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes,
                 dm_stripe_total[k] += (u | v) * length;
             }
         }
-        //for(int j = 0; j < n_samples; j++) {
-        //    bool u = embedded_proportions[j];
-        //    bool v = embedded_proportions[j + stripe + 1];
-
-        //    dm_stripe[j] += (u ^ v) * length;
-        //    dm_stripe_total[j] += (u | v) * length;
-        //}
     }
 }
 
@@ -305,6 +315,27 @@ void su::unifrac(biom &table,
                  unsigned int end, 
                  unsigned int tid) {
 
+    // bind self to a cpu (http://bytefreaks.net/programming-2/cc-set-affinity-to-threads-example-code)
+    // note: comments adapted from the noted URL
+#if defined(__linux__)
+    cpu_set_t cpuset;
+    const pthread_t pid = pthread_self();
+    
+    cpu_set_t cpuset; // cpu_set_t: This data set is a bitset where each bit represents a CPU.
+    CPU_ZERO(&cpuset); // CPU_ZERO: This macro initializes the CPU set set to be the empty set.
+    CPU_SET(tid, &cpuset); // CPU_SET: This macro adds cpu to the CPU set set.
+    
+    /* pthread_setaffinity_np: The pthread_setaffinity_np() function sets the CPU affinity 
+     * mask of the thread thread to the CPU set pointed to by cpuset. If the call is successful, 
+     * and the thread is not currently running on one of the CPUs in cpuset, 
+     * then it is migrated to one of those CPUs.
+     */
+    const int set_result = pthread_setaffinity_np(pid, sizeof(cpu_set_t), &cpuset);
+    if (set_result != 0) {
+      print_error_then_terminate(set_result, "pthread_setaffinity_np");
+    }
+#endif
+
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
                  double*,                // embedded_proportions
@@ -329,10 +360,21 @@ void su::unifrac(biom &table,
     uint32_t node;
     double *node_proportions;
     double *embedded_proportions; 
+    double length;
 	posix_memalign((void **)&embedded_proportions, 32, sizeof(double) * table.n_samples * 2);
 
-    // the effect of this is to reserve (ceil(n_samples / 2))
-    double length;
+    // thread local memory
+    for(int i = start; i < end; i++){
+        posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * table.n_samples);
+        for(int j = 0; j < table.n_samples; j++)
+            dm_stripes[i][j] = 0.;
+
+        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
+            posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * table.n_samples);
+            for(int j = 0; j < table.n_samples; j++)
+                dm_stripes_total[i][j] = 0.;
+        }
+    }
 
     // - 1 to avoid root   
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
@@ -448,7 +490,6 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
         for(int j = 0; j < n_samples; j++)
             tmp[j] = 0.0;
         dm_stripes[i] = tmp;
-        //dm_stripes[i] = (double*)calloc(sizeof(double), n_samples);
     }    
     return dm_stripes;
 }

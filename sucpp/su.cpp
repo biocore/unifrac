@@ -93,9 +93,11 @@ int main(int argc, char **argv){
     std::unordered_set<std::string> to_keep(table.obs_ids.begin(), table.obs_ids.end());
     su::BPTree tree_sheared = tree.shear(to_keep).collapse();
 
-    std::vector<double*> dm_stripes = su::make_strides(table.n_samples);
-    std::vector<double*> dm_stripes_total = su::make_strides(table.n_samples);
-
+    std::vector<double*> dm_stripes; // = su::make_strides(table.n_samples);
+    std::vector<double*> dm_stripes_total; // = su::make_strides(table.n_samples);
+    dm_stripes.resize((table.n_samples + 1) / 2);
+    dm_stripes_total.resize((table.n_samples + 1) / 2);
+    
     unsigned int chunksize = dm_stripes.size() / nthreads;
     unsigned int start = 0;
     unsigned int end = dm_stripes.size();
