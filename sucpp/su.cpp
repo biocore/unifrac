@@ -9,7 +9,14 @@
 #include <thread>
 
 void usage() {
-    std::cout << "ya, you know, make this" << std::endl;
+    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "    -i\tThe input BIOM table." << std::endl;
+    std::cout << "    -t\tThe input phylogeny in newick." << std::endl;
+    std::cout << "    -m\tThe method, [unweighted | weighted_normalized | weighted_unnormalized]." << std::endl;
+    std::cout << "    -o\tThe output distance matrix." << std::endl;
+    std::cout << "    -n\t[OPTIONAL] The number of threads." << std::endl;
+    std::cout << std::endl;
 }
 
 void err(std::string msg) {
