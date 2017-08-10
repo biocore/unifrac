@@ -7,30 +7,6 @@
 #include <algorithm>
 #include <thread>
 
-#if defined(__linux__)
-    #include <sched.h>
-    #include <pthread.h>
-    // block below from http://bytefreaks.net/programming-2/cc-set-affinity-to-threads-example-code
-    // note: comments adapted from the noted URL
-    #include <errno.h>
-     
-    // The <errno.h> header file defines the integer variable errno, which is set by system calls and some library functions in the event of an error to indicate what went wrong.
-    #define print_error_then_terminate(en, msg) \
-      do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
-    #define print_perror_then_terminate(msg) \
-      do { perror(msg); exit(EXIT_FAILURE); } while (0)
-     
-      struct thread_info {
-     
-        pthread_t thread_id; // ID returned by pthread_create()
-        int core_id; // Core ID we want this pthread to set its affinity to
-      };
- 
-#define SUCCESS_MSG "Successfully set thread %lu to affinity to CPU %d\n"
-#define FAILURE_MSG "Failed to set thread %lu to affinity to CPU %d\n"
-// end block
-#endif
-
 
 using namespace su;
 
@@ -314,26 +290,6 @@ void su::unifrac(biom &table,
                  unsigned int start, 
                  unsigned int end, 
                  unsigned int tid) {
-
-    // bind self to a cpu (http://bytefreaks.net/programming-2/cc-set-affinity-to-threads-example-code)
-    // note: comments adapted from the noted URL
-#if defined(__linux__)
-    const pthread_t pid = pthread_self();
-    
-    cpu_set_t cpuset; // cpu_set_t: This data set is a bitset where each bit represents a CPU.
-    CPU_ZERO(&cpuset); // CPU_ZERO: This macro initializes the CPU set set to be the empty set.
-    CPU_SET(tid, &cpuset); // CPU_SET: This macro adds cpu to the CPU set set.
-    
-    /* pthread_setaffinity_np: The pthread_setaffinity_np() function sets the CPU affinity 
-     * mask of the thread thread to the CPU set pointed to by cpuset. If the call is successful, 
-     * and the thread is not currently running on one of the CPUs in cpuset, 
-     * then it is migrated to one of those CPUs.
-     */
-    const int set_result = pthread_setaffinity_np(pid, sizeof(cpu_set_t), &cpuset);
-    if (set_result != 0) {
-      print_error_then_terminate(set_result, "pthread_setaffinity_np");
-    }
-#endif
 
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
