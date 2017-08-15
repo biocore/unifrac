@@ -54,6 +54,11 @@ double* PropStack::pop(uint32_t node) {
     double *vec;
     if(prop_stack.empty()) {
         posix_memalign((void **)&vec, 32, sizeof(double) * defaultsize);
+        if(vec == NULL) {
+            fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                    sizeof(double) * defaultsize, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
     }
     else {
         vec = prop_stack.top();
@@ -68,8 +73,18 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     // would be better to just do striped_to_condensed_form
     double **dm;
     dm = (double**)malloc(sizeof(double*) * n);
+    if(dm == NULL) {
+        fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                sizeof(double*) * n, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     for(unsigned int i = 0; i < n; i++) {
         dm[i] = (double*)malloc(sizeof(double) * n);
+        if(dm[i] == NULL) {
+            fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                    sizeof(double) * n, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
         dm[i][i] = 0;
     }
 
@@ -317,15 +332,30 @@ void su::unifrac(biom &table,
     double *embedded_proportions; 
     double length;
 	posix_memalign((void **)&embedded_proportions, 32, sizeof(double) * table.n_samples * 2);
+    if(embedded_proportions == NULL) {
+        fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                sizeof(double) * table.n_samples, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     // thread local memory
     for(int i = start; i < end; i++){
         posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * table.n_samples);
+        if(dm_stripes[i] == NULL) {
+            fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                    sizeof(double) * table.n_samples, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
         for(int j = 0; j < table.n_samples; j++)
             dm_stripes[i][j] = 0.;
 
         if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
             posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * table.n_samples);
+            if(dm_stripes_total[i] == NULL) {
+                fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                        sizeof(double) * table.n_samples, __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
             for(int j = 0; j < table.n_samples; j++)
                 dm_stripes_total[i][j] = 0.;
         }
@@ -336,8 +366,6 @@ void su::unifrac(biom &table,
         node = tree.postorderselect(k);
         length = tree.lengths[node];
 
-        // optional: embed this block into a prefetch thread. very easy. double buffer
-        // already established for embedded_proportions
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
         embed_proportions(embedded_proportions, node_proportions, table.n_samples);
@@ -442,6 +470,11 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
     for(unsigned int i = 0; i < n_rotations; i++) {
         double* tmp;
         posix_memalign((void **)&tmp, 32, sizeof(double) * n_samples);
+        if(tmp == NULL) {
+            fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                    sizeof(double) * n_samples, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
         for(int j = 0; j < n_samples; j++)
             tmp[j] = 0.0;
         dm_stripes[i] = tmp;

@@ -108,8 +108,20 @@ int main(int argc, char **argv){
     unsigned int chunksize = dm_stripes.size() / nthreads;
     unsigned int start = 0;
     unsigned int end = dm_stripes.size();
+    
     unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
+    if(starts == NULL) {
+        fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
+    if(ends == NULL) {
+        fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+                sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+
     std::vector<std::thread> threads(nthreads);
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         starts[tid] = start;
