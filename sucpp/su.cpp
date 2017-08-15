@@ -24,6 +24,12 @@ void err(std::string msg) {
     usage();
 }
 
+// https://stackoverflow.com/a/19841704/19741
+bool is_file_exists(const char *fileName) {
+    std::ifstream infile(fileName);
+        return infile.good();
+}
+
 int main(int argc, char **argv){
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
@@ -61,9 +67,15 @@ int main(int argc, char **argv){
         err("table filename missing");
         return EXIT_FAILURE;
     }
+    if(!is_file_exists(table_filename.c_str())) {
+        return EXIT_FAILURE;
+    }
 
     if(tree_filename.empty()) {
         err("tree filename missing");
+        return EXIT_FAILURE;
+    }
+    if(!is_file_exists(tree_filename.c_str())) {
         return EXIT_FAILURE;
     }
 
@@ -71,10 +83,12 @@ int main(int argc, char **argv){
         err("output filename missing");
         return EXIT_FAILURE;
     }
+
     if(method_string.empty()) {
         err("method missing");
         return EXIT_FAILURE;
     }
+
     if(nthreads_arg.empty()) {
         nthreads = 1;
     } else {
