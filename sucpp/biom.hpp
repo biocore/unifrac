@@ -39,15 +39,6 @@ namespace su {
              *      have data will be zero'd.
              */
             void get_obs_data(std::string id, double* out);
-            
-            /* get a dense vector of observation data
-             *
-             * @param id The observation ID to fetch
-             * @param out An allocated array of at least size n_samples. 
-             *      Values of an index position [0, n_samples) which do not
-             *      have data will be zero'd.
-             */
-            //void get_sample_data(std::string id, double* out);
         private:
             /* retain DataSet handles within the HDF5 file */
             H5::DataSet obs_indices;
@@ -58,11 +49,6 @@ namespace su {
             uint32_t **obs_indices_resident;
             double **obs_data_resident;
             unsigned int *obs_counts_resident;
-
-            uint32_t *tmp_sample_indices;
-            double *tmp_sample_data; 
-            uint32_t *tmp_obs_indices;
-            double *tmp_obs_data; 
 
             unsigned int get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
             unsigned int get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);

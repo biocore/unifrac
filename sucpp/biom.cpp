@@ -66,7 +66,6 @@ biom::biom(std::string filename) {
 }
 
 biom::~biom() {
-    /*
     for(int i = 0; i < n_obs; i++) {
         free(obs_indices_resident[i]);
         free(obs_data_resident[i]);
@@ -74,7 +73,6 @@ biom::~biom() {
     free(obs_indices_resident);
     free(obs_data_resident);
     free(obs_counts_resident);
-    */
 }
 
 void biom::set_nnz() {

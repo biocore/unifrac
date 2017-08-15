@@ -15,7 +15,7 @@ void usage() {
     std::cout << "    -t\tThe input phylogeny in newick." << std::endl;
     std::cout << "    -m\tThe method, [unweighted | weighted_normalized | weighted_unnormalized]." << std::endl;
     std::cout << "    -o\tThe output distance matrix." << std::endl;
-    std::cout << "    -n\t[OPTIONAL] The number of threads." << std::endl;
+    std::cout << "    -n\t[OPTIONAL] The number of threads, default is 1." << std::endl;
     std::cout << std::endl;
 }
 
