@@ -247,11 +247,13 @@ void _generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes,
         for(unsigned int j = 0; j < task_p->n_samples; j++) {
             double u1 = embedded_proportions[j];
             double v1 = embedded_proportions[j + stripe + 1];
-            double sub1 = fabs(u1 - v1);
             double sum1 = u1 + v1;
-            double sum_pow1 = pow(sum1, task_p->g_unifrac_alpha) * length;
-            dm_stripe[j] += (sum1 != 0.0) ? (sum_pow1 * (sub1 / sum1)) : 0.0; 
-            dm_stripe_total[j] += sum_pow1;
+            if(sum1 != 0.0) {
+                double sub1 = fabs(u1 - v1);
+                double sum_pow1 = pow(sum1, task_p->g_unifrac_alpha) * length;
+                dm_stripe[j] += sum_pow1 * (sub1 / sum1);
+                dm_stripe_total[j] += sum_pow1;
+            }
         }
     }
 }
