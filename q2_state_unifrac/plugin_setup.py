@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from qiime2.plugin import (Plugin, Properties, Int, Float)
+from qiime2.plugin import (Plugin, Properties, Int, Float, Boolean)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.distance_matrix import DistanceMatrix
 from q2_types.tree import Phylogeny, Rooted
@@ -28,8 +28,12 @@ plugin.methods.register_function(
     function=q2_state_unifrac.unweighted,
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
-    parameters={'threads': Int},
+    parameters={'threads': Int,
+                'variance-adjusted': Bool},
     parameter_descriptions={'threads': 'The number of threads to use.'},
+                            'variance-adjusted':
+                                ('Perform variance adjustment based on '
+                                 'Chang et al. BMC Bioinformatics 2011'),
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -47,8 +51,12 @@ plugin.methods.register_function(
     function=q2_state_unifrac.weighted_unnormalized,
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
-    parameters={'threads': Int},
+    parameters={'threads': Int,
+                'variance-adjusted': Bool},
     parameter_descriptions={'threads': 'The number of threads to use.'},
+                            'variance-adjusted':
+                                ('Perform variance adjustment based on '
+                                 'Chang et al. BMC Bioinformatics 2011'),
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -66,8 +74,12 @@ plugin.methods.register_function(
     function=q2_state_unifrac.weighted_normalized,
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
-    parameters={'threads': Int},
+    parameters={'threads': Int,
+                'variance-adjusted': Bool},
     parameter_descriptions={'threads': 'The number of threads to use.'},
+                            'variance-adjusted':
+                                ('Perform variance adjustment based on '
+                                 'Chang et al. BMC Bioinformatics 2011'),
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -86,8 +98,12 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
+                'variance-adjusted': Bool,
                 'alpha': Float},
     parameter_descriptions={'threads': 'The number of threads to use.',
+                            'variance-adjusted':
+                                ('Perform variance adjustment based on '
+                                 'Chang et al. BMC Bioinformatics 2011'),
                             'alpha': ('The value of alpha controls importance '
                                       'of sample proportions. 1.0 is '
                                       'weighted normalized UniFrac. 0.0 is '
