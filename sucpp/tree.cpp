@@ -244,7 +244,7 @@ int32_t BPTree::enclose(uint32_t i) {
 }
 
 int32_t BPTree::bwd(uint32_t i, int d) {
-    int32_t target_excess = excess[i] + d;
+    uint32_t target_excess = excess[i] + d;
     for(int current_idx = i - 1; current_idx >= 0; current_idx--) {
         if(excess[current_idx] == target_excess)
             return current_idx;

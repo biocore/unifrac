@@ -125,13 +125,13 @@ int main(int argc, char **argv){
     
     unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
     if(starts == NULL) {
-        fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
                 sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
     unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
     if(ends == NULL) {
-        fprintf(stderr, "Failed to allocate %d bytes; [%s]:%d\n", 
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
                 sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
