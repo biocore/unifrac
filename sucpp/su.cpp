@@ -134,38 +134,19 @@ int main(int argc, char **argv){
     unsigned int start = 0;
     unsigned int end = dm_stripes.size();
     
-    unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
-    if(starts == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
-    if(ends == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    su::task_parameters *tasks = (su::task_parameters*)malloc(sizeof(su::task_parameters) * nthreads);
-    if(tasks == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(tasks) * nthreads, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    std::vector<su::task_parameters> tasks;
+    tasks.resize(nthreads);
 
     std::vector<std::thread> threads(nthreads);
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
-        starts[tid] = start;
-        ends[tid] = start + chunksize;
         tasks[tid].tid = tid;
-        tasks[tid].start = start;
-        tasks[tid].stop = end;
+        tasks[tid].start = start; // stripe start
+        tasks[tid].stop = start + chunksize;  // stripe end 
         tasks[tid].n_samples = table.n_samples;
         tasks[tid].g_unifrac_alpha = g_unifrac_alpha;
         start = start + chunksize;
     }
     // the last thread gets any trailing bits
-    ends[threads.size() - 1] = end;
     tasks[threads.size() - 1].stop = end;
     
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
@@ -182,10 +163,6 @@ int main(int argc, char **argv){
         threads[tid].join();
     }
     
-    free(starts);
-    free(ends);
-    free(tasks);
-
     double **dm = su::deconvolute_stripes(dm_stripes, table.n_samples);
 
     std::ofstream output;
