@@ -23,6 +23,11 @@ def compile_ssu():
     # clean the target
     subprocess.call(['make', 'clean'], cwd=SUCPP)
 
+    cmd = ['make', 'test']
+    ret = subprocess.call(cmd, cwd=SUCPP)
+    if ret != 0:
+        raise Exception('Error compiling ssu!')
+
     cmd = ['make', 'main']
     ret = subprocess.call(cmd, cwd=SUCPP)
     if ret != 0:
@@ -51,11 +56,8 @@ setup(
     name="q2-state-unifrac",
     version="2017.2.0",
     packages=find_packages(),
-    install_requires=['qiime2 >= 2017.4.0', 'q2-types >= 2017.4.0',
-                      'q2-feature-table >= 2017.4.0',
-                      'scikit-bio >= 0.5.1, < 0.6.0',
-                      'biom-format >= 2.1.5, < 2.2.0'],
     author="Daniel McDonald",
+    license='BSD-3-Clause',
     author_email="wasade@gmail.com",
     url="https://github.com/wasade/q2-state-unifrac",
     description="An implementation of Strided State UniFrac",

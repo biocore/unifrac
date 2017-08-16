@@ -17,6 +17,7 @@ namespace su {
             uint32_t n_samples;  // the number of samples
             uint32_t n_obs;      // the number of observations
             uint32_t nnz;        // the total number of nonzero entries
+            double *sample_counts;
 
             /* default constructor
              *
@@ -38,15 +39,6 @@ namespace su {
              *      have data will be zero'd.
              */
             void get_obs_data(std::string id, double* out);
-            
-            /* get a dense vector of observation data
-             *
-             * @param id The observation ID to fetch
-             * @param out An allocated array of at least size n_samples. 
-             *      Values of an index position [0, n_samples) which do not
-             *      have data will be zero'd.
-             */
-            void get_sample_data(std::string id, double* out);
         private:
             /* retain DataSet handles within the HDF5 file */
             H5::DataSet obs_indices;
@@ -54,17 +46,13 @@ namespace su {
             H5::DataSet obs_data;
             H5::DataSet sample_data;
             H5::H5File file;
-            
-            /* At construction, these arrays are allocated to avoid 
-             * reallocations everytime a vector is requested. They represent
-             * both compressed sparse indices and data for both axes.
-             *
-             * NOTE: these are not assured to be thread-safe
-             */
-            uint32_t *tmp_obs_indices;
-            uint32_t *tmp_sample_indices;
-            double *tmp_obs_data;
-            double *tmp_sample_data;
+            uint32_t **obs_indices_resident;
+            double **obs_data_resident;
+            unsigned int *obs_counts_resident;
+
+            unsigned int get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
+            unsigned int get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
+            double* get_sample_counts();
 
             /* At construction, lookups mapping IDs -> index position within an
              * axis are defined

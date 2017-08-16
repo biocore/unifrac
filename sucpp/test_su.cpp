@@ -484,54 +484,6 @@ void test_biom_get_obs_data() {
     SUITE_END();
 }
 
-void test_biom_get_sample_data() {
-    SUITE_START("biom get sample data");
-
-    su::biom table = su::biom("test.biom");
-    double exp0[] = {0.0, 5.0, 0.0, 2.0, 0.0};
-    std::vector<double> exp0_vec = _double_array_to_vector(exp0, 5);
-    double exp1[] = {0.0, 1.0, 0.0, 1.0, 1.0};
-    std::vector<double> exp1_vec = _double_array_to_vector(exp1, 5);
-    double exp2[] = {1.0, 0.0, 1.0, 1.0, 1.0};
-    std::vector<double> exp2_vec = _double_array_to_vector(exp2, 5);
-    double exp3[] = {0.0, 2.0, 4.0, 0.0, 0.0};
-    std::vector<double> exp3_vec = _double_array_to_vector(exp3, 5);
-    double exp4[] = {0.0, 3.0, 0.0, 0.0, 0.0};
-    std::vector<double> exp4_vec = _double_array_to_vector(exp4, 5);
-    double exp5[] = {0.0, 1.0, 2.0, 1.0, 0.0};
-    std::vector<double> exp5_vec = _double_array_to_vector(exp5, 5);
-    
-    double *out = (double*)malloc(sizeof(double) * 5);
-    std::vector<double> obs_vec;
-
-    table.get_sample_data(std::string("Sample1").c_str(), out);
-    obs_vec = _double_array_to_vector(out, 5);
-    ASSERT(vec_almost_equal(obs_vec, exp0_vec));
-
-    table.get_sample_data(std::string("Sample2").c_str(), out);
-    obs_vec = _double_array_to_vector(out, 5);
-    ASSERT(vec_almost_equal(obs_vec, exp1_vec));
-
-    table.get_sample_data(std::string("Sample3").c_str(), out);
-    obs_vec = _double_array_to_vector(out, 5);
-    ASSERT(vec_almost_equal(obs_vec, exp2_vec));
-
-    table.get_sample_data(std::string("Sample4").c_str(), out);
-    obs_vec = _double_array_to_vector(out, 5);
-    ASSERT(vec_almost_equal(obs_vec, exp3_vec));
-
-    table.get_sample_data(std::string("Sample5").c_str(), out);
-    obs_vec = _double_array_to_vector(out, 5);
-    ASSERT(vec_almost_equal(obs_vec, exp4_vec));
-
-    table.get_sample_data(std::string("Sample6").c_str(), out);
-    obs_vec = _double_array_to_vector(out, 5);
-    ASSERT(vec_almost_equal(obs_vec, exp5_vec));
-
-    free(out);
-    SUITE_END();
-}
-
 void test_bptree_leftchild() {
     SUITE_START("test bptree left child");
     su::BPTree tree = su::BPTree("((3,4,(6)5)2,7,((10,100)9)8)1;");
@@ -638,19 +590,19 @@ void test_unifrac_set_proportions() {
     double sample_counts[] = {7, 3, 4, 6, 3, 4}; 
     double *obs = ps.pop(4); // GG_OTU_2
     double exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
-    set_proportions(obs, tree, 4, table, ps, sample_counts);
+    set_proportions(obs, tree, 4, table, ps);
     for(unsigned int i = 0; i < table.n_samples; i++)
         ASSERT(fabs(obs[i] - exp4[i]) < 0.000001);
 
     obs = ps.pop(6); // GG_OTU_3
     double exp6[] = {0.0, 0.0, 0.25, 0.666666666667, 0.0, 0.5};
-    set_proportions(obs, tree, 6, table, ps, sample_counts);
+    set_proportions(obs, tree, 6, table, ps);
     for(unsigned int i = 0; i < table.n_samples; i++)
         ASSERT(fabs(obs[i] - exp6[i]) < 0.000001);
 
     obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
     double exp3[] = {0.71428571, 0.33333333, 0.25, 1.0, 1.0, 0.75};
-    set_proportions(obs, tree, 3, table, ps, sample_counts);
+    set_proportions(obs, tree, 3, table, ps);
     for(unsigned int i = 0; i < table.n_samples; i++) 
         ASSERT(fabs(obs[i] - exp3[i]) < 0.000001);
     SUITE_END();
@@ -684,66 +636,99 @@ void test_unifrac_deconvolute_stripes() {
 
 void test_unnormalized_weighted_unifrac() {
     SUITE_START("test unnormalized weighted unifrac");
-    double exp[6][6] = {{ 0.        ,  1.52380952,  2.17857143,  1.9047619 ,  1.14285714, 1.07142857},
-                        { 1.52380952,  0.        ,  1.25      ,  2.66666667,  2.66666667, 1.83333333},
-                        { 2.17857143,  1.25      ,  0.        ,  2.75      ,  3.25      , 1.75      },
-                        { 1.9047619 ,  2.66666667,  2.75      ,  0.        ,  1.33333333, 1.        },
-                        { 1.14285714,  2.66666667,  3.25      ,  1.33333333,  0.        , 2.        },
-                        { 1.07142857,  1.83333333,  1.75      ,  1.        ,  2.        , 0.        }};
-    double **obs;
-
+    
+    std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    obs = su::unifrac(table, tree, su::weighted_unnormalized);
-    for(unsigned int i = 0; i < 6; i++) {
+    
+    std::vector<double*> exp;
+    double stride1[] = {1.52380952, 1.25, 2.75, 1.33333333, 2., 1.07142857};
+    double stride2[] = {2.17857143, 2.66666667, 3.25, 1.0, 1.14285714, 1.83333333};
+    double stride3[] = {1.9047619, 2.66666667, 1.75, 1.9047619, 2.66666667, 1.75};
+    exp.push_back(stride1);
+    exp.push_back(stride2);
+    exp.push_back(stride3);
+    std::vector<double*> strides = su::make_strides(6);
+    std::vector<double*> strides_total = su::make_strides(6);
+    
+    su::unifrac(table, tree, su::weighted_unnormalized, strides, strides_total, 0, 3, 0);
+    for(unsigned int i = 0; i < 3; i++) {
+        for(unsigned int j = 0; j < 6; j++) {
+            ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
+        }
+        free(strides[i]);
+    }
+    SUITE_END();
+}
+
+void test_make_strides() {
+    SUITE_START("test make stripes");
+    std::vector<double*> exp;
+    double stride[] = {0., 0., 0.};
+    exp.push_back(stride);
+    exp.push_back(stride);
+    exp.push_back(stride);
+
+    std::vector<double*> obs = su::make_strides(3);
+    for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(obs[i][j] - exp[i][j]) < 0.000001);
         }
         free(obs[i]);
     }
-    SUITE_END();
 }
 
-// normalized and unweighted are the same thing short of a conversion to presence/absence
-// prior to conversion to proportions.
 void test_unweighted_unifrac() {
     SUITE_START("test unweighted unifrac");
-    double exp[6][6] = {{ 0.        ,  0.2       ,  0.57142857,  0.6       ,  0.5       , 0.2       },
-                        { 0.2       ,  0.        ,  0.42857143,  0.66666667,  0.6       , 0.33333333},
-                        { 0.57142857,  0.42857143,  0.        ,  0.71428571,  0.85714286, 0.42857143},
-                        { 0.6       ,  0.66666667,  0.71428571,  0.        ,  0.33333333, 0.4       },
-                        { 0.5       ,  0.6       ,  0.85714286,  0.33333333,  0.        , 0.6       },
-                        { 0.2       ,  0.33333333,  0.42857143,  0.4       ,  0.6       , 0.        }};
     double **obs;
+    std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    obs = su::unifrac(table, tree, su::unweighted);
-    for(unsigned int i = 0; i < 6; i++) {
+   
+    std::vector<double*> exp;
+    double stride1[] = {0.2, 0.42857143, 0.71428571, 0.33333333, 0.6, 0.2};
+    double stride2[] = {0.57142857, 0.66666667, 0.85714286, 0.4, 0.5, 0.33333333};
+    double stride3[] = {0.6, 0.6, 0.42857143, 0.6, 0.6, 0.42857143};
+    exp.push_back(stride1);
+    exp.push_back(stride2);
+    exp.push_back(stride3);
+    std::vector<double*> strides = su::make_strides(6);
+    std::vector<double*> strides_total = su::make_strides(6);
+
+    su::unifrac(table, tree, su::unweighted, strides, strides_total, 0, 3, 0);
+ 
+    for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
-            ASSERT(fabs(obs[i][j] - exp[i][j]) < 0.000001);
+            ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
         }
-        free(obs[i]);
+        free(strides[i]);
     }
     SUITE_END();
 }
 
 void test_normalized_weighted_unifrac() {
     SUITE_START("test normalized weighted unifrac");
-    double exp[6][6] = {{ 0.        ,  0.38095238,  0.58095238,  0.47619048,  0.28571429, 0.26785714},
-                        { 0.38095238,  0.        ,  0.33333333,  0.66666667,  0.66666667, 0.45833333},
-                        { 0.58095238,  0.33333333,  0.        ,  0.73333333,  0.86666667, 0.46666667},
-                        { 0.47619048,  0.66666667,  0.73333333,  0.        ,  0.33333333, 0.25      },
-                        { 0.28571429,  0.66666667,  0.86666667,  0.33333333,  0.        , 0.5       },
-                        { 0.26785714,  0.45833333,  0.46666667,  0.25      ,  0.5       , 0.        }};
     double **obs;
+    std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    obs = su::unifrac(table, tree, su::weighted_normalized);
-    for(unsigned int i = 0; i < 6; i++) {
+    
+    std::vector<double*> exp;
+    double stride1[] = {0.38095238, 0.33333333, 0.73333333, 0.33333333, 0.5, 0.26785714};
+    double stride2[] = {0.58095238, 0.66666667, 0.86666667, 0.25, 0.28571429, 0.45833333};
+    double stride3[] = {0.47619048, 0.66666667, 0.46666667, 0.47619048, 0.66666667, 0.46666667};
+    exp.push_back(stride1);
+    exp.push_back(stride2);
+    exp.push_back(stride3);
+    std::vector<double*> strides = su::make_strides(6);
+    std::vector<double*> strides_total = su::make_strides(6);
+    
+    su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, 0, 3, 0);
+    for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
-            ASSERT(fabs(obs[i][j] - exp[i][j]) < 0.000001);
+            ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
         }
-        free(obs[i]);
+        free(strides[i]);
     }
     SUITE_END();
 }
@@ -826,7 +811,7 @@ void test_bptree_collapse_edge() {
 void test_unifrac_sample_counts() {
     SUITE_START("test unifrac sample counts");
     su::biom table = su::biom("test.biom");
-    double* obs = get_sample_counts(table);
+    double* obs = table.sample_counts;
     double exp[] = {7, 3, 4, 6, 3, 4};
     for(unsigned int i = 0; i < 6; i++)
         ASSERT(obs[i] == exp[i]);
@@ -861,7 +846,6 @@ int main(int argc, char** argv) {
 
     test_biom_constructor();
     test_biom_get_obs_data();
-    test_biom_get_sample_data();
 
     test_propstack_constructor();
     test_propstack_push_and_pop();
