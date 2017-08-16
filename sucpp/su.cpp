@@ -9,14 +9,15 @@
 #include <thread>
 
 void usage() {
-    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha]" << std::endl;
+    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]" << std::endl;
     std::cout << std::endl;
-    std::cout << "    -i\tThe input BIOM table." << std::endl;
-    std::cout << "    -t\tThe input phylogeny in newick." << std::endl;
-    std::cout << "    -m\tThe method, [unweighted | weighted_normalized | weighted_unnormalized | generalized]." << std::endl;
-    std::cout << "    -o\tThe output distance matrix." << std::endl;
-    std::cout << "    -n\t[OPTIONAL] The number of threads, default is 1." << std::endl;
-    std::cout << "    -a\t[OPTIONAL] Generalized UniFrac alpha, default is 1." << std::endl;
+    std::cout << "    -i\t\tThe input BIOM table." << std::endl;
+    std::cout << "    -t\t\tThe input phylogeny in newick." << std::endl;
+    std::cout << "    -m\t\tThe method, [unweighted | weighted_normalized | weighted_unnormalized | generalized]." << std::endl;
+    std::cout << "    -o\t\tThe output distance matrix." << std::endl;
+    std::cout << "    -n\t\t[OPTIONAL] The number of threads, default is 1." << std::endl;
+    std::cout << "    -a\t\t[OPTIONAL] Generalized UniFrac alpha, default is 1." << std::endl;
+    std::cout << "    --vaw\t[OPTIONAL] Variance adjusted, default is to not adjust for variance." << std::endl;
     std::cout << std::endl;
 }
 
@@ -97,6 +98,7 @@ int main(int argc, char **argv){
         nthreads = atoi(nthreads_arg.c_str());
     }
     
+    bool vaw = input.cmdOptionExists("--vaw"); 
     double g_unifrac_alpha;
     if(gunifrac_arg.empty()) {
         g_unifrac_alpha = 1.0;
@@ -150,13 +152,22 @@ int main(int argc, char **argv){
     tasks[threads.size() - 1].stop = end;
     
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
-        threads[tid] = std::thread(su::unifrac, 
-                                   std::ref(table),
-                                   std::ref(tree_sheared), 
-                                   method, 
-                                   std::ref(dm_stripes), 
-                                   std::ref(dm_stripes_total), 
-                                   &tasks[tid]);
+        if(vaw)
+            threads[tid] = std::thread(su::unifrac_vaw, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
+        else
+            threads[tid] = std::thread(su::unifrac, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
     }
 
     for(unsigned int tid = 0; tid < threads.size(); tid++) {

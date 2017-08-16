@@ -30,4 +30,33 @@ namespace su {
                                    double* __restrict__ embedded_proportions,
                                    double length,
                                    const su::task_parameters* task_p);
+    
+    void _vaw_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                                 std::vector<double*> &__restrict__ dm_stripes_total,
+                                                 double* __restrict__ embedded_proportions,
+                                                 double* __restrict__ embedded_counts,
+                                                 double* __restrict__ sample_total_counts,
+                                                 double length,
+                                                 const su::task_parameters* task_p);
+    void _vaw_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                               std::vector<double*> &__restrict__ dm_stripes_total,
+                                               double* __restrict__ embedded_proportions,
+                                               double* __restrict__ embedded_counts,
+                                               double* __restrict__ sample_total_counts,
+                                               double length,
+                                               const su::task_parameters* task_p);
+    void _vaw_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                      std::vector<double*> &__restrict__ dm_stripes_total,
+                                      double* __restrict__ embedded_proportions,
+                                      double* __restrict__ embedded_counts,
+                                      double* __restrict__ sample_total_counts,
+                                      double length,
+                                      const su::task_parameters* task_p);
+    void _vaw_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                       std::vector<double*> &__restrict__ dm_stripes_total,
+                                       double* __restrict__ embedded_proportions,
+                                       double* __restrict__ embedded_counts,
+                                       double* __restrict__ sample_total_counts,
+                                       double length,
+                                       const su::task_parameters* task_p);
 }

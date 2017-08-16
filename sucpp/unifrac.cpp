@@ -124,11 +124,23 @@ void initialize_embedded(double*& prop, const su::task_parameters* task_p) {
 	posix_memalign((void **)&prop, 32, sizeof(double) * task_p->n_samples * 2);
     if(prop == NULL) {
         fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+                sizeof(double) * task_p->n_samples * 2, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
 }
 
+void initialize_sample_counts(double*& counts, const su::task_parameters* task_p, biom &table) {
+	posix_memalign((void **)&counts, 32, sizeof(double) * task_p->n_samples * 2);
+    if(counts == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    for(unsigned int i = 0; i < table.n_samples; i++) {
+        counts[i] = table.sample_counts[i];
+        counts[i + table.n_samples] = table.sample_counts[i];
+    }
+}
 
 void initialize_stripes(std::vector<double*> &dm_stripes, 
                         std::vector<double*> &dm_stripes_total, 
@@ -271,15 +283,98 @@ void su::unifrac(biom &table,
     free(embedded_proportions);
 }
 
+void su::unifrac_vaw(biom &table,
+                     BPTree &tree, 
+                     Method unifrac_method,
+                     std::vector<double*> &dm_stripes,
+                     std::vector<double*> &dm_stripes_total,
+                     const su::task_parameters* task_p) {
+
+    if(table.n_samples != task_p->n_samples) {
+        fprintf(stderr, "Task and table n_samples not equal\n");
+        exit(EXIT_FAILURE);
+    }
+
+    void (*func)(std::vector<double*>&,  // dm_stripes
+                 std::vector<double*>&,  // dm_stripes_total
+                 double*,                // embedded_proportions
+                 double*,                // embedded_counts
+                 double*,                // sample total counts
+                 double,                 // length
+                 const su::task_parameters*);
+
+    switch(unifrac_method) {
+        case unweighted:
+            func = &su::_vaw_unweighted_unifrac_task;
+            break;
+        case weighted_normalized:
+            func = &su::_vaw_normalized_weighted_unifrac_task;
+            break;
+        case weighted_unnormalized:
+            func = &su::_vaw_unnormalized_weighted_unifrac_task;
+            break;
+        case generalized:
+            func = &su::_vaw_generalized_unifrac_task;
+            break;
+    }
+    PropStack propstack(table.n_samples);
+    PropStack countstack(table.n_samples);
+
+    uint32_t node;
+    double *node_proportions;
+    double *node_counts;
+    double *embedded_proportions; 
+    double *embedded_counts; 
+    double *sample_total_counts;
+    double length;
+
+    initialize_embedded(embedded_proportions, task_p);
+    initialize_embedded(embedded_counts, task_p);
+    initialize_sample_counts(sample_total_counts, task_p, table);
+    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
+
+    // - 1 to avoid root   
+    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
+        node = tree.postorderselect(k);
+        length = tree.lengths[node];
+
+        node_proportions = propstack.pop(node);
+        node_counts = countstack.pop(node);
+
+        set_proportions(node_proportions, tree, node, table, propstack);
+        set_proportions(node_counts, tree, node, table, countstack, false);
+
+        embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
+        embed_proportions(embedded_counts, node_counts, task_p->n_samples);
+
+        func(dm_stripes, dm_stripes_total, embedded_proportions, embedded_counts, sample_total_counts, length, task_p);
+    }
+    
+    if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
+        for(unsigned int i = task_p->start; i < task_p->stop; i++) {
+            for(unsigned int j = 0; j < task_p->n_samples; j++) {
+                dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
+            }
+        }
+    }
+    
+    free(embedded_proportions);
+    free(embedded_counts);
+    free(sample_total_counts);
+}
 void su::set_proportions(double* props, 
                          BPTree &tree, 
                          uint32_t node, 
                          biom &table, 
-                         PropStack &ps) {
+                         PropStack &ps,
+                         bool normalize) {
     if(tree.isleaf(node)) {
        table.get_obs_data(tree.names[node], props);
-       for(unsigned int i = 0; i < table.n_samples; i++)
-           props[i] = props[i] / table.sample_counts[i];
+       for(unsigned int i = 0; i < table.n_samples; i++) {
+           props[i] = props[i];
+           if(normalize)
+               props[i] /= table.sample_counts[i];
+       }
 
     } else {
         unsigned int current = tree.leftchild(node);

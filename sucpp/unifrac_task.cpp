@@ -7,7 +7,6 @@ void su::_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ 
                                              double length,
                                              const su::task_parameters* task_p) {
     double *dm_stripe;
-    //__m256d ymm0, ymm1; 
     for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
 
@@ -23,33 +22,6 @@ void su::_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ 
          * support must be tested at compile time, so it's rather annoying
          * at the moment. basically, we can't assume the presence of avx2.
          */
-        //for(j = 0; j < n_samples / 4; j++) {
-        //    int offset = j * 4;
-        //    ymm0 = _mm256_sub_pd(_mm256_load_pd(embedded_proportions + offset),
-        //                         _mm256_load_pd(embedded_proportions + (offset + stripe + 1))); // u - v
-        //    ymm1 = _mm256_sub_pd(_mm256_set1_pd(0.0),
-        //                         ymm0); // 0.0 - (u - v)
-        //    ymm0 = _mm256_max_pd(ymm0, ymm1);  // abs(u - v)
-        //    ymm0 = _mm256_fmadd_pd(ymm0,
-        //                            _mm256_set1_pd(length),
-        //                           _mm256_load_pd(dm_stripe + offset));  // fused mutiply add, dm_stripe[offset] += (abs(u - v) * length)
-        //    _mm256_store_pd(dm_stripe + offset, ymm0);  //store
-        //}
-
-        //if((n_samples % 4) != 0) {
-        //    for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
-        //        double u = embedded_proportions[k];
-        //        ////double v = alt_proportions[j];
-        //        double v = embedded_proportions[k + stripe + 1];
-        //        dm_stripe[k] += fabs(u - v) * length;
-        //    }
-        //}
-        
-        //for(int k = 0; k < n_samples; k++) {
-        //    double u = embedded_proportions[k];
-        //    double v = embedded_proportions[k + stripe + 1];
-        //    dm_stripe[k] += fabs(u - v) * length;
-        //}
         for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
             int k = j * 4;
             double u1 = embedded_proportions[k];
@@ -79,6 +51,30 @@ void su::_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ 
     }
 }
 
+void su::_vaw_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                                 std::vector<double*> &__restrict__ dm_stripes_total,
+                                                 double* __restrict__ embedded_proportions,
+                                                 double* __restrict__ embedded_counts,
+                                                 double* __restrict__ sample_total_counts,
+                                                 double length,
+                                                 const su::task_parameters* task_p) {
+    double *dm_stripe;
+    for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
+        dm_stripe = dm_stripes[stripe];
+
+        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+            double u = embedded_proportions[j];
+            double v = embedded_proportions[j + stripe + 1];
+
+            double m = sample_total_counts[j] + sample_total_counts[j + stripe + 1];
+            double mi = embedded_counts[j] + embedded_counts[j + stripe + 1];
+            double vaw = sqrt(mi * (m - mi));
+
+            if(vaw > 0)
+                dm_stripe[j] += (fabs(u - v) * length) / vaw;
+        }
+    }
+}
 void su::_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
                                            std::vector<double*> &__restrict__ dm_stripes_total,
                                            double* __restrict__ embedded_proportions, 
@@ -127,6 +123,36 @@ void su::_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm
     }
 }
 
+void su::_vaw_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                               std::vector<double*> &__restrict__ dm_stripes_total,
+                                               double* __restrict__ embedded_proportions, 
+                                               double* __restrict__ embedded_counts, 
+                                               double* __restrict__ sample_total_counts,
+                                               double length, 
+                                               const su::task_parameters* task_p) {
+    double *dm_stripe;
+    double *dm_stripe_total;
+
+    // point of thread
+    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
+        dm_stripe = dm_stripes[stripe];
+        dm_stripe_total = dm_stripes_total[stripe];
+
+        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+            double u = embedded_proportions[j];
+            double v = embedded_proportions[j + stripe + 1];
+            
+            double m = sample_total_counts[j] + sample_total_counts[j + stripe + 1];
+            double mi = embedded_counts[j] + embedded_counts[j + stripe + 1];
+            double vaw = sqrt(mi * (m - mi));
+
+            if(vaw > 0) {   
+                dm_stripe[j] += (fabs(u - v) * length) / vaw;
+                dm_stripe_total[j] += ((u + v) * length) / vaw;
+            }
+        }
+    }
+}
 void su::_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
                                    std::vector<double*> &__restrict__ dm_stripes_total,
                                    double* __restrict__ embedded_proportions, 
@@ -154,6 +180,39 @@ void su::_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes
     }
 }
 
+void su::_vaw_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                       std::vector<double*> &__restrict__ dm_stripes_total,
+                                       double* __restrict__ embedded_proportions, 
+                                       double* __restrict__ embedded_counts, 
+                                       double* __restrict__ sample_total_counts,
+                                       double length, 
+                                       const su::task_parameters* task_p) {
+    double *dm_stripe;
+    double *dm_stripe_total;
+
+    // point of thread
+    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
+        dm_stripe = dm_stripes[stripe];
+        dm_stripe_total = dm_stripes_total[stripe];
+
+        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+            double m = sample_total_counts[j] + sample_total_counts[j + stripe + 1];
+            double mi = embedded_counts[j] + embedded_counts[j + stripe + 1];
+            double vaw = sqrt(mi * (m - mi));
+            
+            double u1 = embedded_proportions[j];
+            double v1 = embedded_proportions[j + stripe + 1];
+            
+            if(vaw > 0.0) {
+                double sum1 = (u1 + v1) / vaw;
+                double sub1 = fabs(u1 - v1) / vaw;
+                double sum_pow1 = pow(sum1, task_p->g_unifrac_alpha) * length;
+                dm_stripe[j] += sum_pow1 * (sub1 / sum1);
+                dm_stripe_total[j] += sum_pow1;
+            }
+        }
+    }
+}
 void su::_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
                                   std::vector<double*> &__restrict__ dm_stripes_total,
                                   double* __restrict__ embedded_proportions, 
@@ -196,6 +255,36 @@ void su::_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes,
 
                 dm_stripe[k] += (u ^ v) * length;
                 dm_stripe_total[k] += (u | v) * length;
+            }
+        }
+    }
+}
+
+void su::_vaw_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                                      std::vector<double*> &__restrict__ dm_stripes_total,
+                                      double* __restrict__ embedded_proportions, 
+                                      double* __restrict__ embedded_counts, 
+                                      double* __restrict__ sample_total_counts,
+                                      double length,  
+                                      const su::task_parameters* task_p) {
+    double *dm_stripe;
+    double *dm_stripe_total;
+    
+    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
+        dm_stripe = dm_stripes[stripe];
+        dm_stripe_total = dm_stripes_total[stripe];
+
+        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+            int32_t u = embedded_proportions[j] > 0;
+            int32_t v = embedded_proportions[j + stripe + 1] > 0;
+
+            double m = sample_total_counts[j] + sample_total_counts[j + stripe + 1];
+            double mi = embedded_counts[j] + embedded_counts[j + stripe + 1];
+            double vaw = sqrt(mi * (m - mi));
+            
+            if(vaw > 0) {
+                dm_stripe[j] += ((u ^ v) * length) / vaw;
+                dm_stripe_total[j] += ((u | v) * length) / vaw;
             }
         }
     }
