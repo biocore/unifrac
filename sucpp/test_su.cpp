@@ -651,12 +651,46 @@ void test_unnormalized_weighted_unifrac() {
     std::vector<double*> strides = su::make_strides(6);
     std::vector<double*> strides_total = su::make_strides(6);
     
-    su::unifrac(table, tree, su::weighted_unnormalized, strides, strides_total, 0, 3, 0);
+    su::task_parameters task_p;
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; 
+
+    su::unifrac(table, tree, su::weighted_unnormalized, strides, strides_total, &task_p);
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
         }
         free(strides[i]);
+    }
+    SUITE_END();
+}
+
+void test_generalized_unifrac() {
+    SUITE_START("test generalized unifrac");
+    
+    std::vector<std::thread> threads(1);
+    su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
+    su::biom table = su::biom("test.biom");
+    
+    std::vector<double*> w_exp;
+    double w_stride1[] = {0.38095238, 0.33333333, 0.73333333, 0.33333333, 0.5, 0.26785714};
+    double w_stride2[] = {0.58095238, 0.66666667, 0.86666667, 0.25, 0.28571429, 0.45833333};
+    double w_stride3[] = {0.47619048, 0.66666667, 0.46666667, 0.47619048, 0.66666667, 0.46666667};
+    w_exp.push_back(w_stride1);
+    w_exp.push_back(w_stride2);
+    w_exp.push_back(w_stride3);
+    std::vector<double*> w_strides = su::make_strides(6);
+    std::vector<double*> w_strides_total = su::make_strides(6);
+    su::task_parameters w_task_p;
+    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6; 
+    w_task_p.g_unifrac_alpha = 1.0;
+    
+    su::unifrac(table, tree, su::generalized, w_strides, w_strides_total, &w_task_p);
+
+    for(unsigned int i = 0; i < 3; i++) {
+        for(unsigned int j = 0; j < 6; j++) {
+            ASSERT(fabs(w_strides[i][j] - w_exp[i][j]) < 0.000001);
+        }
+        free(w_strides[i]);
     }
     SUITE_END();
 }
@@ -695,7 +729,10 @@ void test_unweighted_unifrac() {
     std::vector<double*> strides = su::make_strides(6);
     std::vector<double*> strides_total = su::make_strides(6);
 
-    su::unifrac(table, tree, su::unweighted, strides, strides_total, 0, 3, 0);
+    su::task_parameters task_p;
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; 
+
+    su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
  
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
@@ -722,8 +759,11 @@ void test_normalized_weighted_unifrac() {
     exp.push_back(stride3);
     std::vector<double*> strides = su::make_strides(6);
     std::vector<double*> strides_total = su::make_strides(6);
-    
-    su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, 0, 3, 0);
+   
+    su::task_parameters task_p;
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; 
+
+    su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, &task_p);
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
@@ -856,6 +896,7 @@ int main(int argc, char** argv) {
     test_unweighted_unifrac();
     test_unnormalized_weighted_unifrac();
     test_normalized_weighted_unifrac();
+    test_generalized_unifrac();
     test_unifrac_sample_counts();
 
     printf("\n");

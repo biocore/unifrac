@@ -109,12 +109,10 @@ void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_s
                                          std::vector<double*> &__restrict__ dm_stripes_total,
                                          double* __restrict__ embedded_proportions,
                                          double length,
-                                         uint32_t n_samples,
-                                         unsigned int start,
-                                         unsigned int stop) {
+                                         const su::task_parameters* task_p) {
     double *dm_stripe;
     //__m256d ymm0, ymm1; 
-    for(unsigned int stripe=start; stripe < stop; stripe++) {
+    for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
 
         /* intrinsics yield about a 2x reduction in runtime on llvm. they
@@ -156,7 +154,7 @@ void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_s
         //    double v = embedded_proportions[k + stripe + 1];
         //    dm_stripe[k] += fabs(u - v) * length;
         //}
-        for(unsigned int j = 0; j < n_samples / 4; j++) {
+        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
             int k = j * 4;
             double u1 = embedded_proportions[k];
             double u2 = embedded_proportions[k + 1];
@@ -174,8 +172,8 @@ void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_s
             dm_stripe[k + 3] += fabs(u4 - v4) * length;
         }
 
-        if((n_samples % 4) != 0) {
-            for(unsigned int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+        if((task_p->n_samples % 4) != 0) {
+            for(unsigned int k = task_p->n_samples - (task_p->n_samples % 4); k < task_p->n_samples; k++) {
                 double u = embedded_proportions[k];
                 double v = embedded_proportions[k + stripe + 1];
  
@@ -189,18 +187,16 @@ void _normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_str
                                        std::vector<double*> &__restrict__ dm_stripes_total,
                                        double* __restrict__ embedded_proportions, 
                                        double length, 
-                                       uint32_t n_samples,
-                                       unsigned int start,
-                                       unsigned int stop) {
+                                       const su::task_parameters* task_p) {
     double *dm_stripe;
     double *dm_stripe_total;
 
     // point of thread
-    for(unsigned int stripe = start; stripe < stop; stripe++) {
+    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < n_samples / 4; j++) {
+        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
             int k = j * 4;
             double u1 = embedded_proportions[k];
             double u2 = embedded_proportions[k + 1];
@@ -217,20 +213,45 @@ void _normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_str
             dm_stripe[k + 2] += fabs(u3 - v3) * length;
             dm_stripe[k + 3] += fabs(u4 - v4) * length;
 
-            dm_stripe_total[k] += fabs(u1 + v1) * length;
-            dm_stripe_total[k + 1] += fabs(u2 + v2) * length;
-            dm_stripe_total[k + 2] += fabs(u3 + v3) * length;
-            dm_stripe_total[k + 3] += fabs(u4 + v4) * length;
+            dm_stripe_total[k] += (u1 + v1) * length;
+            dm_stripe_total[k + 1] += (u2 + v2) * length;
+            dm_stripe_total[k + 2] += (u3 + v3) * length;
+            dm_stripe_total[k + 3] += (u4 + v4) * length;
         }
 
-        if((n_samples % 4) != 0) {
-            for(unsigned int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+        if((task_p->n_samples % 4) != 0) {
+            for(unsigned int k = task_p->n_samples - (task_p->n_samples % 4); k < task_p->n_samples; k++) {
                 double u = embedded_proportions[k];
                 double v = embedded_proportions[k + stripe + 1];
                    
                 dm_stripe[k] += fabs(u - v) * length;
-                dm_stripe_total[k] += fabs(u + v) * length;
+                dm_stripe_total[k] += (u + v) * length;
             }
+        }
+    }
+}
+
+void _generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
+                               std::vector<double*> &__restrict__ dm_stripes_total,
+                               double* __restrict__ embedded_proportions, 
+                               double length, 
+                               const su::task_parameters* task_p) {
+    double *dm_stripe;
+    double *dm_stripe_total;
+
+    // point of thread
+    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
+        dm_stripe = dm_stripes[stripe];
+        dm_stripe_total = dm_stripes_total[stripe];
+
+        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+            double u1 = embedded_proportions[j];
+            double v1 = embedded_proportions[j + stripe + 1];
+            double sub1 = fabs(u1 - v1);
+            double sum1 = u1 + v1;
+            double sum_pow1 = pow(sum1, task_p->g_unifrac_alpha) * length;
+            dm_stripe[j] += (sum1 != 0.0) ? (sum_pow1 * (sub1 / sum1)) : 0.0; 
+            dm_stripe_total[j] += sum_pow1;
         }
     }
 }
@@ -239,17 +260,15 @@ void _unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes,
                               std::vector<double*> &__restrict__ dm_stripes_total,
                               double* __restrict__ embedded_proportions, 
                               double length,  
-                              uint32_t n_samples,
-                              unsigned int start,
-                              unsigned int stop) {
+                              const su::task_parameters* task_p) {
     double *dm_stripe;
     double *dm_stripe_total;
     
-    for(unsigned int stripe = start; stripe < stop; stripe++) {
+    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
         dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < n_samples / 4; j++) {
+        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
             int k = j * 4;
             int32_t u1 = embedded_proportions[k] > 0;
             int32_t u2 = embedded_proportions[k + 1] > 0;
@@ -272,8 +291,8 @@ void _unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes,
             dm_stripe_total[k + 3] += (u4 | v4) * length;
         }
         
-        if((n_samples % 4) != 0) {
-            for(unsigned int k = n_samples - (n_samples % 4); k < n_samples; k++) {
+        if((task_p->n_samples % 4) != 0) {
+            for(unsigned int k = task_p->n_samples - (task_p->n_samples % 4); k < task_p->n_samples; k++) {
                 int32_t u = embedded_proportions[k] > 0;
                 int32_t v = embedded_proportions[k + stripe + 1] > 0;
 
@@ -306,17 +325,18 @@ void su::unifrac(biom &table,
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
-                 unsigned int start, 
-                 unsigned int end, 
-                 unsigned int tid) {
+                 const su::task_parameters* task_p) {
+
+    if(table.n_samples != task_p->n_samples) {
+        fprintf(stderr, "Task and table n_samples not equal\n");
+        exit(EXIT_FAILURE);
+    }
 
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
                  double*,                // embedded_proportions
                  double,                 // length
-                 uint32_t,               // number of samples
-                 unsigned int,           // stripe start
-                 unsigned int);          // stripe stop
+                 const su::task_parameters*);
 
     switch(unifrac_method) {
         case unweighted:
@@ -327,6 +347,9 @@ void su::unifrac(biom &table,
             break;
         case weighted_unnormalized:
             func = &_unnormalized_weighted_unifrac_task;
+            break;
+        case generalized:
+            func = &_generalized_unifrac_task;
             break;
     }
     PropStack propstack(table.n_samples);
@@ -343,7 +366,7 @@ void su::unifrac(biom &table,
     }
 
     // thread local memory
-    for(unsigned int i = start; i < end; i++){
+    for(unsigned int i = task_p->start; i < task_p->stop; i++){
         posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * table.n_samples);
         if(dm_stripes[i] == NULL) {
             fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
@@ -372,7 +395,7 @@ void su::unifrac(biom &table,
 
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
-        embed_proportions(embedded_proportions, node_proportions, table.n_samples);
+        embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
 
         /*
          * The values in the example vectors correspond to index positions of an 
@@ -418,17 +441,16 @@ void su::unifrac(biom &table,
          * We end up performing N / 2 redundant calculations on the last stripe 
          * (see C) but that is small over large N.  
          */
-        func(dm_stripes, dm_stripes_total, embedded_proportions, length, 
-             table.n_samples, start, end);
+        func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
         
         // should make this compile-time support
         //if((tid == 0) && ((k % 1000) == 0))
  	    //    progressbar((float)k / (float)(tree.nparens / 2));       
     }
     
-    if(unifrac_method == weighted_normalized || unifrac_method == unweighted) {
-        for(unsigned int i = start; i < end; i++) {
-            for(unsigned int j = 0; j < table.n_samples; j++) {
+    if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
+        for(unsigned int i = task_p->start; i < task_p->stop; i++) {
+            for(unsigned int j = 0; j < task_p->n_samples; j++) {
                 dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
             }
         }
