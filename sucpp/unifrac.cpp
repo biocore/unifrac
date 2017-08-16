@@ -322,6 +322,44 @@ void progressbar(float progress) {
     std::cout.flush();
 }
 
+void initialize_embedded(double*& prop, const su::task_parameters* task_p) {
+	posix_memalign((void **)&prop, 32, sizeof(double) * task_p->n_samples * 2);
+    if(prop == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void initialize_stripes(std::vector<double*> &dm_stripes, 
+                        std::vector<double*> &dm_stripes_total, 
+                        Method unifrac_method, 
+                        const su::task_parameters* task_p) {
+    for(unsigned int i = task_p->start; i < task_p->stop; i++){
+        posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * task_p->n_samples);
+        if(dm_stripes[i] == NULL) {
+            fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                    sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        for(unsigned int j = 0; j < task_p->n_samples; j++)
+            dm_stripes[i][j] = 0.;
+
+        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
+            posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * task_p->n_samples);
+            if(dm_stripes_total[i] == NULL) {
+                fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                        sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
+            for(unsigned int j = 0; j < task_p->n_samples; j++)
+                dm_stripes_total[i][j] = 0.;
+        }
+    }
+}
+
+
 void su::unifrac(biom &table,
                  BPTree &tree, 
                  Method unifrac_method,
@@ -360,35 +398,9 @@ void su::unifrac(biom &table,
     double *node_proportions;
     double *embedded_proportions; 
     double length;
-	posix_memalign((void **)&embedded_proportions, 32, sizeof(double) * table.n_samples * 2);
-    if(embedded_proportions == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(double) * table.n_samples, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
 
-    // thread local memory
-    for(unsigned int i = task_p->start; i < task_p->stop; i++){
-        posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * table.n_samples);
-        if(dm_stripes[i] == NULL) {
-            fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                    sizeof(double) * table.n_samples, __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
-        }
-        for(unsigned int j = 0; j < table.n_samples; j++)
-            dm_stripes[i][j] = 0.;
-
-        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
-            posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * table.n_samples);
-            if(dm_stripes_total[i] == NULL) {
-                fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                        sizeof(double) * table.n_samples, __FILE__, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-            for(unsigned int j = 0; j < table.n_samples; j++)
-                dm_stripes_total[i][j] = 0.;
-        }
-    }
+    initialize_embedded(embedded_proportions, task_p);
+    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
     // - 1 to avoid root   
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
