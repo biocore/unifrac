@@ -2,18 +2,11 @@
 #include <vector>
 #include <unordered_map>
 #include <thread>
+#include "unifrac_task.hpp"
 
 namespace su {
     enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized};
     
-    struct task_parameters {
-       uint32_t n_samples;          // number of samples
-       unsigned int start;          // starting stripe
-       unsigned int stop;           // stopping stripe
-       unsigned int tid;            // thread ID
-       double g_unifrac_alpha;      // generalized unifrac alpha
-    };
-
     class PropStack {
         private:
             std::stack<double*> prop_stack;
@@ -33,12 +26,7 @@ namespace su {
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
                  const task_parameters* task_p);
-    //void unweighted_unifrac(biom &table,
-    //             BPTree &tree, 
-    //             Method unifrac_method,
-    //             std::vector<double*> &dm_stripes,
-    //             std::vector<double*> &dm_stripes_total,
-    //             const task_parameters* task_p);
+    
     double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
     void set_proportions(double* props, 
                          BPTree &tree, uint32_t node, 
