@@ -29,8 +29,7 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int},
-    parameter_descriptions={'threads': ('The number of threads to use. '
-                                        'Default: 1')},
+    parameter_descriptions={'threads': 'The number of threads to use.'},
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -47,8 +46,7 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int},
-    parameter_descriptions={'threads': ('The number of threads to use. '
-                                        'Default: 1')},
+    parameter_descriptions={'threads': 'The number of threads to use.'},
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -65,8 +63,7 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int},
-    parameter_descriptions={'threads': ('The number of threads to use. '
-                                        'Default: 1')},
+    parameter_descriptions={'threads': 'The number of threads to use.'},
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
