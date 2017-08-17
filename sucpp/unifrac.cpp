@@ -104,8 +104,6 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     return dm;
 }
 
-<<<<<<< HEAD
-=======
 void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
                                          std::vector<double*> &__restrict__ dm_stripes_total,
                                          double* __restrict__ embedded_proportions,
