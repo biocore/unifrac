@@ -11,9 +11,9 @@ import pkg_resources
 from q2_state_unifrac._methods import (unweighted,
                                        weighted_normalized,
                                        weighted_unnormalized,
-                                       generalized)
+                                       generalized, meta)
 
 
 __version__ = pkg_resources.get_distribution('q2-state-unifrac').version
 __all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized',
-           'generalized']
+           'generalized', 'meta']

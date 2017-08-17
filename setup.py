@@ -65,5 +65,7 @@ setup(
         "qiime2.plugins":
         ["q2-state-unifrac=q2_state_unifrac.plugin_setup:plugin"]
     },
-    cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand}
+    cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand},
+    package_data={
+        'q2_state_unifrac.tests': ['data/*', ]}
 )
