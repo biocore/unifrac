@@ -3,7 +3,6 @@
 #include "unifrac.hpp"
 #include <unordered_map>
 #include <cstdlib>
-#include <math.h>
 #include <algorithm>
 #include <thread>
 
@@ -301,32 +300,86 @@ void progressbar(float progress) {
     std::cout.flush();
 }
 
+void initialize_embedded(double*& prop, const su::task_parameters* task_p) {
+	posix_memalign((void **)&prop, 32, sizeof(double) * task_p->n_samples * 2);
+    if(prop == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double) * task_p->n_samples * 2, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void initialize_sample_counts(double*& counts, const su::task_parameters* task_p, biom &table) {
+	posix_memalign((void **)&counts, 32, sizeof(double) * task_p->n_samples * 2);
+    if(counts == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    for(unsigned int i = 0; i < table.n_samples; i++) {
+        counts[i] = table.sample_counts[i];
+        counts[i + table.n_samples] = table.sample_counts[i];
+    }
+}
+
+void initialize_stripes(std::vector<double*> &dm_stripes, 
+                        std::vector<double*> &dm_stripes_total, 
+                        Method unifrac_method, 
+                        const su::task_parameters* task_p) {
+    for(unsigned int i = task_p->start; i < task_p->stop; i++){
+        posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * task_p->n_samples);
+        if(dm_stripes[i] == NULL) {
+            fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                    sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        for(unsigned int j = 0; j < task_p->n_samples; j++)
+            dm_stripes[i][j] = 0.;
+
+        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
+            posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * task_p->n_samples);
+            if(dm_stripes_total[i] == NULL) {
+                fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                        sizeof(double) * task_p->n_samples, __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
+            for(unsigned int j = 0; j < task_p->n_samples; j++)
+                dm_stripes_total[i][j] = 0.;
+        }
+    }
+}
+
+
 void su::unifrac(biom &table,
                  BPTree &tree, 
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
-                 unsigned int start, 
-                 unsigned int end, 
-                 unsigned int tid) {
+                 const su::task_parameters* task_p) {
+
+    if(table.n_samples != task_p->n_samples) {
+        fprintf(stderr, "Task and table n_samples not equal\n");
+        exit(EXIT_FAILURE);
+    }
 
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
                  double*,                // embedded_proportions
                  double,                 // length
-                 uint32_t,               // number of samples
-                 unsigned int,           // stripe start
-                 unsigned int);          // stripe stop
+                 const su::task_parameters*);
 
     switch(unifrac_method) {
         case unweighted:
-            func = &_unweighted_unifrac_task;
+            func = &su::_unweighted_unifrac_task;
             break;
         case weighted_normalized:
-            func = &_normalized_weighted_unifrac_task;
+            func = &su::_normalized_weighted_unifrac_task;
             break;
         case weighted_unnormalized:
-            func = &_unnormalized_weighted_unifrac_task;
+            func = &su::_unnormalized_weighted_unifrac_task;
+            break;
+        case generalized:
+            func = &su::_generalized_unifrac_task;
             break;
     }
     PropStack propstack(table.n_samples);
@@ -335,35 +388,9 @@ void su::unifrac(biom &table,
     double *node_proportions;
     double *embedded_proportions; 
     double length;
-	posix_memalign((void **)&embedded_proportions, 32, sizeof(double) * table.n_samples * 2);
-    if(embedded_proportions == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(double) * table.n_samples, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
 
-    // thread local memory
-    for(unsigned int i = start; i < end; i++){
-        posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * table.n_samples);
-        if(dm_stripes[i] == NULL) {
-            fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                    sizeof(double) * table.n_samples, __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
-        }
-        for(unsigned int j = 0; j < table.n_samples; j++)
-            dm_stripes[i][j] = 0.;
-
-        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
-            posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * table.n_samples);
-            if(dm_stripes_total[i] == NULL) {
-                fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                        sizeof(double) * table.n_samples, __FILE__, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-            for(unsigned int j = 0; j < table.n_samples; j++)
-                dm_stripes_total[i][j] = 0.;
-        }
-    }
+    initialize_embedded(embedded_proportions, task_p);
+    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
     // - 1 to avoid root   
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
@@ -372,7 +399,7 @@ void su::unifrac(biom &table,
 
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
-        embed_proportions(embedded_proportions, node_proportions, table.n_samples);
+        embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
 
         /*
          * The values in the example vectors correspond to index positions of an 
@@ -418,17 +445,16 @@ void su::unifrac(biom &table,
          * We end up performing N / 2 redundant calculations on the last stripe 
          * (see C) but that is small over large N.  
          */
-        func(dm_stripes, dm_stripes_total, embedded_proportions, length, 
-             table.n_samples, start, end);
+        func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
         
         // should make this compile-time support
         //if((tid == 0) && ((k % 1000) == 0))
  	    //    progressbar((float)k / (float)(tree.nparens / 2));       
     }
     
-    if(unifrac_method == weighted_normalized || unifrac_method == unweighted) {
-        for(unsigned int i = start; i < end; i++) {
-            for(unsigned int j = 0; j < table.n_samples; j++) {
+    if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
+        for(unsigned int i = task_p->start; i < task_p->stop; i++) {
+            for(unsigned int j = 0; j < task_p->n_samples; j++) {
                 dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
             }
         }
@@ -437,15 +463,98 @@ void su::unifrac(biom &table,
     free(embedded_proportions);
 }
 
+void su::unifrac_vaw(biom &table,
+                     BPTree &tree, 
+                     Method unifrac_method,
+                     std::vector<double*> &dm_stripes,
+                     std::vector<double*> &dm_stripes_total,
+                     const su::task_parameters* task_p) {
+
+    if(table.n_samples != task_p->n_samples) {
+        fprintf(stderr, "Task and table n_samples not equal\n");
+        exit(EXIT_FAILURE);
+    }
+
+    void (*func)(std::vector<double*>&,  // dm_stripes
+                 std::vector<double*>&,  // dm_stripes_total
+                 double*,                // embedded_proportions
+                 double*,                // embedded_counts
+                 double*,                // sample total counts
+                 double,                 // length
+                 const su::task_parameters*);
+
+    switch(unifrac_method) {
+        case unweighted:
+            func = &su::_vaw_unweighted_unifrac_task;
+            break;
+        case weighted_normalized:
+            func = &su::_vaw_normalized_weighted_unifrac_task;
+            break;
+        case weighted_unnormalized:
+            func = &su::_vaw_unnormalized_weighted_unifrac_task;
+            break;
+        case generalized:
+            func = &su::_vaw_generalized_unifrac_task;
+            break;
+    }
+    PropStack propstack(table.n_samples);
+    PropStack countstack(table.n_samples);
+
+    uint32_t node;
+    double *node_proportions;
+    double *node_counts;
+    double *embedded_proportions; 
+    double *embedded_counts; 
+    double *sample_total_counts;
+    double length;
+
+    initialize_embedded(embedded_proportions, task_p);
+    initialize_embedded(embedded_counts, task_p);
+    initialize_sample_counts(sample_total_counts, task_p, table);
+    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
+
+    // - 1 to avoid root   
+    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
+        node = tree.postorderselect(k);
+        length = tree.lengths[node];
+
+        node_proportions = propstack.pop(node);
+        node_counts = countstack.pop(node);
+
+        set_proportions(node_proportions, tree, node, table, propstack);
+        set_proportions(node_counts, tree, node, table, countstack, false);
+
+        embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
+        embed_proportions(embedded_counts, node_counts, task_p->n_samples);
+
+        func(dm_stripes, dm_stripes_total, embedded_proportions, embedded_counts, sample_total_counts, length, task_p);
+    }
+    
+    if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
+        for(unsigned int i = task_p->start; i < task_p->stop; i++) {
+            for(unsigned int j = 0; j < task_p->n_samples; j++) {
+                dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
+            }
+        }
+    }
+    
+    free(embedded_proportions);
+    free(embedded_counts);
+    free(sample_total_counts);
+}
 void su::set_proportions(double* props, 
                          BPTree &tree, 
                          uint32_t node, 
                          biom &table, 
-                         PropStack &ps) {
+                         PropStack &ps,
+                         bool normalize) {
     if(tree.isleaf(node)) {
        table.get_obs_data(tree.names[node], props);
-       for(unsigned int i = 0; i < table.n_samples; i++)
-           props[i] = props[i] / table.sample_counts[i];
+       for(unsigned int i = 0; i < table.n_samples; i++) {
+           props[i] = props[i];
+           if(normalize)
+               props[i] /= table.sample_counts[i];
+       }
 
     } else {
         unsigned int current = tree.leftchild(node);

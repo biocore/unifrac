@@ -29,11 +29,11 @@ else
 endif
 
 
-test: tree.o test_su.cpp biom.o unifrac.o
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o 
+test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o
+	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o
 
-main: tree.o biom.o unifrac.o cmd.o
-	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o
+main: tree.o biom.o unifrac.o cmd.o unifrac_task.o
+	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o
 
 ocltest: opencl.o
 	clang++ -framework OpenCL opencl.cpp -c

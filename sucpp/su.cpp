@@ -9,13 +9,26 @@
 #include <thread>
 
 void usage() {
-    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads]" << std::endl;
+    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]" << std::endl;
     std::cout << std::endl;
-    std::cout << "    -i\tThe input BIOM table." << std::endl;
-    std::cout << "    -t\tThe input phylogeny in newick." << std::endl;
-    std::cout << "    -m\tThe method, [unweighted | weighted_normalized | weighted_unnormalized]." << std::endl;
-    std::cout << "    -o\tThe output distance matrix." << std::endl;
-    std::cout << "    -n\t[OPTIONAL] The number of threads, default is 1." << std::endl;
+    std::cout << "    -i\t\tThe input BIOM table." << std::endl;
+    std::cout << "    -t\t\tThe input phylogeny in newick." << std::endl;
+    std::cout << "    -m\t\tThe method, [unweighted | weighted_normalized | weighted_unnormalized | generalized]." << std::endl;
+    std::cout << "    -o\t\tThe output distance matrix." << std::endl;
+    std::cout << "    -n\t\t[OPTIONAL] The number of threads, default is 1." << std::endl;
+    std::cout << "    -a\t\t[OPTIONAL] Generalized UniFrac alpha, default is 1." << std::endl;
+    std::cout << "    --vaw\t[OPTIONAL] Variance adjusted, default is to not adjust for variance." << std::endl;
+    std::cout << std::endl;
+    std::cout << "Citations: " << std::endl;
+    std::cout << "    For UniFrac, please see:" << std::endl;
+    std::cout << "        Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005" << std::endl;
+    std::cout << "        Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06" << std::endl;
+    std::cout << "        Hamady et al. ISME 2010; DOI: 10.1038/ismej.2009.97" << std::endl;
+    std::cout << "        Lozupone et al. ISME 2011; DOI: 10.1038/ismej.2010.133" << std::endl;
+    std::cout << "    For Generalized UniFrac, please see: " << std::endl;
+    std::cout << "        Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342" << std::endl;
+    std::cout << "    For Variance Adjusted UniFrac, please see: " << std::endl;
+    std::cout << "        Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118" << std::endl;
     std::cout << std::endl;
 }
 
@@ -60,6 +73,7 @@ int main(int argc, char **argv){
     const std::string &output_filename = input.getCmdOption("-o");
     const std::string &method_string = input.getCmdOption("-m");
     const std::string &nthreads_arg = input.getCmdOption("-n");
+    const std::string &gunifrac_arg = input.getCmdOption("-a");
 
     su::Method method;
 
@@ -95,12 +109,22 @@ int main(int argc, char **argv){
         nthreads = atoi(nthreads_arg.c_str());
     }
     
+    bool vaw = input.cmdOptionExists("--vaw"); 
+    double g_unifrac_alpha;
+    if(gunifrac_arg.empty()) {
+        g_unifrac_alpha = 1.0;
+    } else {
+        g_unifrac_alpha = atof(gunifrac_arg.c_str());
+    }
+
     if(method_string == "unweighted") 
         method = su::unweighted;
     else if(method_string == "weighted_normalized")
         method = su::weighted_normalized;
     else if(method_string == "weighted_unnormalized")
         method = su::weighted_unnormalized;
+    else if(method_string == "generalized")
+        method = su::generalized;
     else {
         err("Unknown method");
         return EXIT_FAILURE;
@@ -114,8 +138,8 @@ int main(int argc, char **argv){
     std::unordered_set<std::string> to_keep(table.obs_ids.begin(), table.obs_ids.end());
     su::BPTree tree_sheared = tree.shear(to_keep).collapse();
 
-    std::vector<double*> dm_stripes; // = su::make_strides(table.n_samples);
-    std::vector<double*> dm_stripes_total; // = su::make_strides(table.n_samples);
+    std::vector<double*> dm_stripes; 
+    std::vector<double*> dm_stripes_total; 
     dm_stripes.resize((table.n_samples + 1) / 2);
     dm_stripes_total.resize((table.n_samples + 1) / 2);
     
@@ -123,47 +147,44 @@ int main(int argc, char **argv){
     unsigned int start = 0;
     unsigned int end = dm_stripes.size();
     
-    unsigned int *starts = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
-    if(starts == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    unsigned int *ends = (unsigned int*)malloc(sizeof(unsigned int) * nthreads);
-    if(ends == NULL) {
-        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
-                sizeof(unsigned int) * nthreads, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    std::vector<su::task_parameters> tasks;
+    tasks.resize(nthreads);
 
     std::vector<std::thread> threads(nthreads);
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
-        starts[tid] = start;
-        ends[tid] = start + chunksize;
+        tasks[tid].tid = tid;
+        tasks[tid].start = start; // stripe start
+        tasks[tid].stop = start + chunksize;  // stripe end 
+        tasks[tid].n_samples = table.n_samples;
+        tasks[tid].g_unifrac_alpha = g_unifrac_alpha;
         start = start + chunksize;
     }
     // the last thread gets any trailing bits
-    ends[threads.size() - 1] = end;
+    tasks[threads.size() - 1].stop = end;
     
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
-        threads[tid] = std::thread(su::unifrac, 
-                                   std::ref(table),
-                                   std::ref(tree_sheared), 
-                                   method, 
-                                   std::ref(dm_stripes), 
-                                   std::ref(dm_stripes_total), 
-                                   starts[tid], 
-                                   ends[tid], 
-                                   tid);
+        if(vaw)
+            threads[tid] = std::thread(su::unifrac_vaw, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
+        else
+            threads[tid] = std::thread(su::unifrac, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
     }
 
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid].join();
     }
     
-    free(starts);
-    free(ends);
-
     double **dm = su::deconvolute_stripes(dm_stripes, table.n_samples);
 
     std::ofstream output;

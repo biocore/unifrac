@@ -2,10 +2,11 @@
 #include <vector>
 #include <unordered_map>
 #include <thread>
+#include "unifrac_task.hpp"
 
 namespace su {
-    enum Method {unweighted, weighted_normalized, weighted_unnormalized};
-
+    enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized};
+    
     class PropStack {
         private:
             std::stack<double*> prop_stack;
@@ -24,22 +25,21 @@ namespace su {
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
-                 unsigned int start, 
-                 unsigned int end, 
-                 unsigned int tid);
-    void unweighted_unifrac(biom &table,
-                 BPTree &tree, 
-                 Method unifrac_method,
-                 std::vector<double*> &dm_stripes,
-                 std::vector<double*> &dm_stripes_total,
-                 unsigned int start, 
-                 unsigned int end, 
-                 unsigned int tid);
+                 const task_parameters* task_p);
+    
+    void unifrac_vaw(biom &table, 
+                     BPTree &tree, 
+                     Method unifrac_method,
+                     std::vector<double*> &dm_stripes,
+                     std::vector<double*> &dm_stripes_total,
+                     const task_parameters* task_p);
+    
     double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
     void set_proportions(double* props, 
                          BPTree &tree, uint32_t node, 
                          biom &table, 
-                         PropStack &ps);
+                         PropStack &ps,
+                         bool normalize = true);
     std::vector<double*> make_strides(unsigned int n_samples);
     inline void embed_proportions(double* out, double* in, uint32_t n) {
         double val;
@@ -49,5 +49,5 @@ namespace su {
             out[i + n] = val;
         }
     }
-}
 
+}
