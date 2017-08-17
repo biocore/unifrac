@@ -132,31 +132,31 @@ plugin.methods.register_function(
 )
 
 
-#plugin.methods.register_function(
-#    function=q2_state_unifrac.meta,
-#    inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
-#            'phylogeny': Phylogeny[Rooted]},
-#    parameters={'threads': Int,
-#                'variance_adjusted': Bool,
-#                'alpha': Float},
-#    parameter_descriptions={'threads': 'The number of threads to use.',
-#                            'variance_adjusted':
-#                                ('Perform variance adjustment based on '
-#                                 'Chang et al. BMC Bioinformatics 2011'),
-#                            'alpha': ('The value of alpha controls importance '
-#                                      'of sample proportions. 1.0 is '
-#                                      'weighted normalized UniFrac. 0.0 is '
-#                                      'close to unweighted UniFrac, but only '
-#                                      'if the sample proportions are '
-#                                      'dichotomized.')},
-#    input_descriptions={
-#        'table': 'A rarefied FeatureTable',
-#        'phylogeny': ('A rooted phylogeny which relates the observations in '
-#                      'the table.')
-#    },
-#    outputs=[('distance_matrix', DistanceMatrix % Properties('phylogenetic'))],
-#    name='Metagenomic UniFrac',
-#    description=('This method computes Metagenomic UniFrac as described in '
-#                 'Lozupone et al. 2008 PNAS; '
-#                 'DOI: 10.1073/pnas.0807339105')
-#)
+# plugin.methods.register_function(
+#     function=q2_state_unifrac.meta,
+#     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),  # noqa
+#             'phylogeny': Phylogeny[Rooted]},
+#     parameters={'threads': Int,
+#                 'variance_adjusted': Bool,
+#                 'alpha': Float},
+#     parameter_descriptions={'threads': 'The number of threads to use.',
+#                             'variance_adjusted':
+#                                 ('Perform variance adjustment based on '
+#                                  'Chang et al. BMC Bioinformatics 2011'),
+#                             'alpha': ('The value of alpha controls importance '  # noqa
+#                                       'of sample proportions. 1.0 is '
+#                                       'weighted normalized UniFrac. 0.0 is '
+#                                       'close to unweighted UniFrac, but only '  # noqa
+#                                       'if the sample proportions are '
+#                                       'dichotomized.')},
+#     input_descriptions={
+#         'table': 'A rarefied FeatureTable',
+#         'phylogeny': ('A rooted phylogeny which relates the observations in '
+#                       'the table.')
+#     },
+#     outputs=[('distance_matrix', DistanceMatrix % Properties('phylogenetic'))],  # noqa
+#     name='Metagenomic UniFrac',
+#     description=('This method computes Metagenomic UniFrac as described in '
+#                  'Lozupone et al. 2008 PNAS; '
+#                  'DOI: 10.1073/pnas.0807339105')
+# )

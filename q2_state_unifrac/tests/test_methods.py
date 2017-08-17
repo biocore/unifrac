@@ -8,10 +8,8 @@
 
 import unittest
 
-import qiime2
 import numpy as np
 import numpy.testing as npt
-from biom.table import Table
 from qiime2.plugin.testing import TestPluginBase
 
 from q2_state_unifrac import meta
@@ -33,8 +31,8 @@ class StateUnifracTests(TestPluginBase):
                       method='unweighted')
 
         u1_distances = np.array([[0, 10/16., 8/13.],
-                 [10/16.,0,8/17.],
-                                 [8/13.,8/17.,0]])
+                                 [10/16., 0, 8/17.],
+                                 [8/13., 8/17., 0]])
         u2_distances = np.array([[0, 11/14., 6/13.],
                                  [11/14., 0, 7/13.],
                                  [6/13., 7/13., 0]])
@@ -51,7 +49,7 @@ class StateUnifracTests(TestPluginBase):
                                                  "must be the same.")):
             meta(('a', 'b'), ('a', ))
 
-    def test_meta_unifrac_unbalanced(self):
+    def test_meta_unifrac_unbalanced_weights(self):
         with self.assertRaisesRegex(ValueError, "Number of weights does not "
                                                 "match number of trees and "
                                                 "tables."):
