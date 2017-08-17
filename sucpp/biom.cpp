@@ -51,8 +51,24 @@ biom::biom(std::string filename) {
 
     /* load obs sparse data */
     obs_indices_resident = (uint32_t**)malloc(sizeof(uint32_t**) * n_obs);
+    if(obs_indices_resident == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(uint32_t**) * n_obs, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     obs_data_resident = (double**)malloc(sizeof(double**) * n_obs);
+    if(obs_data_resident == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double**) * n_obs, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     obs_counts_resident = (unsigned int*)malloc(sizeof(unsigned int) * n_obs);
+    if(obs_counts_resident == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(unsigned int) * n_obs, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+
     uint32_t *current_indices = NULL;
     double *current_data = NULL;
     for(unsigned int i = 0; i < obs_ids.size(); i++)  {
@@ -66,7 +82,7 @@ biom::biom(std::string filename) {
 }
 
 biom::~biom() {
-    for(int i = 0; i < n_obs; i++) {
+    for(unsigned int i = 0; i < n_obs; i++) {
         free(obs_indices_resident[i]);
         free(obs_data_resident[i]);
     }
@@ -95,6 +111,11 @@ void biom::load_ids(const char *path, std::vector<std::string> &ids) {
 
     /* the IDs are a dataset of variable length strings */
     char **dataout = (char**)malloc(sizeof(char*) * dims[0]);
+    if(dataout == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(char*) * dims[0], __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     ds_ids.read((void*)dataout, dtype);
 
     ids.reserve(dims[0]);
@@ -116,6 +137,11 @@ void biom::load_indptr(const char *path, std::vector<uint32_t> &indptr) {
     dataspace.getSimpleExtentDims(dims, NULL);
     
     uint32_t *dataout = (uint32_t*)malloc(sizeof(uint32_t) * dims[0]);
+    if(dataout == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(uint32_t) * dims[0], __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     ds.read((void*)dataout, dtype);
 
     indptr.reserve(dims[0]);
@@ -154,7 +180,17 @@ unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indic
     data_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
 
     current_indices_out = (uint32_t*)malloc(sizeof(uint32_t) * count[0]);
+    if(current_indices_out == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(uint32_t) * count[0], __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     current_data_out = (double*)malloc(sizeof(double) * count[0]);
+    if(current_data_out == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double) * count[0], __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     obs_indices.read((void*)current_indices_out, indices_dtype, indices_memspace, indices_dataspace);
     obs_data.read((void*)current_data_out, data_dtype, data_memspace, data_dataspace);
@@ -198,7 +234,17 @@ unsigned int biom::get_sample_data_direct(std::string id, uint32_t *& current_in
     data_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
 
     current_indices_out = (uint32_t*)malloc(sizeof(uint32_t) * count[0]);
+    if(current_indices_out == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(uint32_t) * count[0], __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     current_data_out = (double*)malloc(sizeof(double) * count[0]);
+    if(current_data_out == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double) * count[0], __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     sample_indices.read((void*)current_indices_out, indices_dtype, indices_memspace, indices_dataspace);
     sample_data.read((void*)current_data_out, data_dtype, data_memspace, data_dataspace);
