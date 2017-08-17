@@ -12,7 +12,8 @@ compiler:
 
 
 env:
-  - PYTHON_VERSION=3.5
+  - PYTHON_VERSION=3.5 EDITABLE_PIP=1
+  - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
@@ -32,7 +33,12 @@ install:
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - pip install -q https://github.com/qiime2/q2lint/archive/master.zip
-  - pip install .
+  # verify both installation methods
+  - 'if [ ${EDITABLE_PIP} ]; then
+        pip install -e . || travis_terminate 1;
+     else
+        pip install . || travis_terminate 1;
+     fi'
   - pushd sucpp; make test; make main; popd 
 script:
   - ulimit -c unlimited -S
