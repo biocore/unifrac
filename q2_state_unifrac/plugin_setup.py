@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from qiime2.plugin import (Plugin, Properties, Int, Float, Boolean)
+from qiime2.plugin import (Plugin, Properties, Int, Float, Bool)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.distance_matrix import DistanceMatrix
 from q2_types.tree import Phylogeny, Rooted
@@ -30,10 +30,10 @@ plugin.methods.register_function(
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance-adjusted': Bool},
-    parameter_descriptions={'threads': 'The number of threads to use.'},
+    parameter_descriptions={'threads': 'The number of threads to use.',
                             'variance-adjusted':
                                 ('Perform variance adjustment based on '
-                                 'Chang et al. BMC Bioinformatics 2011'),
+                                 'Chang et al. BMC Bioinformatics 2011')},
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -53,10 +53,10 @@ plugin.methods.register_function(
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance-adjusted': Bool},
-    parameter_descriptions={'threads': 'The number of threads to use.'},
+    parameter_descriptions={'threads': 'The number of threads to use.',
                             'variance-adjusted':
                                 ('Perform variance adjustment based on '
-                                 'Chang et al. BMC Bioinformatics 2011'),
+                                 'Chang et al. BMC Bioinformatics 2011')},
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
@@ -76,10 +76,10 @@ plugin.methods.register_function(
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance-adjusted': Bool},
-    parameter_descriptions={'threads': 'The number of threads to use.'},
+    parameter_descriptions={'threads': 'The number of threads to use.',
                             'variance-adjusted':
                                 ('Perform variance adjustment based on '
-                                 'Chang et al. BMC Bioinformatics 2011'),
+                                 'Chang et al. BMC Bioinformatics 2011')},
     input_descriptions={
         'table': 'A rarefied FeatureTable',
         'phylogeny': ('A rooted phylogeny which relates the observations in '
