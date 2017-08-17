@@ -1,5 +1,6 @@
 #include <math.h>
 #include <vector>
+#include <stdint.h>
 
 namespace su {
     struct task_parameters {
