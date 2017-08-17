@@ -29,9 +29,9 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
-                'variance-adjusted': Bool},
+                'variance_adjusted': Bool},
     parameter_descriptions={'threads': 'The number of threads to use.',
-                            'variance-adjusted':
+                            'variance_adjusted':
                                 ('Perform variance adjustment based on '
                                  'Chang et al. BMC Bioinformatics 2011')},
     input_descriptions={
@@ -52,9 +52,9 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
-                'variance-adjusted': Bool},
+                'variance_adjusted': Bool},
     parameter_descriptions={'threads': 'The number of threads to use.',
-                            'variance-adjusted':
+                            'variance_adjusted':
                                 ('Perform variance adjustment based on '
                                  'Chang et al. BMC Bioinformatics 2011')},
     input_descriptions={
@@ -75,9 +75,9 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
-                'variance-adjusted': Bool},
+                'variance_adjusted': Bool},
     parameter_descriptions={'threads': 'The number of threads to use.',
-                            'variance-adjusted':
+                            'variance_adjusted':
                                 ('Perform variance adjustment based on '
                                  'Chang et al. BMC Bioinformatics 2011')},
     input_descriptions={
@@ -98,10 +98,10 @@ plugin.methods.register_function(
     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
-                'variance-adjusted': Bool,
+                'variance_adjusted': Bool,
                 'alpha': Float},
     parameter_descriptions={'threads': 'The number of threads to use.',
-                            'variance-adjusted':
+                            'variance_adjusted':
                                 ('Perform variance adjustment based on '
                                  'Chang et al. BMC Bioinformatics 2011'),
                             'alpha': ('The value of alpha controls importance '
