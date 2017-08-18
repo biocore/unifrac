@@ -686,7 +686,7 @@ void test_generalized_unifrac() {
     w_task_p.g_unifrac_alpha = 1.0;
     su::unifrac(table, tree, su::generalized, w_strides, w_strides_total, &w_task_p);
     
-    // as computed by GUniFrac
+    // as computed by GUniFrac v1.0
     //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
     //Sample1 0.0000000 0.4408392 0.6886965 0.7060606 0.5833333 0.3278410
     //Sample2 0.4408392 0.0000000 0.5102041 0.7500000 0.8000000 0.5208125
@@ -708,7 +708,7 @@ void test_generalized_unifrac() {
     d0_task_p.g_unifrac_alpha = 0.0;
     su::unifrac(table, tree, su::generalized, d0_strides, d0_strides_total, &d0_task_p);
 
-    // as computed by GUniFrac
+    // as computed by GUniFrac v1.0
     //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
     //Sample1 0.0000000 0.4040518 0.6285560 0.5869439 0.4082483 0.2995673
     //Sample2 0.4040518 0.0000000 0.4160597 0.7071068 0.7302479 0.4860856
