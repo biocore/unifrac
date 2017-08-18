@@ -68,3 +68,16 @@ def weighted_unnormalized(table: BIOMV210Format,
         _run(str(table), str(phylogeny), output_fp, str(threads),
              'weighted_unnormalized')
         return skbio.DistanceMatrix.read(output_fp)
+
+
+def generalized(table: BIOMV210Format,
+                phylogeny: NewickFormat,
+                threads: int=1,
+                alpha: float=1.0)-> skbio.DistanceMatrix:
+    _sanity()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        output_fp = os.path.join(tmp, 'foo.dm')
+        _run(str(table), str(phylogeny), output_fp, str(threads),
+             'generalized')
+        return skbio.DistanceMatrix.read(output_fp)

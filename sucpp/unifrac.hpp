@@ -4,7 +4,15 @@
 #include <thread>
 
 namespace su {
-    enum Method {unweighted, weighted_normalized, weighted_unnormalized};
+    enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized};
+    
+    struct task_parameters {
+       uint32_t n_samples;          // number of samples
+       unsigned int start;          // starting stripe
+       unsigned int stop;           // stopping stripe
+       unsigned int tid;            // thread ID
+       double g_unifrac_alpha;      // generalized unifrac alpha
+    };
 
     class PropStack {
         private:
@@ -24,17 +32,8 @@ namespace su {
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
-                 unsigned int start, 
-                 unsigned int end, 
-                 unsigned int tid);
-    void unweighted_unifrac(biom &table,
-                 BPTree &tree, 
-                 Method unifrac_method,
-                 std::vector<double*> &dm_stripes,
-                 std::vector<double*> &dm_stripes_total,
-                 unsigned int start, 
-                 unsigned int end, 
-                 unsigned int tid);
+                 const task_parameters* task_p);
+    
     double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
     void set_proportions(double* props, 
                          BPTree &tree, uint32_t node, 
@@ -49,5 +48,5 @@ namespace su {
             out[i + n] = val;
         }
     }
-}
 
+}

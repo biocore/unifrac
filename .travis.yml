@@ -49,5 +49,7 @@ script:
   - for i in $(find ./ -maxdepth 1 -name 'core*' -print); do gdb $(pwd)/sucpp/ssu core* -ex "thread apply all bt" -ex "set pagination 0" -batch; done;
   - ls -lrt
   - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result.qza --verbose
+  - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result_thread.qza --verbose --p-threads 2
   - qiime diversity beta-phylogenetic --p-metric unweighted_unifrac --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix sk_result.qza
   - python compare_dms.py ssu_result.qza sk_result.qza
+  - python compare_dms.py ssu_result_thread.qza sk_result.qza
