@@ -49,7 +49,7 @@ class PostDevelopCommand(develop):
         develop.run(self)
         self.execute(compile_ssu, [], 'Compiling SSU')
         self.copy_file(os.path.join(SUCPP, 'ssu'),
-                       os.path.join(self.install_libbase, 'q2_state_unifrac/'))
+                       os.path.join(self.egg_path, 'q2_state_unifrac/'))
 
 
 setup(

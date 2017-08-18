@@ -86,7 +86,7 @@ plugin.methods.register_function(
                       'the table.')
     },
     outputs=[('distance_matrix', DistanceMatrix % Properties('phylogenetic'))],
-    name='Wweighted normalized UniFrac',
+    name='Weighted normalized UniFrac',
     description=('This method computes weighted normalized UniFrac as '
                  'described in Lozupone et al. 2007 Appl Environ Microbiol; '
                  'DOI: 10.1128/AEM.01996-06')
@@ -116,7 +116,7 @@ plugin.methods.register_function(
                       'the table.')
     },
     outputs=[('distance_matrix', DistanceMatrix % Properties('phylogenetic'))],
-    name='Wweighted normalized UniFrac',
+    name='Generalized UniFrac',
     description=('This method computes Generalized UniFrac as described in '
                  'Chen et al. 2012 Bioinformatics; '
                  'DOI: 10.1093/bioinformatics/bts342')
