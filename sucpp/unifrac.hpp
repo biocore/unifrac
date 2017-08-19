@@ -7,14 +7,6 @@
 namespace su {
     enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized};
     
-    struct task_parameters {
-       uint32_t n_samples;          // number of samples
-       unsigned int start;          // starting stripe
-       unsigned int stop;           // stopping stripe
-       unsigned int tid;            // thread ID
-       double g_unifrac_alpha;      // generalized unifrac alpha
-    };
-
     class PropStack {
         private:
             std::stack<double*> prop_stack;
