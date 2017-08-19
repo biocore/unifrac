@@ -402,9 +402,6 @@ void su::unifrac(biom &table,
         case generalized:
             func = &su::_generalized_unifrac_task;
             break;
-        case generalized:
-            func = &_generalized_unifrac_task;
-            break;
     }
     PropStack propstack(table.n_samples);
 
