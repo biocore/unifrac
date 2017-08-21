@@ -744,24 +744,24 @@ void test_generalized_unifrac() {
 }
 
 void test_vaw_unifrac_weighted_normalized() {
-	SUITE_START("test vaw weighted normalized unifrac");
-	
-	std::vector<std::thread> threads(1);
-	su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
-	su::biom table = su::biom("test.biom");
-	
+    SUITE_START("test vaw weighted normalized unifrac");
+    
+    std::vector<std::thread> threads(1);
+    su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
+    su::biom table = su::biom("test.biom");
+    
     // as computed by GUniFrac, the original implementation of VAW-UniFrac
     // could not be found.
-	//          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
-	//Sample1 0.0000000 0.4086040 0.6240185 0.4639481 0.2857143 0.2766318
-	//Sample2 0.4086040 0.0000000 0.3798594 0.6884992 0.6807616 0.4735781
-	//Sample3 0.6240185 0.3798594 0.0000000 0.7713254 0.8812897 0.5047114
-	//Sample4 0.4639481 0.6884992 0.7713254 0.0000000 0.6666667 0.2709298
-	//Sample5 0.2857143 0.6807616 0.8812897 0.6666667 0.0000000 0.4735991
-	//Sample6 0.2766318 0.4735781 0.5047114 0.2709298 0.4735991 0.0000000
+    //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
+    //Sample1 0.0000000 0.4086040 0.6240185 0.4639481 0.2857143 0.2766318
+    //Sample2 0.4086040 0.0000000 0.3798594 0.6884992 0.6807616 0.4735781
+    //Sample3 0.6240185 0.3798594 0.0000000 0.7713254 0.8812897 0.5047114
+    //Sample4 0.4639481 0.6884992 0.7713254 0.0000000 0.6666667 0.2709298
+    //Sample5 0.2857143 0.6807616 0.8812897 0.6666667 0.0000000 0.4735991
+    //Sample6 0.2766318 0.4735781 0.5047114 0.2709298 0.4735991 0.0000000
     // weighted normalized unifrac as computed above
     
-	std::vector<double*> w_exp;
+    std::vector<double*> w_exp;
     double w_stride1[] = {0.4086040, 0.3798594, 0.7713254, 0.6666667, 0.4735991, 0.2766318};
     double w_stride2[] = {0.6240185, 0.6884992, 0.8812897, 0.2709298, 0.2857143, 0.4735781};
     double w_stride3[] = {0.4639481, 0.6807616, 0.5047114, 0.4639481, 0.6807616, 0.5047114};
@@ -775,7 +775,7 @@ void test_vaw_unifrac_weighted_normalized() {
     w_task_p.g_unifrac_alpha = 1.0;
     su::unifrac_vaw(table, tree, su::weighted_normalized, w_strides, w_strides_total, &w_task_p);
     
-	for(unsigned int i = 0; i < 3; i++) {
+    for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(w_strides[i][j] - w_exp[i][j]) < 0.000001);
         }
@@ -868,7 +868,7 @@ void test_bptree_shear_simple() {
     su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
  
     // simple
-    std::unordered_set<std::string> to_keep = {"4", "6", "7", "10", "11"};	
+    std::unordered_set<std::string> to_keep = {"4", "6", "7", "10", "11"};    
     
     uint32_t exp_nparens = 20;
     std::vector<bool> exp_structure = {true, true, true, false, true, true, false, false, false, true, 
@@ -890,7 +890,7 @@ void test_bptree_shear_deep() {
     su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
  
     // deep
-    std::unordered_set<std::string> to_keep = {"10", "11"};	
+    std::unordered_set<std::string> to_keep = {"10", "11"};    
     
     uint32_t exp_nparens = 10;
     std::vector<bool> exp_structure = {true, true, true, true, false, true, false, false, false, false};
@@ -935,7 +935,7 @@ void test_bptree_collapse_edge() {
     ASSERT(obs.names == exp.names);
     ASSERT(vec_almost_equal(obs.lengths, exp.lengths));
 
-	SUITE_END();
+    SUITE_END();
 }
 
 void test_unifrac_sample_counts() {
