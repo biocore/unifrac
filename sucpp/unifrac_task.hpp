@@ -34,7 +34,8 @@ namespace su {
      *      duplicated: if A, B and C are proportions for features A, B, and C, the
      *      vector will look like [A B C A B C].
      * length <double> the branch length of the current node to its parent.
-     * tasp_p <task_parameters*> task specific parameters.
+     * task_p <task_parameters*> task specific parameters.
+     */
     void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
                                              std::vector<double*> &__restrict__ dm_stripes_total,
                                              double* __restrict__ embedded_proportions,
@@ -74,7 +75,8 @@ namespace su {
      * sample_total_counts <double*> the total unnormalized feature counts for all samples
      *      embedded in the same way and order as embedded_proportions.
      * length <double> the branch length of the current node to its parent.
-     * tasp_p <task_parameters*> task specific parameters.
+     * task_p <task_parameters*> task specific parameters.
+     */
     void _vaw_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
                                                  std::vector<double*> &__restrict__ dm_stripes_total,
                                                  double* __restrict__ embedded_proportions,
