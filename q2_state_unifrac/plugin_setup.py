@@ -131,7 +131,6 @@ plugin.methods.register_function(
                  'DOI: 10.1093/bioinformatics/bts342')
 )
 
-
 # plugin.methods.register_function(
 #     function=q2_state_unifrac.meta,
 #     inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),  # noqa
