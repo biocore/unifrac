@@ -23,7 +23,8 @@ def _sanity():
         raise ValueError("ssu could not be located!")
 
 
-def _run(table_fp, tree_fp, output_fp, threads, method):
+def _run(table_fp, tree_fp, output_fp, threads, method,
+         variance_adjusted=False, alpha=None):
     cmd = [resource_filename(*ARGS),
            '-i', table_fp,
            '-t', tree_fp,
@@ -31,53 +32,64 @@ def _run(table_fp, tree_fp, output_fp, threads, method):
            '-n', threads,
            '-m', method]
 
+    if variance_adjusted:
+        cmd.append('--vaw')
+
+    if alpha is not None:
+        cmd.append('-a')
+        cmd.append(str(alpha))
+
     subprocess.run(cmd, check=True)
 
 
 def unweighted(table: BIOMV210Format,
                phylogeny: NewickFormat,
-               threads: int=1)-> skbio.DistanceMatrix:
+               threads: int=1,
+               variance_adjusted: bool=False)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
         _run(str(table), str(phylogeny), output_fp, str(threads),
-             'unweighted')
+             'unweighted', variance_adjusted)
         return skbio.DistanceMatrix.read(output_fp)
 
 
 def weighted_normalized(table: BIOMV210Format,
                         phylogeny: NewickFormat,
-                        threads: int=1)-> skbio.DistanceMatrix:
+                        threads: int=1,
+                        variance_adjusted: bool=False)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
         _run(str(table), str(phylogeny), output_fp, str(threads),
-             'weighted_normalized')
+             'weighted_normalized', variance_adjusted)
         return skbio.DistanceMatrix.read(output_fp)
 
 
 def weighted_unnormalized(table: BIOMV210Format,
                           phylogeny: NewickFormat,
-                          threads: int=1)-> skbio.DistanceMatrix:
+                          threads: int=1,
+                          variance_adjusted: bool=False) -> skbio.DistanceMatrix:  # noqa
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
         _run(str(table), str(phylogeny), output_fp, str(threads),
-             'weighted_unnormalized')
+             'weighted_unnormalized', variance_adjusted)
         return skbio.DistanceMatrix.read(output_fp)
 
 
 def generalized(table: BIOMV210Format,
                 phylogeny: NewickFormat,
                 threads: int=1,
-                alpha: float=1.0)-> skbio.DistanceMatrix:
+                alpha: float=1.0,
+                variance_adjusted: bool=False)-> skbio.DistanceMatrix:
     _sanity()
 
     with tempfile.TemporaryDirectory() as tmp:
         output_fp = os.path.join(tmp, 'foo.dm')
         _run(str(table), str(phylogeny), output_fp, str(threads),
-             'generalized')
+             'generalized', variance_adjusted, alpha)
         return skbio.DistanceMatrix.read(output_fp)
