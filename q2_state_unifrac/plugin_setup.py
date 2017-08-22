@@ -26,7 +26,7 @@ plugin = Plugin(
 
 plugin.methods.register_function(
     function=q2_state_unifrac.unweighted,
-    inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
+    inputs={'table': FeatureTable[Frequency],
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance_adjusted': Bool},
@@ -49,7 +49,7 @@ plugin.methods.register_function(
 
 plugin.methods.register_function(
     function=q2_state_unifrac.weighted_unnormalized,
-    inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
+    inputs={'table': FeatureTable[Frequency],
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance_adjusted': Bool},
@@ -72,7 +72,7 @@ plugin.methods.register_function(
 
 plugin.methods.register_function(
     function=q2_state_unifrac.weighted_normalized,
-    inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
+    inputs={'table': FeatureTable[Frequency],
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance_adjusted': Bool},
@@ -95,7 +95,7 @@ plugin.methods.register_function(
 
 plugin.methods.register_function(
     function=q2_state_unifrac.generalized,
-    inputs={'table': FeatureTable[Frequency] % Properties('uniform-sampling'),
+    inputs={'table': FeatureTable[Frequency],
             'phylogeny': Phylogeny[Rooted]},
     parameters={'threads': Int,
                 'variance_adjusted': Bool,
