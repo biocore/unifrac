@@ -14,7 +14,7 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma 
+CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma 
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
@@ -29,11 +29,11 @@ else
 endif
 
 
-test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o
+test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
+	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
 
-main: tree.o biom.o unifrac.o cmd.o unifrac_task.o
-	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o
+main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
+	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 
 ocltest: opencl.o
 	clang++ -framework OpenCL opencl.cpp -c

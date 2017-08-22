@@ -24,17 +24,35 @@ namespace su {
      * condensed_form <double*> the matrix values of length cf_size.
      * sample_ids <char**> the sample IDs of length n_samples.
      */
-    /*struct mat {
+    struct mat {
         unsigned int n_samples;  
         unsigned int cf_size;   
         bool is_square;          
-        double* condensed_form;
+        double** condensed_form;    //  // // // // partial refactor, should not be double pntr
         char** sample_ids;
-    };*/
+    };
     
-
+    /* Compute UniFrac
+     *
+     * biom_filename <const char*> the filename to the biom table.
+     * tree_filename <const char*> the filename to the correspodning tree.
+     * unifrac_method <const char*> the requested unifrac method.
+     * variance_adjust <bool> whether to apply variance adjustment.
+     * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+     * threads <uint> the number of threads to use.
+     * result <double**> the resulting distance matrix.
+     *
+     * one_off returns the following error codes:
+     *
+     * OK             : no problems encountered
+     * TABLE_MISSING  : the filename for the table does not exist
+     * TREE_MISSING   : the filename for the tree does not exist
+     * UNKNOWN_METHOD : the requested method is unknown.
+     */
     int one_off(const char* biom_filename, const char* tree_filename, 
                 const char* unifrac_method, bool variance_adjust, double alpha,
-                unsigned int threads, double** &result);
-}
+                unsigned int threads, mat* &result);
 
+    void initialize_mat(mat* &result, biom &table);
+    void destroy_mat(mat* &result);
+    }

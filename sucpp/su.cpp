@@ -66,8 +66,6 @@ int main(int argc, char **argv){
     const std::string &nthreads_arg = input.getCmdOption("-n");
     const std::string &gunifrac_arg = input.getCmdOption("-a");
 
-    su::Method method;
-
     if(table_filename.empty()) {
         err("table filename missing");
         return EXIT_FAILURE;
@@ -102,27 +100,28 @@ int main(int argc, char **argv){
         g_unifrac_alpha = atof(gunifrac_arg.c_str());
     }
 
-    double **dm = NULL;
+    su::mat *result = NULL;
     int err;
     err = su::one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                      vaw, g_unifrac_alpha, nthreads, dm);
-    if(err != OK || dm == NULL) {
+                      vaw, g_unifrac_alpha, nthreads, result);
+    if(err != OK || result == NULL) {
         fprintf(stderr, "Compute failed: %d\n", err);
         exit(EXIT_FAILURE);
     }
-
-    su::biom table = su::biom(table_filename);
+    
     std::ofstream output;
     output.open(output_filename);
     
-    for(unsigned int i = 0; i < table.n_samples; i++)
-        output << "\t" << table.sample_ids[i];
+    for(unsigned int i = 0; i < result->n_samples; i++)
+        output << "\t" << result->sample_ids[i];
     output << std::endl;
-    for(unsigned int i = 0; i < table.n_samples; i++) {
-        output << table.sample_ids[i];
-        for(unsigned int j = 0; j < table.n_samples; j++)
-            output << std::setprecision(16) << "\t" << dm[i][j];
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        output << result->sample_ids[i];
+        for(unsigned int j = 0; j < result->n_samples; j++)
+            output << std::setprecision(16) << "\t" << result->condensed_form[i][j];
         output << std::endl;
     }
+    su::destroy_mat(result);
+
     return EXIT_SUCCESS;
 }

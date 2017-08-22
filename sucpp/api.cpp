@@ -11,9 +11,47 @@ bool is_file_exists(const char *fileName) {
 }
 
 
+void destroy_stripes(vector<double*> &dm_stripes, vector<double*> &dm_stripes_total, unsigned int n_samples) {
+    unsigned int n_rotations = (n_samples + 1) / 2;
+    for(unsigned int i = 0; i < n_rotations; i++) {
+        free(dm_stripes[i]);
+        if(dm_stripes_total[i] != NULL) {
+            free(dm_stripes_total[i]);
+        }
+    }
+}
+
+void su::initialize_mat(mat* &result, biom &table) {
+    result = (mat*)malloc(sizeof(mat));
+    result->n_samples = table.n_samples;
+    
+    // // // // // // // condensed form represents full distance matrix, refactor is not complete
+    result->cf_size = table.n_samples * table.n_samples;
+    result->is_square = true;
+    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
+
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        size_t len = table.sample_ids[i].length();
+        result->sample_ids[i] = (char*)malloc(sizeof(char) * len + 1);
+        table.sample_ids[i].copy(result->sample_ids[i], len);
+        result->sample_ids[i][len] = '\0';
+    }
+}
+
+void su::destroy_mat(mat* &result) {
+    // // // // condensed form is currently full distance matrix
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        free(result->sample_ids[i]);
+        free(result->condensed_form[i]);
+    };
+    free(result->sample_ids);
+    free(result->condensed_form);
+    free(result);
+}
+
 int su::one_off(const char* biom_filename, const char* tree_filename, 
                 const char* unifrac_method, bool variance_adjust, double alpha,
-                unsigned int nthreads, double** &result) {
+                unsigned int nthreads, mat* &result) {
     if(!is_file_exists(biom_filename)) {
         fprintf(stderr, "%s does not exist.\n", biom_filename);
         return TABLE_MISSING;
@@ -91,17 +129,10 @@ int su::one_off(const char* biom_filename, const char* tree_filename,
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid].join();
     }
-    
-    result = su::deconvolute_stripes(dm_stripes, table.n_samples);
 
-    unsigned int n_rotations = (table.n_samples + 1) / 2;
-    for(unsigned int i = 0; i < n_rotations; i++)
-        free(dm_stripes[i]);
-    
-    if(method == su::weighted_normalized || method == su::unweighted) {
-        for(unsigned int i = 0; i < n_rotations; i++)
-            free(dm_stripes_total[i]);
-    }
+    initialize_mat(result, table); 
+    result->condensed_form = su::deconvolute_stripes(dm_stripes, table.n_samples);
+    destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples);
 
     return OK;
 }
