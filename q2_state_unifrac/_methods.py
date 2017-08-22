@@ -147,12 +147,12 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
     if consolidation_ is None:
         raise ValueError("Consolidation (%s) unrecognized. Available "
                          "consolidations are: %s"
-                         % (consolidation, ', '.join(CONSOLIDATIONS.keys()))
+                         % (consolidation, ', '.join(CONSOLIDATIONS.keys())))
 
     if alpha is not None and method is not generalized:
         raise ValueError("The alpha parameter can only be set when the method "
                          "is set as 'generalized', the selected method is "
-                         "'%s'". % method)
+                         "'%s'." % method)
 
     kwargs = {'threads': threads, 'variance_adjusted': variance_adjusted}
     if alpha is not None:

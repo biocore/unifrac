@@ -82,8 +82,7 @@ class StateUnifracTests(TestPluginBase):
 
     def test_meta_unifrac_alpha_not_generalized(self):
         with self.assertRaisesRegex(ValueError,
-                                    "alpha is set, but generalized UniFrac "
-                                    "was not specified"):
+                                    "The alpha parameter can"):
             meta(('a', ), ('b', ), method='generalized',
                  alpha=1, consolidation='skipping_missing_matrices')
 
