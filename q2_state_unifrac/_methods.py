@@ -16,7 +16,7 @@ from functools import reduce
 import skbio
 from q2_types.feature_table import BIOMV210Format
 from q2_types.tree import NewickFormat
-from q2_state_unifrac._meta import consolidations
+from q2_state_unifrac._meta import CONSOLIDATIONS
 
 from pkg_resources import resource_exists, Requirement, resource_filename
 
@@ -94,8 +94,9 @@ def generalized(table: BIOMV210Format,
     _sanity()
 
     if alpha == 1.0:
-        warn("alpha of 1.0 is weighted-normalized UniFrac. Using "
-             "weighted-normalized instead as it is more optimized.",
+        warn("alpha of 1.0 is weighted-normalized UniFrac. "
+             "Weighted-normalized is being used instead as it is more "
+             "optimized.",
              Warning)
         return weighted_normalized(table, phylogeny, threads,
                                    variance_adjusted)
@@ -107,7 +108,7 @@ def generalized(table: BIOMV210Format,
         return skbio.DistanceMatrix.read(output_fp)
 
 
-methods = {'unweighted': unweighted,
+METHODS = {'unweighted': unweighted,
            'weighted_normalized': weighted_normalized,
            'weighted_unnormalized': weighted_unnormalized,
            'generalized': generalized}
@@ -127,7 +128,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
         raise ValueError("Number of trees and tables must be the same.")
 
     if weights is None:
-        weights = tuple([1 for _ in range(len(phylogenies))])
+        weights = tuple(1 for _ in phylogenies)
     else:
         if len(weights) != len(phylogenies):
             raise ValueError("Number of weights does not match number of "
@@ -135,19 +136,23 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
 
     if method is None:
         raise ValueError("No method specified.")
-    method_ = methods.get(method.replace('-', '_'))
+    method_ = METHODS.get(method.replace('-', '_'))
     if method_ is None:
-        raise ValueError("Method (%s) unrecognized." % method)
+        raise ValueError("Method (%s) unrecognized. Available methods are: %s"
+                         % (method, ', '.join(METHODS.keys())))
 
     if consolidation is None:
         raise ValueError("No consolidation specified.")
-    consolidation_ = consolidations.get(consolidation.replace('-', '_'))
+    consolidation_ = CONSOLIDATIONS.get(consolidation.replace('-', '_'))
     if consolidation_ is None:
-        raise ValueError("Consolidation (%s) unrecognized." % consolidation)
+        raise ValueError("Consolidation (%s) unrecognized. Available "
+                         "consolidations are: %s"
+                         % (consolidation, ', '.join(CONSOLIDATIONS.keys()))
 
     if alpha is not None and method is not generalized:
-        raise ValueError("alpha is set, but generalized UniFrac was "
-                         "not specified")
+        raise ValueError("The alpha parameter can only be set when the method "
+                         "is set as 'generalized', the selected method is "
+                         "'%s'". % method)
 
     kwargs = {'threads': threads, 'variance_adjusted': variance_adjusted}
     if alpha is not None:

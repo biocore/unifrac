@@ -6,7 +6,10 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-# Code pulled from cogent.maths.unifrac.fast_unifrac
+# Code pulled from cogent.maths.unifrac.fast_unifrac; the authors have
+# previously indicated approval for converstion from GPL -> BSD
+# https://github.com/biocore/scikit-bio#the-pre-history-of-scikit-bio
+
 # These methods did not have unit tests in cogent
 
 import numpy as np
@@ -85,7 +88,7 @@ def reshape_by_name(m, old_names, new_names, default_off_diag=0,
     return result
 
 
-consolidations = \
+CONSOLIDATIONS = \
     {'skipping_missing_matrices': consolidate_skipping_missing_matrices,
      'missing_zero': consolidate_missing_zero,
      'missing_one': consolidate_missing_one,
