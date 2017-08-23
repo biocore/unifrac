@@ -9,6 +9,8 @@
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
+from setuptools.extension import Extension
+import numpy as np
 
 import subprocess
 import os
@@ -52,6 +54,21 @@ class PostDevelopCommand(develop):
                        os.path.join(self.egg_path, 'q2_state_unifrac/'))
 
 
+USE_CYTHON = os.environ.get('USE_CYTHON', True)
+ext = '.pyx' if USE_CYTHON else '.cpp'
+extensions = [Extension("q2_state_unifrac._api",
+                        sources=["q2_state_unifrac/_api" + ext, "sucpp/api.cpp"],
+                        language="c++",
+                        extra_compile_args=["-stdlib=libc++", "-std=c++11"],
+                        extra_link_args=["-std=c++11"],
+                        include_dirs=[np.get_include()] + ['sucpp/'],
+                        library_dirs=['sucpp/'],
+                        libraries=['ssu'])]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
+
 setup(
     name="q2-state-unifrac",
     version="2017.2.0",
@@ -65,5 +82,6 @@ setup(
         "qiime2.plugins":
         ["q2-state-unifrac=q2_state_unifrac.plugin_setup:plugin"]
     },
+    ext_modules=extensions,
     cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand}
 )
