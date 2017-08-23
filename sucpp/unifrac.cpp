@@ -105,6 +105,35 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     return dm;
 }
 
+
+
+double* su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n) {
+    double* cf;
+    // n must be >= 2, but that should be enforced upstream as that would imply
+    // computing unifrac on a single sample. 
+    uint32_t entries = ((n * n) - n) / 2;
+    cf = (double*)malloc(sizeof(double) * entries);
+
+    uint32_t comb_N = comb_2(n);
+    for(unsigned int stripe = 0; stripe < stripes.size(); stripe++) {
+        // compute the (i, j) position of each element in each stripe
+        uint32_t i = 0;
+        uint32_t j = stripe + 1;
+        for(uint32_t k = 0; k < n; k++, i++, j++) {
+            if(j == n) {
+                i = 0;
+                j = n - (stripe + 1);
+            }
+            // determine the position in the condensed form vector for a given (i, j)
+            // based off of
+            // https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html
+            uint32_t comb_N_minus_i = comb_2(n - i);
+            cf[comb_N - comb_N_minus_i + (j - i - 1)] = stripes[stripe][k];
+        }
+    }
+    return cf;
+}
+
 void progressbar(float progress) {
     // from http://stackoverflow.com/a/14539953
     //
