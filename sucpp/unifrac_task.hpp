@@ -16,7 +16,7 @@ namespace su {
        unsigned int start;          // starting stripe
        unsigned int stop;           // stopping stripe
        unsigned int tid;            // thread ID
-
+       
        // task specific arguments below
        double g_unifrac_alpha;      // generalized unifrac alpha
     };

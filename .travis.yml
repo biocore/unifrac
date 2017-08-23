@@ -43,6 +43,7 @@ install:
 script:
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; popd
+  - nosetests
   - flake8 q2_state_unifrac setup.py
   - q2lint
   - ./sucpp/ssu
