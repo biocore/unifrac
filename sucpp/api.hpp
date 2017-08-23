@@ -7,12 +7,10 @@
 #include <thread>
 #include <vector>
 
-#define OK 0
-#define TREE_MISSING 1
-#define TABLE_MISSING 2
-#define UNKNOWN_METHOD 3
 
 namespace su {
+    typedef enum compute_status {okay, tree_missing, table_missing, unknown_method} ComputeStatus;
+
     /* a result matrix
      *
      * n_samples <uint> the number of samples.
@@ -49,9 +47,9 @@ namespace su {
      * TREE_MISSING   : the filename for the tree does not exist
      * UNKNOWN_METHOD : the requested method is unknown.
      */
-    int one_off(const char* biom_filename, const char* tree_filename, 
-                const char* unifrac_method, bool variance_adjust, double alpha,
-                unsigned int threads, mat* &result);
+    compute_status one_off(const char* biom_filename, const char* tree_filename, 
+                           const char* unifrac_method, bool variance_adjust, double alpha,
+                           unsigned int threads, mat* &result);
 
     void initialize_mat(mat* &result, biom &table);
     void destroy_mat(mat* &result);

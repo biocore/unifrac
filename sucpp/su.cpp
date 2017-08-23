@@ -101,11 +101,11 @@ int main(int argc, char **argv){
     }
 
     su::mat *result = NULL;
-    int err;
-    err = su::one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                      vaw, g_unifrac_alpha, nthreads, result);
-    if(err != OK || result == NULL) {
-        fprintf(stderr, "Compute failed: %d\n", err);
+    su::compute_status status;
+    status = su::one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
+                         vaw, g_unifrac_alpha, nthreads, result);
+    if(status != su::okay || result == NULL) {
+        fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);
     }
     

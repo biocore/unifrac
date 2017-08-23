@@ -49,17 +49,17 @@ void su::destroy_mat(mat* &result) {
     free(result);
 }
 
-int su::one_off(const char* biom_filename, const char* tree_filename, 
-                const char* unifrac_method, bool variance_adjust, double alpha,
-                unsigned int nthreads, mat* &result) {
+su::compute_status su::one_off(const char* biom_filename, const char* tree_filename, 
+                               const char* unifrac_method, bool variance_adjust, double alpha,
+                               unsigned int nthreads, mat* &result) {
     if(!is_file_exists(biom_filename)) {
         fprintf(stderr, "%s does not exist.\n", biom_filename);
-        return TABLE_MISSING;
+        return su::table_missing;
     }
 
     if(!is_file_exists(tree_filename)) {
         fprintf(stderr, "%s does not exist.\n", biom_filename);
-        return TREE_MISSING;
+        return tree_missing;
     }
 
     Method method;
@@ -72,7 +72,7 @@ int su::one_off(const char* biom_filename, const char* tree_filename,
     else if(std::strcmp(unifrac_method, "generalized") == 0)
         method = su::generalized;
     else {
-        return UNKNOWN_METHOD;
+        return unknown_method;
     }
 
     std::ifstream ifs(tree_filename);
@@ -134,7 +134,7 @@ int su::one_off(const char* biom_filename, const char* tree_filename,
     result->condensed_form = su::deconvolute_stripes(dm_stripes, table.n_samples);
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples);
 
-    return OK;
+    return okay;
 }
 
 
