@@ -4,7 +4,10 @@ from libcpp cimport bool
 
 cdef extern from "../sucpp/api.hpp" namespace "su":
     struct mat:
-        pass
+        double** condensed_form
+        unsigned int n_samples
+        char** sample_ids
+
     enum compute_status:
         pass
 

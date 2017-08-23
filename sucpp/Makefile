@@ -35,9 +35,9 @@ test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 
-ocltest: opencl.o
-	clang++ -framework OpenCL opencl.cpp -c
-	clang++ -framework OpenCL opencltest.cpp opencl.o -o opencltest
+api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
+	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
+	$(CXX) -shared -fPIC -Wl -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -static -c $< -o $@
