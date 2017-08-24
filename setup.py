@@ -35,6 +35,11 @@ def compile_ssu():
     if ret != 0:
         raise Exception('Error compiling ssu!')
 
+    cmd = ['make', 'api']
+    ret = subprocess.call(cmd, cwd=SUCPP)
+    if ret != 0:
+        raise Exception('Error compiling ssu!')
+
 
 class PostBuildCommand(install):
     """Post-installation for development mode."""
@@ -59,7 +64,7 @@ ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("q2_state_unifrac._api",
                         sources=["q2_state_unifrac/_api" + ext, "sucpp/api.cpp"],
                         language="c++",
-                        extra_compile_args=["-stdlib=libc++", "-std=c++11"],
+                        extra_compile_args=["-std=c++11"],
                         extra_link_args=["-std=c++11"],
                         include_dirs=[np.get_include()] + ['sucpp/'],
                         library_dirs=['sucpp/'],
