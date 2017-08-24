@@ -51,12 +51,10 @@ su::compute_status su::one_off(const char* biom_filename, const char* tree_filen
                                const char* unifrac_method, bool variance_adjust, double alpha,
                                unsigned int nthreads, mat* &result) {
     if(!is_file_exists(biom_filename)) {
-        fprintf(stderr, "%s does not exist.\n", biom_filename);
         return su::table_missing;
     }
 
     if(!is_file_exists(tree_filename)) {
-        fprintf(stderr, "%s does not exist.\n", biom_filename);
         return tree_missing;
     }
 

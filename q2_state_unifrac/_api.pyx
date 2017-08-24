@@ -34,6 +34,14 @@ def ssu(str biom_filename, str tree_filename,
                      threads, 
                      result)
 
+    if status != okay:
+        if status == tree_missing:
+            raise ValueError("Tree file not found.")
+        if status == table_missing:
+            raise ValueError("Table file not found.")
+        if status == unknown_method:
+            raise ValueError("Unknown method.")
+
     ids = []
     numpy_arr = np.zeros(result.cf_size, dtype=np.double)
     numpy_arr[:] = <np.double_t[:result.cf_size]> result.condensed_form

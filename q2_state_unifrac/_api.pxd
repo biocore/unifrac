@@ -10,7 +10,10 @@ cdef extern from "../sucpp/api.hpp" namespace "su":
         char** sample_ids
 
     enum compute_status:
-        pass
+        okay, 
+        tree_missing,
+        table_missing,
+        unknown_method
 
     compute_status one_off(const char* biom_filename, const char* tree_filename, 
                                const char* unifrac_method, bool variance_adjust, double alpha,
