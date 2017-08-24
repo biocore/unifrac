@@ -26,7 +26,7 @@ namespace su {
         unsigned int n_samples;  
         unsigned int cf_size;   
         bool is_square;          
-        double** condensed_form;    //  // // // // partial refactor, should not be double pntr
+        double* condensed_form;    
         char** sample_ids;
     };
     

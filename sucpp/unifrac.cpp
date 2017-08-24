@@ -106,7 +106,6 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
 }
 
 
-
 double* su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n) {
     double* cf;
     // n must be >= 2, but that should be enforced upstream as that would imply

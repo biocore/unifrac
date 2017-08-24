@@ -8,20 +8,40 @@ def ssu(str biom_filename, str tree_filename,
     cdef:
         mat *result;
         compute_status status;
-        np.double_t[:, :] view
-        np.ndarray[np.double_t, ndim=2] numpy_arr
-        double **cf
+        np.ndarray[np.double_t, ndim=1] numpy_arr
+        double *cf
         int i
+        bytes biom_py_bytes
+        bytes tree_py_bytes
+        bytes met_py_bytes
+        char* biom_c_string 
+        char* tree_c_string 
+        char* met_c_string 
         list ids
 
-    status = one_off(biom_filename, tree_filename, unifrac_method, variance_adjust, alpha, threads, result)
+    biom_py_bytes = biom_filename.encode()
+    tree_py_bytes = tree_filename.encode()
+    met_py_bytes = unifrac_method.encode()
+    biom_c_string = biom_py_bytes
+    tree_c_string = tree_py_bytes
+    met_c_string = met_py_bytes
+
+    status = one_off(biom_c_string, 
+                     tree_c_string, 
+                     met_c_string, 
+                     variance_adjust, 
+                     alpha, 
+                     threads, 
+                     result)
 
     ids = []
-    numpy_arr = np.zeros((result.n_samples, result.n_samples), dtype=np.double)
+    numpy_arr = np.zeros(result.cf_size, dtype=np.double)
+    numpy_arr[:] = <np.double_t[:result.cf_size]> result.condensed_form
+    
     for i in range(result.n_samples):
-        numpy_arr[i, :] = <np.double_t[:result.n_samples]> result.condensed_form[i]
         ids.append(result.sample_ids[i].decode('utf-8'))
 
     destroy_mat(result)
+
     return skbio.DistanceMatrix(numpy_arr, ids)
     

@@ -25,9 +25,8 @@ void su::initialize_mat(mat* &result, biom &table) {
     result = (mat*)malloc(sizeof(mat));
     result->n_samples = table.n_samples;
     
-    // // // // // // // condensed form represents full distance matrix, refactor is not complete
-    result->cf_size = table.n_samples * table.n_samples;
-    result->is_square = true;
+    result->cf_size = ((table.n_samples * table.n_samples) - table.n_samples) / 2;
+    result->is_square = true;  // future support for dissimilarity matrices
     result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
 
     for(unsigned int i = 0; i < result->n_samples; i++) {
@@ -39,10 +38,8 @@ void su::initialize_mat(mat* &result, biom &table) {
 }
 
 void su::destroy_mat(mat* &result) {
-    // // // // condensed form is currently full distance matrix
     for(unsigned int i = 0; i < result->n_samples; i++) {
         free(result->sample_ids[i]);
-        free(result->condensed_form[i]);
     };
     free(result->sample_ids);
     free(result->condensed_form);
@@ -132,7 +129,7 @@ su::compute_status su::one_off(const char* biom_filename, const char* tree_filen
 
     initialize_mat(result, table);
 
-    result->condensed_form = su::deconvolute_stripes(dm_stripes, table.n_samples);
+    result->condensed_form = su::stripes_to_condensed_form(dm_stripes, table.n_samples);
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples);
 
     return okay;

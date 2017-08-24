@@ -111,14 +111,27 @@ int main(int argc, char **argv){
     
     std::ofstream output;
     output.open(output_filename);
-    
+  
+    uint32_t comb_N = su::comb_2(result->n_samples);
+    uint32_t comb_N_minus;
+    double v;
     for(unsigned int i = 0; i < result->n_samples; i++)
         output << "\t" << result->sample_ids[i];
     output << std::endl;
     for(unsigned int i = 0; i < result->n_samples; i++) {
         output << result->sample_ids[i];
-        for(unsigned int j = 0; j < result->n_samples; j++)
-            output << std::setprecision(16) << "\t" << result->condensed_form[i][j];
+        for(unsigned int j = 0; j < result->n_samples; j++) {
+            if(i < j) { // upper triangle
+                comb_N_minus = su::comb_2(result->n_samples - i);
+                v = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
+            } else if (i > j) { // lower triangle
+                comb_N_minus = su::comb_2(result->n_samples - j);
+                v = result->condensed_form[comb_N - comb_N_minus + (i - j - 1)];
+            } else {
+                v = 0.0;
+            }
+            output << std::setprecision(16) << "\t" << v;
+        }
         output << std::endl;
     }
     su::destroy_mat(result);
