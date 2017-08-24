@@ -130,7 +130,8 @@ su::compute_status su::one_off(const char* biom_filename, const char* tree_filen
         threads[tid].join();
     }
 
-    initialize_mat(result, table); 
+    initialize_mat(result, table);
+
     result->condensed_form = su::deconvolute_stripes(dm_stripes, table.n_samples);
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples);
 

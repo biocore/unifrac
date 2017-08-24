@@ -189,7 +189,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
         for(unsigned int j = 0; j < task_p->n_samples; j++)
             dm_stripes[i][j] = 0.;
 
-        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
+        if(unifrac_method == unweighted || unifrac_method == weighted_normalized || unifrac_method == generalized) {
             err = posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * task_p->n_samples);
             if(dm_stripes_total[i] == NULL || err != 0) {
                 fprintf(stderr, "Failed to allocate %zd bytes err %d; [%s]:%d\n", 
