@@ -84,4 +84,6 @@ setup(
     },
     ext_modules=extensions,
     cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand}
+    package_data={
+        'q2_state_unifrac.tests': ['data/*', ]}
 )
