@@ -83,7 +83,7 @@ setup(
         ["q2-state-unifrac=q2_state_unifrac.plugin_setup:plugin"]
     },
     ext_modules=extensions,
-    cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand}
+    cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand},
     package_data={
         'q2_state_unifrac.tests': ['data/*', ]}
 )
