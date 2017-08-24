@@ -651,7 +651,8 @@ void test_unifrac_stripes_to_condensed_form_even() {
     stripes.push_back(s3);
 
     double exp[15] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    double *obs = su::stripes_to_condensed_form(stripes, 6);
+    double *obs = (double*)malloc(sizeof(double) * 15);
+    su::stripes_to_condensed_form(stripes, 6, obs, 0, 3);
     for(unsigned int i = 0; i < 15; i++) {
         ASSERT(exp[i] == obs[i]);
     }
@@ -678,7 +679,8 @@ void test_unifrac_stripes_to_condensed_form_odd() {
     stripes.push_back(s3);
     
     double exp[21] = {1, 12, 13, 17, 7, 0, 2, 11, 14, 18, 1, 3, 10, 15, 2, 4, 9, 16, 5, 8, 6};
-    double *obs = su::stripes_to_condensed_form(stripes, 7);
+    double *obs = (double*)malloc(sizeof(double) * 21);
+    su::stripes_to_condensed_form(stripes, 7, obs, 0, 3);
     for(unsigned int i = 0; i < 21; i++) {
         ASSERT(exp[i] == obs[i]);
     }

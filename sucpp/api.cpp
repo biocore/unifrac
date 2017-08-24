@@ -25,9 +25,10 @@ void su::initialize_mat(mat* &result, biom &table) {
     result = (mat*)malloc(sizeof(mat));
     result->n_samples = table.n_samples;
     
-    result->cf_size = ((table.n_samples * table.n_samples) - table.n_samples) / 2;
+    result->cf_size = su::comb_2(table.n_samples); 
     result->is_square = true;  // future support for dissimilarity matrices
     result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
+    result->condensed_form = (double*)malloc(sizeof(double) * su::comb_2(table.n_samples));
 
     for(unsigned int i = 0; i < result->n_samples; i++) {
         size_t len = table.sample_ids[i].length();
@@ -128,8 +129,18 @@ su::compute_status su::one_off(const char* biom_filename, const char* tree_filen
     }
 
     initialize_mat(result, table);
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid] = std::thread(su::stripes_to_condensed_form, 
+                                   std::ref(dm_stripes), 
+                                   table.n_samples,
+                                   std::ref(result->condensed_form),
+                                   tasks[tid].start,
+                                   tasks[tid].stop);
+    } 
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid].join();
+    }
 
-    result->condensed_form = su::stripes_to_condensed_form(dm_stripes, table.n_samples);
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples);
 
     return okay;

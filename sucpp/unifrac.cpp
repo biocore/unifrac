@@ -106,15 +106,12 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
 }
 
 
-double* su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n) {
-    double* cf;
+void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* &cf, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample. 
-    uint32_t entries = ((n * n) - n) / 2;
-    cf = (double*)malloc(sizeof(double) * entries);
 
     uint32_t comb_N = comb_2(n);
-    for(unsigned int stripe = 0; stripe < stripes.size(); stripe++) {
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
         // compute the (i, j) position of each element in each stripe
         uint32_t i = 0;
         uint32_t j = stripe + 1;
@@ -130,7 +127,6 @@ double* su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n)
             cf[comb_N - comb_N_minus_i + (j - i - 1)] = stripes[stripe][k];
         }
     }
-    return cf;
 }
 
 void progressbar(float progress) {

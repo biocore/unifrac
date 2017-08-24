@@ -36,7 +36,7 @@
                          const task_parameters* task_p);
         
         double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
-        double* stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n);
+        void stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* &cf, unsigned int start, unsigned int stop);
         void set_proportions(double* props, 
                              BPTree &tree, uint32_t node, 
                              biom &table, 
