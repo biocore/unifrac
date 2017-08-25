@@ -41,22 +41,22 @@ def compile_ssu():
         raise Exception('Error compiling ssu!')
 
 
-class PostBuildCommand(install):
-    """Post-installation for development mode."""
+class PreBuildCommand(install):
+    """Pre-installation for development mode."""
     def run(self):
-        install.run(self)
         self.execute(compile_ssu, [], 'Compiling SSU')
         self.copy_file(os.path.join(SUCPP, 'ssu'),
                        os.path.join(self.install_libbase, 'q2_state_unifrac/'))
+        install.run(self)
 
 
-class PostDevelopCommand(develop):
-    """Post-installation for development mode (i.e. `pip install -e ...`)."""
+class PreDevelopCommand(develop):
+    """Pre-installation for development mode (i.e. `pip install -e ...`)."""
     def run(self):
-        develop.run(self)
         self.execute(compile_ssu, [], 'Compiling SSU')
         self.copy_file(os.path.join(SUCPP, 'ssu'),
                        os.path.join(self.egg_path, 'q2_state_unifrac/'))
+        develop.run(self)
 
 
 import os
@@ -89,7 +89,7 @@ setup(
         ["q2-state-unifrac=q2_state_unifrac.plugin_setup:plugin"]
     },
     ext_modules=extensions,
-    cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand},
+    cmdclass={'install': PreBuildCommand, 'develop': PreDevelopCommand},
     package_data={
         'q2_state_unifrac.tests': ['data/*', ]}
 )
