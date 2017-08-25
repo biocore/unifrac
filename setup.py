@@ -67,7 +67,6 @@ extensions = [Extension("q2_state_unifrac._api",
                         extra_compile_args=["-std=c++11"],
                         extra_link_args=["-std=c++11"],
                         include_dirs=[np.get_include()] + ['sucpp/'],
-                        library_dirs=['sucpp/'],
                         libraries=['ssu'])]
 
 if USE_CYTHON:
