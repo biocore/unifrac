@@ -38,7 +38,6 @@ main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
 	$(CXX) -shared -fPIC -Wl -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc
-	cp libssu.so ../q2_state_unifrac/
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -static -c $< -o $@
