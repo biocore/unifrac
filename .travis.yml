@@ -32,6 +32,7 @@ install:
   - conda install --yes flake8 nose
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
+  - export CC=`which h5c++`
   - pip install -q https://github.com/qiime2/q2lint/archive/master.zip
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
