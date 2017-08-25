@@ -14,7 +14,7 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma 
+CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma -march=native -fPIC
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
