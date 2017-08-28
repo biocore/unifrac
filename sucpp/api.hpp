@@ -88,4 +88,11 @@ namespace su {
                            std::vector<double*> &dm_stripes_total);
     void initialize_mat(mat* &result, biom &table);
     void destroy_mat(mat* &result);
-    }
+
+    void set_tasks(std::vector<su::task_parameters> &tasks,
+                   double alpha,
+                   unsigned int n_samples,
+                   unsigned int stripe_start, 
+                   unsigned int stripe_stop, 
+                   unsigned int nthreads);
+}

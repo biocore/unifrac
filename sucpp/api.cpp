@@ -103,36 +103,46 @@ void su::destroy_mat(mat* &result) {
     free(result);
 }
 
-void set_stripes_and_tasks(std::vector<double*> &dm_stripes, 
-                           std::vector<double*> &dm_stripes_total, 
-                           std::vector<su::task_parameters> &tasks,
-                           double alpha,
-                           unsigned int n_samples,
-                           unsigned int stripe_start, 
-                           unsigned int stripe_stop, 
-                           unsigned int nthreads) {
+void su::set_tasks(std::vector<su::task_parameters> &tasks,
+                   double alpha,
+                   unsigned int n_samples,
+                   unsigned int stripe_start, 
+                   unsigned int stripe_stop, 
+                   unsigned int nthreads) {
 
     // compute from start to the max possible stripe if stop doesn't make sense
     if(stripe_stop <= stripe_start)
         stripe_stop = (n_samples + 1) / 2;
 
-    dm_stripes.resize(stripe_stop);
-    dm_stripes_total.resize(stripe_stop);
-    
-    unsigned int chunksize = (stripe_stop - stripe_start) / nthreads;
+    /* chunking strategy is to balance as much as possible. eg if there are 15 stripes
+     * and 4 threads, our goal is to assign 4 stripes to 3 threads, and 3 stripes to one thread.
+     *
+     * we use the remaining the chunksize for bins which cannot be full maximally
+     */
+    unsigned int fullchunk = ((stripe_stop - stripe_start) + nthreads - 1) / nthreads;  // this computes the ceiling
+    unsigned int smallchunk = (stripe_stop - stripe_start) / nthreads;
+
+    unsigned int n_fullbins = (stripe_start - stripe_stop) % nthreads;
+    if(n_fullbins == 0)
+        n_fullbins = nthreads;
+
     unsigned int start = stripe_start;
-    unsigned int end = stripe_stop;
     
     for(unsigned int tid = 0; tid < nthreads; tid++) {
         tasks[tid].tid = tid;
         tasks[tid].start = start; // stripe start
-        tasks[tid].stop = start + chunksize;  // stripe end 
+
+        if(tid < n_fullbins) {
+            tasks[tid].stop = start + fullchunk;  // stripe end 
+            start = start + fullchunk;
+        } else {
+            tasks[tid].stop = start + smallchunk;  // stripe end 
+            start = start + smallchunk;
+        }
+
         tasks[tid].n_samples = n_samples;
         tasks[tid].g_unifrac_alpha = alpha;
-        start = start + chunksize;
     }
-    // the last thread gets any trailing bits
-    tasks[nthreads - 1].stop = end;
 }
 
 compute_status partial(const char* biom_filename, const char* tree_filename, 
@@ -148,10 +158,14 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
 
-    std::vector<double*> dm_stripes; 
-    std::vector<double*> dm_stripes_total;
+    // we resize to the largest number of possible stripes even if only computing
+    // partial, however we do not allocate arrays for non-computed stripes so
+    // there is a little memory waste here but should be on the order of
+    // 8 bytes * N samples per vector. 
+    std::vector<double*> dm_stripes(stripe_stop); 
+    std::vector<double*> dm_stripes_total(stripe_stop);
 
-    set_stripes_and_tasks(dm_stripes, dm_stripes_total, tasks, alpha, table.n_samples, stripe_start, stripe_stop, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, stripe_start, stripe_stop, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_partial_mat(result, table, dm_stripes, stripe_start, stripe_stop);
@@ -173,10 +187,14 @@ su::compute_status su::one_off(const char* biom_filename, const char* tree_filen
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
 
-    std::vector<double*> dm_stripes; 
-    std::vector<double*> dm_stripes_total;
+    // we resize to the largest number of possible stripes even if only computing
+    // partial, however we do not allocate arrays for non-computed stripes so
+    // there is a little memory waste here but should be on the order of
+    // 8 bytes * N samples per vector. 
+    std::vector<double*> dm_stripes(comb_2(table.n_samples)); 
+    std::vector<double*> dm_stripes_total(comb_2(table.n_samples));
 
-    set_stripes_and_tasks(dm_stripes, dm_stripes_total, tasks, alpha, table.n_samples, 0, 0, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, 0, 0, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_mat(result, table);

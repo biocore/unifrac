@@ -1,7 +1,5 @@
 #include <iostream>
-#include "tree.hpp"
-#include "biom.hpp"
-#include "unifrac.hpp"
+#include "api.hpp"
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
@@ -1002,6 +1000,105 @@ void test_unifrac_sample_counts() {
     SUITE_END();
 }
 
+void test_set_tasks() {
+    SUITE_START("test set tasks");
+    std::vector<su::task_parameters> obs(1);
+    std::vector<su::task_parameters> exp(1);
+
+    exp[0].g_unifrac_alpha = 1.0;
+    exp[0].n_samples = 100;
+    exp[0].start = 0;
+    exp[0].stop = 100;
+    exp[0].tid = 0;
+
+    su::set_tasks(obs, 1.0, 100, 0, 100, 1);
+    ASSERT(obs[0].g_unifrac_alpha == exp[0].g_unifrac_alpha);
+    ASSERT(obs[0].n_samples == exp[0].n_samples);
+    ASSERT(obs[0].start == exp[0].start);
+    ASSERT(obs[0].stop == exp[0].stop);
+    ASSERT(obs[0].tid == exp[0].tid);
+
+    std::vector<su::task_parameters> obs2(2);
+    std::vector<su::task_parameters> exp2(2);
+
+    exp2[0].g_unifrac_alpha = 1.0;
+    exp2[0].n_samples = 100;
+    exp2[0].start = 0;
+    exp2[0].stop = 50;
+    exp2[0].tid = 0;
+    exp2[1].g_unifrac_alpha = 1.0;
+    exp2[1].n_samples = 100;
+    exp2[1].start = 50;
+    exp2[1].stop = 100;
+    exp2[1].tid = 1;
+    
+    su::set_tasks(obs2, 1.0, 100, 0, 100, 2);
+    for(unsigned int i=0; i < 2; i++) {
+        ASSERT(obs2[i].g_unifrac_alpha == exp2[i].g_unifrac_alpha);
+        ASSERT(obs2[i].n_samples == exp2[i].n_samples);
+        ASSERT(obs2[i].start == exp2[i].start);
+        ASSERT(obs2[i].stop == exp2[i].stop);
+        ASSERT(obs2[i].tid == exp2[i].tid);
+    }
+    
+    std::vector<su::task_parameters> obs3(3);
+    std::vector<su::task_parameters> exp3(3);
+
+    exp3[0].g_unifrac_alpha = 1.0;
+    exp3[0].n_samples = 100;
+    exp3[0].start = 25;
+    exp3[0].stop = 50;
+    exp3[0].tid = 0;
+    exp3[1].g_unifrac_alpha = 1.0;
+    exp3[1].n_samples = 100;
+    exp3[1].start = 50;
+    exp3[1].stop = 75;
+    exp3[1].tid = 1;
+    exp3[2].g_unifrac_alpha = 1.0;
+    exp3[2].n_samples = 100;
+    exp3[2].start = 75;
+    exp3[2].stop = 100;
+    exp3[2].tid = 2;
+    
+    su::set_tasks(obs3, 1.0, 100, 25, 100, 3);
+    for(unsigned int i=0; i < 3; i++) {
+        ASSERT(obs3[i].g_unifrac_alpha == exp3[i].g_unifrac_alpha);
+        ASSERT(obs3[i].n_samples == exp3[i].n_samples);
+        ASSERT(obs3[i].start == exp3[i].start);
+        ASSERT(obs3[i].stop == exp3[i].stop);
+        ASSERT(obs3[i].tid == exp3[i].tid);
+    }
+    
+    std::vector<su::task_parameters> obs4(3);
+    std::vector<su::task_parameters> exp4(3);
+
+    exp4[0].g_unifrac_alpha = 1.0;
+    exp4[0].n_samples = 100;
+    exp4[0].start = 26;
+    exp4[0].stop = 51;
+    exp4[0].tid = 0;
+    exp4[1].g_unifrac_alpha = 1.0;
+    exp4[1].n_samples = 100;
+    exp4[1].start = 51;
+    exp4[1].stop = 76;
+    exp4[1].tid = 1;
+    exp4[2].g_unifrac_alpha = 1.0;
+    exp4[2].n_samples = 100;
+    exp4[2].start = 76;
+    exp4[2].stop = 100;
+    exp4[2].tid = 2;
+    
+    su::set_tasks(obs4, 1.0, 100, 26, 100, 3);
+    for(unsigned int i=0; i < 3; i++) {
+        ASSERT(obs4[i].g_unifrac_alpha == exp4[i].g_unifrac_alpha);
+        ASSERT(obs4[i].n_samples == exp4[i].n_samples);
+        ASSERT(obs4[i].start == exp4[i].start);
+        ASSERT(obs4[i].stop == exp4[i].stop);
+        ASSERT(obs4[i].tid == exp4[i].tid);
+    }
+    SUITE_END();
+}
+
 void test_bptree_constructor_newline_bug() {
     SUITE_START("test bptree constructor newline bug");
     su::BPTree tree = su::BPTree("((362be41f31fd26be95ae43a8769b91c0:0.116350803,(a16679d5a10caa9753f171977552d920:0.105836235,((a7acc2abb505c3ee177a12e514d3b994:0.008268754,(4e22aa3508b98813f52e1a12ffdb74ad:0.03144211,8139c4ac825dae48454fb4800fb87896:0.043622957)0.923:0.046588301)0.997:0.120902074,((2d3df7387323e2edcbbfcb6e56a02710:0.031543994,3f6752aabcc291b67a063fb6492fd107:0.091571442)0.759:0.016335166,((d599ebe277afb0dfd4ad3c2176afc50e:5e-09,84d0affc7243c7d6261f3a7d680b873f:0.010245188)0.883:0.048993011,51121722488d0c3da1388d1b117cd239:0.119447926)0.763:0.035660204)0.921:0.058191474)0.776:0.02854575)0.657:0.052060833)0.658:0.032547569,(99647b51f775c8ddde8ed36a7d60dbcd:0.173334268,(f18a9c8112372e2916a66a9778f3741b:0.194813398,(5833416522de0cca717a1abf720079ac:5e-09,(2bf1067d2cd4f09671e3ebe5500205ca:0.031692682,(b32621bcd86cb99e846d8f6fee7c9ab8:0.031330707,1016319c25196d73bdb3096d86a9df2f:5e-09)0.058:0.01028612)0.849:0.010284866)0.791:0.041353384)0.922:0.109470534):0.022169824000000005)root;\n\n");
@@ -1045,6 +1142,7 @@ int main(int argc, char** argv) {
     test_generalized_unifrac();
     test_vaw_unifrac_weighted_normalized();
     test_unifrac_sample_counts();
+    test_set_tasks();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);
