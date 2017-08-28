@@ -65,7 +65,7 @@ ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("q2_state_unifrac._api",
                         sources=["q2_state_unifrac/_api" + ext, "sucpp/api.cpp"],
                         language="c++",
-                        extra_compile_args=["-std=c++11"],
+                        extra_compile_args=["-std=c++11 -stdlib=libc++"],
                         extra_link_args=["-std=c++11"],
                         include_dirs=[np.get_include()] + ['sucpp/'],
                         library_dirs=[os.getcwd() + '/sucpp/'],
