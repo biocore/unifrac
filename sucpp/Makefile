@@ -1,4 +1,4 @@
-CXX := h5c++
+CXX := ~/hdf5test/bin/h5c++
 
 PLATFORM := $(shell uname -s)
 COMPILER := $(shell ($(CXX) -v 2>&1) | tr A-Z a-z )
@@ -37,7 +37,7 @@ main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) -shared -fPIC -Wl -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc
+	$(CXX) -shared -fPIC -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -static -c $< -o $@
