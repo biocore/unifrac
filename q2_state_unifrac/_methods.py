@@ -5,8 +5,11 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
-import os
+from warning import warn
+from functools import reduce
+from operator import or_
 
+import numpy as np
 import skbio
 from q2_types.feature_table import BIOMV210Format
 from q2_types.tree import NewickFormat
@@ -19,7 +22,7 @@ def unweighted(table: BIOMV210Format,
                phylogeny: NewickFormat,
                threads: int=1,
                variance_adjusted: bool=False)-> skbio.DistanceMatrix:
-    return ssu(str(table), str(tree), output_fp, 'unweighted',
+    return ssu(str(table), str(phylogeny), 'unweighted',
                variance_adjusted, 1.0, threads)
 
 
@@ -27,7 +30,7 @@ def weighted_normalized(table: BIOMV210Format,
                         phylogeny: NewickFormat,
                         threads: int=1,
                         variance_adjusted: bool=False)-> skbio.DistanceMatrix:
-    return ssu(str(table), str(tree), output_fp, 'weighted_normalized',
+    return ssu(str(table), str(phylogeny), 'weighted_normalized',
                variance_adjusted, 1.0, threads)
 
 
@@ -35,7 +38,7 @@ def weighted_unnormalized(table: BIOMV210Format,
                           phylogeny: NewickFormat,
                           threads: int=1,
                           variance_adjusted: bool=False) -> skbio.DistanceMatrix:  # noqa
-    return ssu(str(table), str(tree), output_fp, 'weighted_unnormalized',
+    return ssu(str(table), str(phylogeny), 'weighted_unnormalized',
                variance_adjusted, 1.0, threads)
 
 
@@ -52,8 +55,9 @@ def generalized(table: BIOMV210Format,
         return weighted_normalized(table, phylogeny, threads,
                                    variance_adjusted)
     else:
-        return ssu(str(table), str(tree), output_fp, 'generalized',
+        return ssu(str(table), str(phylogeny), 'generalized',
                    variance_adjusted, alpha, threads)
+
 
 METHODS = {'unweighted': unweighted,
            'weighted_normalized': weighted_normalized,

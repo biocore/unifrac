@@ -5,7 +5,6 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
-
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -59,11 +58,11 @@ class PreDevelopCommand(develop):
         develop.run(self)
 
 
-import os
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("q2_state_unifrac._api",
-                        sources=["q2_state_unifrac/_api" + ext, "sucpp/api.cpp"],
+                        sources=["q2_state_unifrac/_api" + ext,
+                                 "sucpp/api.cpp"],
                         language="c++",
                         extra_compile_args=["-std=c++11"],
                         extra_link_args=["-std=c++11"],
