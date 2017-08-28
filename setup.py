@@ -44,6 +44,7 @@ CONDA_PREFIX = os.environ.get('CONDA_PREFIX')
 if CONDA_PREFIX is None:
     raise ValueError("Cannot build outside of a conda environment")
 
+
 class PreBuildCommand(install):
     """Pre-installation for development mode."""
     def run(self):
@@ -71,7 +72,7 @@ extensions = [Extension("q2_state_unifrac._api",
                         extra_compile_args=["-std=c++11"],
                         extra_link_args=["-std=c++11",
                                          '-Wl,-rpath',
-                                         '-Wl,%s/lib/libssu.so' % CONDA_PREFIX],
+                                         '-Wl,%s/lib/libssu.so' % CONDA_PREFIX],  # noqa
                         include_dirs=[np.get_include()] + ['sucpp/'],
                         library_dirs=[os.getcwd() + '/sucpp/'],
                         libraries=['ssu'])]
