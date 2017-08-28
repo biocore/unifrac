@@ -5,7 +5,7 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
-from warning import warn
+from warnings import warn
 from functools import reduce
 from operator import or_
 
