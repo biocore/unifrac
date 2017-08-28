@@ -459,3 +459,36 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
     }    
     return dm_stripes;
 }
+
+
+void su::process_stripes(biom &table, 
+                         BPTree &tree_sheared, 
+                         Method method,
+                         bool variance_adjust,
+                         std::vector<double*> &dm_stripes, 
+                         std::vector<double*> &dm_stripes_total,
+                         std::vector<std::thread> &threads,
+                         std::vector<su::task_parameters> &tasks) {
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        if(variance_adjust)
+            threads[tid] = std::thread(su::unifrac_vaw, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
+        else
+            threads[tid] = std::thread(su::unifrac, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
+    }
+
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid].join();
+    }
+}
