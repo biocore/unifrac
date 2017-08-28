@@ -5,11 +5,12 @@ addons:
     packages:
       - gdb
       - apport
+      - libhdf5-serial-dev
+
 language: python
 
 compiler:
   - gcc
-
 
 env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=1
@@ -28,7 +29,7 @@ install:
   - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
   # needed for the hdf5 dev tools
-  - conda install --yes -c conda-forge hdf5 h5py cython
+  - conda install --yes -c conda-forge cython
   - conda install --yes flake8 nose
   - ls -lrt /home/travis/miniconda3/envs/test-env/lib/libhdf*
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
