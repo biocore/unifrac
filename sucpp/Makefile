@@ -1,4 +1,4 @@
-CXX := ~/hdf5test/bin/h5c++
+CXX := h5c++
 
 PLATFORM := $(shell uname -s)
 COMPILER := $(shell ($(CXX) -v 2>&1) | tr A-Z a-z )
