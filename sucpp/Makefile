@@ -43,4 +43,4 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) -static -c $< -o $@
 
 clean:
-	rm *.o ssu
+	-rm *.o ssu
