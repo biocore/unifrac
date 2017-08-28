@@ -37,7 +37,8 @@ main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) -shared -fPIC -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp
+	$(CXX) -dynamiclib -install_name @rpath${CONDA_PREFIX}/lib/libssu.so -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp
+	cp libssu.so ${CONDA_PREFIX}/lib/
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@

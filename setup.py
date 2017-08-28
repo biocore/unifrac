@@ -40,12 +40,16 @@ def compile_ssu():
         raise Exception('Error compiling ssu!')
 
 
+CONDA_PREFIX = os.environ.get('CONDA_PREFIX')
+if CONDA_PREFIX is None:
+    raise ValueError("Cannot build outside of a conda environment")
+
 class PreBuildCommand(install):
     """Pre-installation for development mode."""
     def run(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
         self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-                       os.path.join(self.install_libbase, 'q2_state_unifrac/'))
+                       os.path.join(CONDA_PREFIX, 'lib/'))
         install.run(self)
 
 
@@ -54,7 +58,7 @@ class PreDevelopCommand(develop):
     def run(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
         self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-                       os.path.join(self.egg_path, 'q2_state_unifrac/'))
+                       os.path.join(CONDA_PREFIX, 'lib/'))
         develop.run(self)
 
 
@@ -65,7 +69,9 @@ extensions = [Extension("q2_state_unifrac._api",
                                  "sucpp/api.cpp"],
                         language="c++",
                         extra_compile_args=["-std=c++11"],
-                        extra_link_args=["-std=c++11"],
+                        extra_link_args=["-std=c++11",
+                                         '-Wl,-rpath',
+                                         '-Wl,%s/lib/libssu.so' % CONDA_PREFIX],
                         include_dirs=[np.get_include()] + ['sucpp/'],
                         library_dirs=[os.getcwd() + '/sucpp/'],
                         libraries=['ssu'])]
