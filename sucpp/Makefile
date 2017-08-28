@@ -40,7 +40,7 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) -shared -fPIC -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc
 
 %.o: %.cpp %.hpp
-	$(CXX) $(CPPFLAGS) -static -c $< -o $@
+	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
 	-rm *.o ssu
