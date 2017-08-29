@@ -1,4 +1,10 @@
 #include "api.hpp"
+#include "biom.hpp"
+#include "tree.hpp"
+#include "unifrac.hpp"
+#include <fstream>
+#include <iomanip>
+#include <thread>
 #include <cstring>
 
 #define CHECK_FILE(filename, err) if(!is_file_exists(filename)) { \
@@ -7,13 +13,13 @@
 
 #define SET_METHOD(requested_method, err) Method method;                                                       \
                                           if(std::strcmp(requested_method, "unweighted") == 0)                 \
-                                              method = su::unweighted;                                         \
+                                              method = unweighted;                                             \
                                           else if(std::strcmp(requested_method, "weighted_normalized") == 0)   \
-                                              method = su::weighted_normalized;                                \
+                                              method = weighted_normalized;                                    \
                                           else if(std::strcmp(requested_method, "weighted_unnormalized") == 0) \
-                                              method = su::weighted_unnormalized;                              \
+                                              method = weighted_unnormalized;                                  \
                                           else if(std::strcmp(requested_method, "generalized") == 0)           \
-                                              method = su::generalized;                                        \
+                                              method = generalized;                                            \
                                           else {                                                               \
                                               return err;                                                      \
                                           }
@@ -55,8 +61,8 @@ void destroy_stripes(vector<double*> &dm_stripes, vector<double*> &dm_stripes_to
 }
 
 
-void su::initialize_mat(mat* &result, biom &table) {
-    result = (mat*)malloc(sizeof(mat));
+void initialize_mat(mat_t* &result, biom &table) {
+    result = (mat_t*)malloc(sizeof(mat));
     result->n_samples = table.n_samples;
     
     result->cf_size = su::comb_2(table.n_samples); 
@@ -73,8 +79,8 @@ void su::initialize_mat(mat* &result, biom &table) {
 }
 
 
-void initialize_partial_mat(partial_mat* &result, biom &table, std::vector<double*> &dm_stripes, unsigned int stripe_start, unsigned int stripe_stop) {
-    result = (partial_mat*)malloc(sizeof(partial_mat));
+void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<double*> &dm_stripes, unsigned int stripe_start, unsigned int stripe_stop) {
+    result = (partial_mat_t*)malloc(sizeof(partial_mat));
     result->n_samples = table.n_samples;
     
     result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
@@ -94,16 +100,16 @@ void initialize_partial_mat(partial_mat* &result, biom &table, std::vector<doubl
 }
 
 
-void su::destroy_mat(mat* &result) {
-    for(unsigned int i = 0; i < result->n_samples; i++) {
-        free(result->sample_ids[i]);
+void destroy_mat(mat_t** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);
     };
-    free(result->sample_ids);
-    free(result->condensed_form);
-    free(result);
+    free((*result)->sample_ids);
+    free((*result)->condensed_form);
+    free(*result);
 }
 
-void su::set_tasks(std::vector<su::task_parameters> &tasks,
+void set_tasks(std::vector<su::task_parameters> &tasks,
                    double alpha,
                    unsigned int n_samples,
                    unsigned int stripe_start, 
@@ -148,7 +154,7 @@ void su::set_tasks(std::vector<su::task_parameters> &tasks,
 compute_status partial(const char* biom_filename, const char* tree_filename, 
                        const char* unifrac_method, bool variance_adjust, double alpha,
                        unsigned int nthreads, unsigned int stripe_start, unsigned int stripe_stop,
-                       partial_mat* result) {
+                       partial_mat_t** result) {
 
     CHECK_FILE(biom_filename, table_missing)
     CHECK_FILE(tree_filename, tree_missing)
@@ -168,16 +174,16 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     set_tasks(tasks, alpha, table.n_samples, stripe_start, stripe_stop, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
-    initialize_partial_mat(result, table, dm_stripes, stripe_start, stripe_stop);
+    initialize_partial_mat(*result, table, dm_stripes, stripe_start, stripe_stop);
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, stripe_start, stripe_stop);
     
     return okay;
 }
 
 
-su::compute_status su::one_off(const char* biom_filename, const char* tree_filename, 
-                               const char* unifrac_method, bool variance_adjust, double alpha,
-                               unsigned int nthreads, mat* &result) {
+compute_status one_off(const char* biom_filename, const char* tree_filename, 
+                       const char* unifrac_method, bool variance_adjust, double alpha,
+                       unsigned int nthreads, mat_t** result) {
 
     CHECK_FILE(biom_filename, table_missing)
     CHECK_FILE(tree_filename, tree_missing)
@@ -197,12 +203,12 @@ su::compute_status su::one_off(const char* biom_filename, const char* tree_filen
     set_tasks(tasks, alpha, table.n_samples, 0, 0, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
-    initialize_mat(result, table);
+    initialize_mat(*result, table);
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid] = std::thread(su::stripes_to_condensed_form, 
                                    std::ref(dm_stripes), 
                                    table.n_samples,
-                                   std::ref(result->condensed_form),
+                                   std::ref((*result)->condensed_form),
                                    tasks[tid].start,
                                    tasks[tid].stop);
     } 

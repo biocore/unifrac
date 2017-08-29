@@ -32,7 +32,7 @@ def ssu(str biom_filename, str tree_filename,
                      variance_adjust, 
                      alpha, 
                      threads, 
-                     result)
+                     &result)
 
     if status != okay:
         if status == tree_missing:
@@ -49,7 +49,7 @@ def ssu(str biom_filename, str tree_filename,
     for i in range(result.n_samples):
         ids.append(result.sample_ids[i].decode('utf-8'))
 
-    destroy_mat(result)
+    destroy_mat(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
     

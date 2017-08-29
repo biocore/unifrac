@@ -1,26 +1,9 @@
+#include "task_parameters.hpp"
 #include <math.h>
 #include <vector>
 #include <stdint.h>
 
 namespace su {
-    /* task specific compute parameters
-     *
-     * n_samples <int> the number of samples being processed
-     * start <uint> the first stride to process
-     * stop <uint> the last stride to process
-     * tid <uint> the thread identifier
-     * g_unifrac_alpha <double> an alpha value for generalized unifrac
-     */
-    struct task_parameters {
-       uint32_t n_samples;          // number of samples
-       unsigned int start;          // starting stripe
-       unsigned int stop;           // stopping stripe
-       unsigned int tid;            // thread ID
-       
-       // task specific arguments below
-       double g_unifrac_alpha;      // generalized unifrac alpha
-    };
-
     /* void su::unifrac tasks
      *
      * all methods utilize the same function signature. that signature is as follows:

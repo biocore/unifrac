@@ -4,6 +4,9 @@
 #include <iomanip>
 #include "api.hpp"
 #include "cmd.hpp"
+#include "tree.hpp"
+#include "biom.hpp"
+#include "unifrac.hpp"
 
 void usage() {
     std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]" << std::endl;
@@ -100,11 +103,11 @@ int main(int argc, char **argv){
         g_unifrac_alpha = atof(gunifrac_arg.c_str());
     }
 
-    su::mat *result = NULL;
-    su::compute_status status;
-    status = su::one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                         vaw, g_unifrac_alpha, nthreads, result);
-    if(status != su::okay || result == NULL) {
+    mat_t *result = NULL;
+    compute_status status;
+    status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
+                     vaw, g_unifrac_alpha, nthreads, &result);
+    if(status != okay || result == NULL) {
         fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);
     }
@@ -134,7 +137,7 @@ int main(int argc, char **argv){
         }
         output << std::endl;
     }
-    su::destroy_mat(result);
+    destroy_mat(&result);
 
     return EXIT_SUCCESS;
 }

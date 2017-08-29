@@ -1,5 +1,8 @@
 #include <iostream>
 #include "api.hpp"
+#include "tree.hpp"
+#include "biom.hpp"
+#include "unifrac.hpp"
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
@@ -1011,7 +1014,7 @@ void test_set_tasks() {
     exp[0].stop = 100;
     exp[0].tid = 0;
 
-    su::set_tasks(obs, 1.0, 100, 0, 100, 1);
+    set_tasks(obs, 1.0, 100, 0, 100, 1);
     ASSERT(obs[0].g_unifrac_alpha == exp[0].g_unifrac_alpha);
     ASSERT(obs[0].n_samples == exp[0].n_samples);
     ASSERT(obs[0].start == exp[0].start);
@@ -1032,7 +1035,7 @@ void test_set_tasks() {
     exp2[1].stop = 100;
     exp2[1].tid = 1;
     
-    su::set_tasks(obs2, 1.0, 100, 0, 100, 2);
+    set_tasks(obs2, 1.0, 100, 0, 100, 2);
     for(unsigned int i=0; i < 2; i++) {
         ASSERT(obs2[i].g_unifrac_alpha == exp2[i].g_unifrac_alpha);
         ASSERT(obs2[i].n_samples == exp2[i].n_samples);
@@ -1060,7 +1063,7 @@ void test_set_tasks() {
     exp3[2].stop = 100;
     exp3[2].tid = 2;
     
-    su::set_tasks(obs3, 1.0, 100, 25, 100, 3);
+    set_tasks(obs3, 1.0, 100, 25, 100, 3);
     for(unsigned int i=0; i < 3; i++) {
         ASSERT(obs3[i].g_unifrac_alpha == exp3[i].g_unifrac_alpha);
         ASSERT(obs3[i].n_samples == exp3[i].n_samples);
@@ -1088,7 +1091,7 @@ void test_set_tasks() {
     exp4[2].stop = 100;
     exp4[2].tid = 2;
     
-    su::set_tasks(obs4, 1.0, 100, 26, 100, 3);
+    set_tasks(obs4, 1.0, 100, 26, 100, 3);
     for(unsigned int i=0; i < 3; i++) {
         ASSERT(obs4[i].g_unifrac_alpha == exp4[i].g_unifrac_alpha);
         ASSERT(obs4[i].n_samples == exp4[i].n_samples);

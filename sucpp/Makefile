@@ -18,7 +18,7 @@ CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma -march=native -fP
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
-	LDDFLAGS = -dynamiclib -install_name @rpath${CONDA_PREFIX}/lib/libssu.so
+	LDDFLAGS = -dynamiclib -install_name @rpath/libssu.so
 else
 	AVX2 := $(shell grep "^flags" /proc/cpuinfo | head -n 1 | grep -c avx2)
 	LDDFLAGS = -shared
@@ -41,6 +41,10 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
 	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp
 	cp libssu.so ${CONDA_PREFIX}/lib/
+
+capi_test: api
+	gcc -std=c99 capi_test.c -lssu -L${CONDA_PREFIX}/lib -o capi_test
+	LD_LIBRARY_PATH=${CONDA_PREFIX}/lib ./capi_test
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
