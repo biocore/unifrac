@@ -9,7 +9,7 @@
 
 
 namespace su {
-    typedef enum compute_status {okay, tree_missing, table_missing, unknown_method} ComputeStatus;
+    extern "C" typedef enum compute_status {okay, tree_missing, table_missing, unknown_method} ComputeStatus;
 
     /* a result matrix
      *
@@ -22,7 +22,7 @@ namespace su {
      * condensed_form <double*> the matrix values of length cf_size.
      * sample_ids <char**> the sample IDs of length n_samples.
      */
-    struct mat {
+    extern "C" struct mat {
         unsigned int n_samples;  
         unsigned int cf_size;   
         bool is_square;          
@@ -30,7 +30,7 @@ namespace su {
         char** sample_ids;
     };
 
-    struct partial_mat {
+    extern "C" struct partial_mat {
         unsigned int n_samples;  
         char** sample_ids;
         double** stripes;
@@ -55,9 +55,9 @@ namespace su {
      * TREE_MISSING   : the filename for the tree does not exist
      * UNKNOWN_METHOD : the requested method is unknown.
      */
-    compute_status one_off(const char* biom_filename, const char* tree_filename, 
-                           const char* unifrac_method, bool variance_adjust, double alpha,
-                           unsigned int threads, mat* &result);
+    extern "C" compute_status one_off(const char* biom_filename, const char* tree_filename, 
+                                      const char* unifrac_method, bool variance_adjust, double alpha,
+                                      unsigned int threads, mat* &result);
 
     /* Compute UniFrac
      *
@@ -81,11 +81,11 @@ namespace su {
      * TREE_MISSING   : the filename for the tree does not exist
      * UNKNOWN_METHOD : the requested method is unknown.
      */
-    compute_status partial(const char* biom_filename, const char* tree_filename, 
-                           const char* unifrac_method, bool variance_adjust, double alpha,
-                           unsigned int threads, unsigned int stripe_start, unsigned int stripe_stop,
-                           std::vector<double*> &dm_stripes,
-                           std::vector<double*> &dm_stripes_total);
+    extern "C" compute_status partial(const char* biom_filename, const char* tree_filename, 
+                                      const char* unifrac_method, bool variance_adjust, double alpha,
+                                      unsigned int threads, unsigned int stripe_start, unsigned int stripe_stop,
+                                      std::vector<double*> &dm_stripes,
+                                      std::vector<double*> &dm_stripes_total);
     void initialize_mat(mat* &result, biom &table);
     void destroy_mat(mat* &result);
 
