@@ -4,10 +4,10 @@
 #include "api.hpp"
 
 void err(bool condition, const char* msg) {
-	if(condition) {
-		fprintf(stderr, "%s\n", msg);
-		exit(1);
-	}
+    if(condition) {
+        fprintf(stderr, "%s\n", msg);
+        exit(1);
+    }
 } 
 
 
