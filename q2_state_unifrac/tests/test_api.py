@@ -32,12 +32,12 @@ class StateUnifracAPITests(TestPluginBase):
 
     def test_ssu_bad_tree(self):
         e1 = self.get_data_path('e1.biom')
-        with self.assertRaisesRegex(ValueError, "Tree file not found."):
+        with self.assertRaisesRegex(IOError, "Tree file not found."):
             ssu(e1, 'bad-file', 'unweighted', False, 1.0, 1)
 
     def test_ssu_bad_table(self):
         t1 = self.get_data_path('t1.newick')
-        with self.assertRaisesRegex(ValueError, "Table file not found."):
+        with self.assertRaisesRegex(IOError, "Table file not found."):
             ssu('bad-file', t1, 'unweighted', False, 1.0, 1)
 
     def test_ssu_bad_method(self):
