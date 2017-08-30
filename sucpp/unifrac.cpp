@@ -105,206 +105,29 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     return dm;
 }
 
-void _unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                         std::vector<double*> &__restrict__ dm_stripes_total,
-                                         double* __restrict__ embedded_proportions,
-                                         double length,
-                                         const su::task_parameters* task_p) {
-    double *dm_stripe;
-    //__m256d ymm0, ymm1; 
-    for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
 
-        /* intrinsics yield about a 2x reduction in runtime on llvm. they
-         * were not effective on linux gcc 4.9.1 or 4.9.2. it is unclear
-         * if they would be effective on other versions of gcc.
-         *
-         * one reason they help is that these for loops are not easily
-         * autovectorizable. using the intrinsics effectively gets around
-         * this. ...although, it also appears that loop unrolling works.
-         *
-         * it may make sense to revisit the inclusion of intriniscs, however
-         * support must be tested at compile time, so it's rather annoying
-         * at the moment. basically, we can't assume the presence of avx2.
-         */
-        //for(j = 0; j < n_samples / 4; j++) {
-        //    int offset = j * 4;
-        //    ymm0 = _mm256_sub_pd(_mm256_load_pd(embedded_proportions + offset),
-        //                         _mm256_load_pd(embedded_proportions + (offset + stripe + 1))); // u - v
-        //    ymm1 = _mm256_sub_pd(_mm256_set1_pd(0.0),
-        //                         ymm0); // 0.0 - (u - v)
-        //    ymm0 = _mm256_max_pd(ymm0, ymm1);  // abs(u - v)
-        //    ymm0 = _mm256_fmadd_pd(ymm0,
-        //                            _mm256_set1_pd(length),
-        //                           _mm256_load_pd(dm_stripe + offset));  // fused mutiply add, dm_stripe[offset] += (abs(u - v) * length)
-        //    _mm256_store_pd(dm_stripe + offset, ymm0);  //store
-        //}
+void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* &cf, unsigned int start, unsigned int stop) {
+    // n must be >= 2, but that should be enforced upstream as that would imply
+    // computing unifrac on a single sample. 
 
-        //if((n_samples % 4) != 0) {
-        //    for(int k = n_samples - (n_samples % 4); k < n_samples; k++) {
-        //        double u = embedded_proportions[k];
-        //        ////double v = alt_proportions[j];
-        //        double v = embedded_proportions[k + stripe + 1];
-        //        dm_stripe[k] += fabs(u - v) * length;
-        //    }
-        //}
-        
-        //for(int k = 0; k < n_samples; k++) {
-        //    double u = embedded_proportions[k];
-        //    double v = embedded_proportions[k + stripe + 1];
-        //    dm_stripe[k] += fabs(u - v) * length;
-        //}
-        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
-            int k = j * 4;
-            double u1 = embedded_proportions[k];
-            double u2 = embedded_proportions[k + 1];
-            double u3 = embedded_proportions[k + 2];
-            double u4 = embedded_proportions[k + 3];
-
-            double v1 = embedded_proportions[k + stripe + 1];
-            double v2 = embedded_proportions[k + stripe + 2];
-            double v3 = embedded_proportions[k + stripe + 3];
-            double v4 = embedded_proportions[k + stripe + 4];
-            
-            dm_stripe[k] += fabs(u1 - v1) * length;
-            dm_stripe[k + 1] += fabs(u2 - v2) * length;
-            dm_stripe[k + 2] += fabs(u3 - v3) * length;
-            dm_stripe[k + 3] += fabs(u4 - v4) * length;
-        }
-
-        if((task_p->n_samples % 4) != 0) {
-            for(unsigned int k = task_p->n_samples - (task_p->n_samples % 4); k < task_p->n_samples; k++) {
-                double u = embedded_proportions[k];
-                double v = embedded_proportions[k + stripe + 1];
- 
-                dm_stripe[k] += fabs(u - v) * length;
+    uint32_t comb_N = comb_2(n);
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
+        // compute the (i, j) position of each element in each stripe
+        uint32_t i = 0;
+        uint32_t j = stripe + 1;
+        for(uint32_t k = 0; k < n; k++, i++, j++) {
+            if(j == n) {
+                i = 0;
+                j = n - (stripe + 1);
             }
+            // determine the position in the condensed form vector for a given (i, j)
+            // based off of
+            // https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html
+            uint32_t comb_N_minus_i = comb_2(n - i);
+            cf[comb_N - comb_N_minus_i + (j - i - 1)] = stripes[stripe][k];
         }
     }
 }
-
-void _normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                       std::vector<double*> &__restrict__ dm_stripes_total,
-                                       double* __restrict__ embedded_proportions, 
-                                       double length, 
-                                       const su::task_parameters* task_p) {
-    double *dm_stripe;
-    double *dm_stripe_total;
-
-    // point of thread
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
-
-        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
-            int k = j * 4;
-            double u1 = embedded_proportions[k];
-            double u2 = embedded_proportions[k + 1];
-            double u3 = embedded_proportions[k + 2];
-            double u4 = embedded_proportions[k + 3];
-         
-            double v1 = embedded_proportions[k + stripe + 1];
-            double v2 = embedded_proportions[k + stripe + 2];
-            double v3 = embedded_proportions[k + stripe + 3];
-            double v4 = embedded_proportions[k + stripe + 4];
-               
-            dm_stripe[k] += fabs(u1 - v1) * length;
-            dm_stripe[k + 1] += fabs(u2 - v2) * length;
-            dm_stripe[k + 2] += fabs(u3 - v3) * length;
-            dm_stripe[k + 3] += fabs(u4 - v4) * length;
-
-            dm_stripe_total[k] += (u1 + v1) * length;
-            dm_stripe_total[k + 1] += (u2 + v2) * length;
-            dm_stripe_total[k + 2] += (u3 + v3) * length;
-            dm_stripe_total[k + 3] += (u4 + v4) * length;
-        }
-
-        if((task_p->n_samples % 4) != 0) {
-            for(unsigned int k = task_p->n_samples - (task_p->n_samples % 4); k < task_p->n_samples; k++) {
-                double u = embedded_proportions[k];
-                double v = embedded_proportions[k + stripe + 1];
-                   
-                dm_stripe[k] += fabs(u - v) * length;
-                dm_stripe_total[k] += (u + v) * length;
-            }
-        }
-    }
-}
-
-void _generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                               std::vector<double*> &__restrict__ dm_stripes_total,
-                               double* __restrict__ embedded_proportions, 
-                               double length, 
-                               const su::task_parameters* task_p) {
-    double *dm_stripe;
-    double *dm_stripe_total;
-
-    // point of thread
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
-
-        for(unsigned int j = 0; j < task_p->n_samples; j++) {
-            double u1 = embedded_proportions[j];
-            double v1 = embedded_proportions[j + stripe + 1];
-            double sum1 = u1 + v1;
-            if(sum1 != 0.0) {
-                double sub1 = fabs(u1 - v1);
-                double sum_pow1 = pow(sum1, task_p->g_unifrac_alpha) * length;
-                dm_stripe[j] += sum_pow1 * (sub1 / sum1);
-                dm_stripe_total[j] += sum_pow1;
-            }
-        }
-    }
-}
-
-void _unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                              std::vector<double*> &__restrict__ dm_stripes_total,
-                              double* __restrict__ embedded_proportions, 
-                              double length,  
-                              const su::task_parameters* task_p) {
-    double *dm_stripe;
-    double *dm_stripe_total;
-    
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
-
-        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
-            int k = j * 4;
-            int32_t u1 = embedded_proportions[k] > 0;
-            int32_t u2 = embedded_proportions[k + 1] > 0;
-            int32_t u3 = embedded_proportions[k + 2] > 0;
-            int32_t u4 = embedded_proportions[k + 3] > 0;
- 
-            int32_t v1 = embedded_proportions[k + stripe + 1] > 0;
-            int32_t v2 = embedded_proportions[k + stripe + 2] > 0;
-            int32_t v3 = embedded_proportions[k + stripe + 3] > 0;
-            int32_t v4 = embedded_proportions[k + stripe + 4] > 0;
-
-            dm_stripe[k] += (u1 ^ v1) * length;
-            dm_stripe[k + 1] += (u2 ^ v2) * length;
-            dm_stripe[k + 2] += (u3 ^ v3) * length;
-            dm_stripe[k + 3] += (u4 ^ v4) * length;
- 
-            dm_stripe_total[k] += (u1 | v1) * length;
-            dm_stripe_total[k + 1] += (u2 | v2) * length;
-            dm_stripe_total[k + 2] += (u3 | v3) * length;
-            dm_stripe_total[k + 3] += (u4 | v4) * length;
-        }
-        
-        if((task_p->n_samples % 4) != 0) {
-            for(unsigned int k = task_p->n_samples - (task_p->n_samples % 4); k < task_p->n_samples; k++) {
-                int32_t u = embedded_proportions[k] > 0;
-                int32_t v = embedded_proportions[k + stripe + 1] > 0;
-
-                dm_stripe[k] += (u ^ v) * length;
-                dm_stripe_total[k] += (u | v) * length;
-            }
-        }
-    }
-}
-
 
 void progressbar(float progress) {
     // from http://stackoverflow.com/a/14539953
@@ -361,7 +184,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
         for(unsigned int j = 0; j < task_p->n_samples; j++)
             dm_stripes[i][j] = 0.;
 
-        if(unifrac_method == unweighted || unifrac_method == weighted_normalized) {
+        if(unifrac_method == unweighted || unifrac_method == weighted_normalized || unifrac_method == generalized) {
             err = posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * task_p->n_samples);
             if(dm_stripes_total[i] == NULL || err != 0) {
                 fprintf(stderr, "Failed to allocate %zd bytes err %d; [%s]:%d\n", 
@@ -635,4 +458,37 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
         dm_stripes[i] = tmp;
     }    
     return dm_stripes;
+}
+
+
+void su::process_stripes(biom &table, 
+                         BPTree &tree_sheared, 
+                         Method method,
+                         bool variance_adjust,
+                         std::vector<double*> &dm_stripes, 
+                         std::vector<double*> &dm_stripes_total,
+                         std::vector<std::thread> &threads,
+                         std::vector<su::task_parameters> &tasks) {
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        if(variance_adjust)
+            threads[tid] = std::thread(su::unifrac_vaw, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
+        else
+            threads[tid] = std::thread(su::unifrac, 
+                                       std::ref(table),
+                                       std::ref(tree_sheared), 
+                                       method, 
+                                       std::ref(dm_stripes), 
+                                       std::ref(dm_stripes_total), 
+                                       &tasks[tid]);
+    }
+
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid].join();
+    }
 }

@@ -5,17 +5,29 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
-
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
+from setuptools.extension import Extension
+import numpy as np
 
 import subprocess
 import os
+import sys
 
 
 SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      'sucpp/')
+
+
+CONDA_PREFIX = os.environ.get('CONDA_PREFIX')
+if CONDA_PREFIX is None:
+    raise ValueError("Cannot build outside of a conda environment")
+
+
+# https://stackoverflow.com/a/33308902/379593
+if sys.platform == 'darwin':
+    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.12'
 
 
 def compile_ssu():
@@ -33,24 +45,47 @@ def compile_ssu():
     if ret != 0:
         raise Exception('Error compiling ssu!')
 
+    cmd = ['make', 'api']
+    ret = subprocess.call(cmd, cwd=SUCPP)
+    if ret != 0:
+        raise Exception('Error compiling ssu!')
 
-class PostBuildCommand(install):
-    """Post-installation for development mode."""
+
+class PreBuildCommand(install):
+    """Pre-installation for development mode."""
     def run(self):
+        self.execute(compile_ssu, [], 'Compiling SSU')
+        self.copy_file(os.path.join(SUCPP, 'libssu.so'),
+                       os.path.join(CONDA_PREFIX, 'lib/'))
         install.run(self)
-        self.execute(compile_ssu, [], 'Compiling SSU')
-        self.copy_file(os.path.join(SUCPP, 'ssu'),
-                       os.path.join(self.install_libbase, 'q2_state_unifrac/'))
 
 
-class PostDevelopCommand(develop):
-    """Post-installation for development mode (i.e. `pip install -e ...`)."""
+class PreDevelopCommand(develop):
+    """Pre-installation for development mode (i.e. `pip install -e ...`)."""
     def run(self):
-        develop.run(self)
         self.execute(compile_ssu, [], 'Compiling SSU')
-        self.copy_file(os.path.join(SUCPP, 'ssu'),
-                       os.path.join(self.egg_path, 'q2_state_unifrac/'))
+        self.copy_file(os.path.join(SUCPP, 'libssu.so'),
+                       os.path.join(CONDA_PREFIX, 'lib/'))
+        develop.run(self)
 
+
+USE_CYTHON = os.environ.get('USE_CYTHON', True)
+ext = '.pyx' if USE_CYTHON else '.cpp'
+extensions = [Extension("q2_state_unifrac._api",
+                        sources=["q2_state_unifrac/_api" + ext,
+                                 "sucpp/api.cpp"],
+                        language="c++",
+                        extra_compile_args=["-std=c++11"],
+                        extra_link_args=["-std=c++11",
+                                         '-Wl,-rpath',
+                                         '-Wl,%s/lib/libssu.so' % CONDA_PREFIX],  # noqa
+                        include_dirs=[np.get_include()] + ['sucpp/'],
+                        library_dirs=[os.getcwd() + '/sucpp/'],
+                        libraries=['ssu'])]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
 
 setup(
     name="q2-state-unifrac",
@@ -65,7 +100,8 @@ setup(
         "qiime2.plugins":
         ["q2-state-unifrac=q2_state_unifrac.plugin_setup:plugin"]
     },
-    cmdclass={'install': PostBuildCommand, 'develop': PostDevelopCommand},
+    ext_modules=extensions,
+    cmdclass={'install': PreBuildCommand, 'develop': PreDevelopCommand},
     package_data={
         'q2_state_unifrac.tests': ['data/*', ]}
 )

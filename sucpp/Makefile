@@ -14,12 +14,14 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -pthreads -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma 
+CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma -march=native -fPIC
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
+	LDDFLAGS = -dynamiclib -install_name @rpath/libssu.so
 else
 	AVX2 := $(shell grep "^flags" /proc/cpuinfo | head -n 1 | grep -c avx2)
+	LDDFLAGS = -shared
 endif
 
 ifeq ($(AVX2),1)
@@ -29,18 +31,23 @@ else
 endif
 
 
-test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o
+test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
+	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
 
-main: tree.o biom.o unifrac.o cmd.o unifrac_task.o
-	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o
+main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
+	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp
 
-ocltest: opencl.o
-	clang++ -framework OpenCL opencl.cpp -c
-	clang++ -framework OpenCL opencltest.cpp opencl.o -o opencltest
+api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
+	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
+	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp
+	cp libssu.so ${CONDA_PREFIX}/lib/
+
+capi_test: api
+	gcc -std=c99 capi_test.c -lssu -L${CONDA_PREFIX}/lib -o capi_test
+	LD_LIBRARY_PATH=${CONDA_PREFIX}/lib ./capi_test
 
 %.o: %.cpp %.hpp
-	$(CXX) $(CPPFLAGS) -static -c $< -o $@
+	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	rm *.o ssu
+	-rm *.o ssu
