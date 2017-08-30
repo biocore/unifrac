@@ -18,7 +18,3 @@ Assuming `h5c++` is in your path, the following should work:
 `conda-forge` channel, for example:
 
     conda install -c conda-forge hdf5
-
-On OSX, it may be necessary to update the development target if c++11x is not being found.
-
-    export MACOSX_DEPLOYMENT_TARGET=10.12

@@ -110,11 +110,11 @@ void destroy_mat(mat_t** result) {
 }
 
 void set_tasks(std::vector<su::task_parameters> &tasks,
-                   double alpha,
-                   unsigned int n_samples,
-                   unsigned int stripe_start, 
-                   unsigned int stripe_stop, 
-                   unsigned int nthreads) {
+               double alpha,
+               unsigned int n_samples,
+               unsigned int stripe_start, 
+               unsigned int stripe_stop, 
+               unsigned int nthreads) {
 
     // compute from start to the max possible stripe if stop doesn't make sense
     if(stripe_stop <= stripe_start)
@@ -220,5 +220,3 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
 
     return okay;
 }
-
-

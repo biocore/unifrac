@@ -13,10 +13,21 @@ import numpy as np
 
 import subprocess
 import os
+import sys
 
 
 SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      'sucpp/')
+
+
+CONDA_PREFIX = os.environ.get('CONDA_PREFIX')
+if CONDA_PREFIX is None:
+    raise ValueError("Cannot build outside of a conda environment")
+
+
+# https://stackoverflow.com/a/33308902/379593
+if sys.platform == 'darwin':
+    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.12'
 
 
 def compile_ssu():
@@ -38,11 +49,6 @@ def compile_ssu():
     ret = subprocess.call(cmd, cwd=SUCPP)
     if ret != 0:
         raise Exception('Error compiling ssu!')
-
-
-CONDA_PREFIX = os.environ.get('CONDA_PREFIX')
-if CONDA_PREFIX is None:
-    raise ValueError("Cannot build outside of a conda environment")
 
 
 class PreBuildCommand(install):

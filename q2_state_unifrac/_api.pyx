@@ -5,6 +5,38 @@ cimport numpy as np
 def ssu(str biom_filename, str tree_filename, 
         str unifrac_method, bool variance_adjust, double alpha,
         unsigned int threads):
+    """Execute a call to Strided State UniFrac via the direct API
+
+    Parameters
+    ----------
+    biom_filename : str
+        A filepath to a BIOM 2.1 formatted table (HDF5)
+    tree_filename : str
+        A filepath to a Newick formatted tree
+    unifrac_method : str
+        The requested UniFrac method, one of {unweighted,
+        weighted_normalized, weighted_unnormalized, generalized}
+    variance_adjust : bool
+        Whether to perform Variance Adjusted UniFrac
+    alpha : float
+        The value of alpha for Generalized UniFrac; only applies to
+        Generalized UniFrac
+    threads : int
+        The number of threads to use.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
+    """
     cdef:
         mat *result;
         compute_status status;
@@ -36,9 +68,9 @@ def ssu(str biom_filename, str tree_filename,
 
     if status != okay:
         if status == tree_missing:
-            raise ValueError("Tree file not found.")
+            raise IOError("Tree file not found.")
         if status == table_missing:
-            raise ValueError("Table file not found.")
+            raise IOError("Table file not found.")
         if status == unknown_method:
             raise ValueError("Unknown method.")
 
@@ -52,4 +84,3 @@ def ssu(str biom_filename, str tree_filename,
     destroy_mat(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
-    

@@ -11,7 +11,7 @@ import numpy as np
 import numpy.testing as npt
 from qiime2.plugin.testing import TestPluginBase
 
-from q2_state_unifrac._api import ssu
+from q2_state_unifrac import ssu
 
 
 class StateUnifracAPITests(TestPluginBase):

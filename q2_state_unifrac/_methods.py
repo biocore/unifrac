@@ -13,33 +13,33 @@ import numpy as np
 import skbio
 from q2_types.feature_table import BIOMV210Format
 from q2_types.tree import NewickFormat
-from q2_state_unifrac._meta import CONSOLIDATIONS
 
-from q2_state_unifrac._api import ssu
+import q2_state_unifrac as qsu
+from q2_state_unifrac._meta import CONSOLIDATIONS
 
 
 def unweighted(table: BIOMV210Format,
                phylogeny: NewickFormat,
                threads: int=1,
                variance_adjusted: bool=False)-> skbio.DistanceMatrix:
-    return ssu(str(table), str(phylogeny), 'unweighted',
-               variance_adjusted, 1.0, threads)
+    return qsu.ssu(str(table), str(phylogeny), 'unweighted',
+                   variance_adjusted, 1.0, threads)
 
 
 def weighted_normalized(table: BIOMV210Format,
                         phylogeny: NewickFormat,
                         threads: int=1,
                         variance_adjusted: bool=False)-> skbio.DistanceMatrix:
-    return ssu(str(table), str(phylogeny), 'weighted_normalized',
-               variance_adjusted, 1.0, threads)
+    return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
+                   variance_adjusted, 1.0, threads)
 
 
 def weighted_unnormalized(table: BIOMV210Format,
                           phylogeny: NewickFormat,
                           threads: int=1,
                           variance_adjusted: bool=False) -> skbio.DistanceMatrix:  # noqa
-    return ssu(str(table), str(phylogeny), 'weighted_unnormalized',
-               variance_adjusted, 1.0, threads)
+    return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
+                   variance_adjusted, 1.0, threads)
 
 
 def generalized(table: BIOMV210Format,
@@ -55,8 +55,8 @@ def generalized(table: BIOMV210Format,
         return weighted_normalized(table, phylogeny, threads,
                                    variance_adjusted)
     else:
-        return ssu(str(table), str(phylogeny), 'generalized',
-                   variance_adjusted, alpha, threads)
+        return qsu.ssu(str(table), str(phylogeny), 'generalized',
+                       variance_adjusted, alpha, threads)
 
 
 METHODS = {'unweighted': unweighted,
