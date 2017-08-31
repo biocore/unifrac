@@ -1,10 +1,11 @@
 #include "tree.hpp"
 #include "biom.hpp"
 #include "unifrac.hpp"
+#include "affinity.hpp"
 #include <unordered_map>
 #include <cstdlib>
-#include <algorithm>
 #include <thread>
+#include <algorithm>
 
 
 using namespace su;
@@ -204,6 +205,12 @@ void su::unifrac(biom &table,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
                  const su::task_parameters* task_p) {
+    // processor affinity
+    int err = bind_to_core(task_p->tid);
+    if(err != 0) {
+        fprintf(stderr, "Unable to bind thread to core: %d\n", err);
+        exit(EXIT_FAILURE);
+    }
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
@@ -326,6 +333,12 @@ void su::unifrac_vaw(biom &table,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const su::task_parameters* task_p) {
+    // processor affinity
+    int err = bind_to_core(task_p->tid);
+    if(err != 0) {
+        fprintf(stderr, "Unable to bind thread to core: %d\n", err);
+        exit(EXIT_FAILURE);
+    }
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
