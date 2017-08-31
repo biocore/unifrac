@@ -76,33 +76,50 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpu_size,
 
 #endif
 
-int bind_to_core(int tid) {
+#define handle_error_en(en, msg) \
+       do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+int bind_to_core(int core) {
+    /* bind the calling thread to the requested core
+     *
+     * The use of this method is for better NUMA utilization. The 
+     * default NUMA policy is local, where memory is allocated on the NUMA node
+     * relative to the core if possible. The intention with this method is to
+     * bind to a core first, and then allocate memory. A beneficial side effect
+     * is that threads should not hop between cores either. 
+     *
+     * This method is cgroup safe.
+     */
 	// https://stackoverflow.com/a/11583550/19741
 	// http://blog.saliya.org/2015/07/get-and-set-process-affinity-in-c.html
     pthread_t thread = pthread_self();
     pid_t pid = getpid();
 
     cpu_set_t current_set, new_set;
-    int ret;
+    int j, ret;
 
     CPU_ZERO(&current_set);
     CPU_ZERO(&new_set);
 
     ret = sched_getaffinity(pid, sizeof(current_set), &current_set);
 
+    // find which core in our cpu_set corresponds to the callers
+    // request
     int target = -1;
-	for(unsigned int j = 0; j < CPU_COUNT(&current_set); j++) {
+	for(j = 0; j < CPU_SETSIZE; j++) {
         if(CPU_ISSET(j, &current_set)) {
             target++;
         }
-        if(target == tid)
+        if(target == core) 
             break;
     }
 
-    if(target != tid) {
+    if(target != core) {
+        fprintf(stderr, "Unable to bind this thread to core %d. Are sufficient processors available?", thread);
         return -1;
     }
 
-    CPU_SET(target, &new_set);
-    return pthread_setaffinity_np(thread, sizeof(new_set), &new_set);
+    CPU_SET(j, &new_set);
+    int serr = pthread_setaffinity_np(thread, sizeof(new_set), &new_set);
+    return serr;
 }
