@@ -25,6 +25,9 @@ namespace su {
              */
             biom(std::string filename);
 
+            /* copy constructor */
+            biom(const biom &obj);
+
             /* default destructor
              *
              * Temporary arrays are freed

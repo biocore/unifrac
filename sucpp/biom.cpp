@@ -18,6 +18,8 @@ const std::string SAMPLE_DATA = std::string("/sample/matrix/data");
 const std::string SAMPLE_IDS = std::string("/sample/ids");
 
 biom::biom(std::string filename) {
+    int err;
+
     file = H5File(filename, H5F_ACC_RDONLY);
 
     /* establish the datasets */
@@ -79,7 +81,76 @@ biom::biom(std::string filename) {
         obs_data_resident[i] = current_data;
     }
     sample_counts = get_sample_counts();
+    
+    obs_indices.close();
+    obs_data.close();
+    sample_indices.close();
+    sample_data.close();
+    file.close();
 }
+
+biom::biom(const biom &obj) {
+    sample_ids = obj.sample_ids;
+    obs_ids = obj.obs_ids;
+    sample_indptr = obj.sample_indptr;
+    obs_indptr = obj.obs_indptr;
+
+    /* cache shape and nnz info */
+    n_samples = sample_ids.size();
+    n_obs = obs_ids.size();
+    nnz = obj.nnz;
+
+    /* define a mapping between an ID and its corresponding offset */
+    obs_id_index = obj.obs_id_index; 
+    sample_id_index = obj.sample_id_index;
+    
+    /* load obs sparse data */
+    obs_indices_resident = (uint32_t**)malloc(sizeof(uint32_t**) * n_obs);
+    if(obs_indices_resident == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(uint32_t**) * n_obs, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    obs_data_resident = (double**)malloc(sizeof(double**) * n_obs);
+    if(obs_data_resident == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(double**) * n_obs, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    obs_counts_resident = (unsigned int*)malloc(sizeof(unsigned int) * n_obs);
+    if(obs_counts_resident == NULL) {
+        fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                sizeof(unsigned int) * n_obs, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    int err;
+    unsigned int count;
+    memcpy(obs_counts_resident, obj.obs_counts_resident, sizeof(unsigned int) * n_obs);
+    for(unsigned int i = 0; i < obs_ids.size(); i++)  {
+        count = obs_counts_resident[i];
+
+        err = posix_memalign((void **)&obs_indices_resident[i], 32, sizeof(uint32_t) * count);
+        if(obs_indices_resident[i] == NULL || err != 0) {
+            fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                    sizeof(uint32_t) * count, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+
+        err = posix_memalign((void **)&obs_data_resident[i], 32, sizeof(double) * count);
+        if(obs_data_resident[i] == NULL || err != 0) {
+            fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
+                    sizeof(uint32_t) * count, __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+
+        memcpy(obs_indices_resident[i], obj.obs_indices_resident[i], sizeof(uint32_t) * count);
+        memcpy(obs_data_resident[i], obj.obs_data_resident[i], sizeof(double) * count);
+    }
+    sample_counts = (double*)malloc(sizeof(double) * n_samples);
+    memcpy(sample_counts, obj.sample_counts, sizeof(double) * n_samples);
+}
+
 
 biom::~biom() {
     for(unsigned int i = 0; i < n_obs; i++) {
@@ -99,6 +170,8 @@ void biom::set_nnz() {
     hsize_t dims[1];
     dataspace.getSimpleExtentDims(dims, NULL);
     nnz = dims[0];
+
+    dataspace.close();
 }
 
 void biom::load_ids(const char *path, std::vector<std::string> &ids) {
@@ -126,6 +199,8 @@ void biom::load_ids(const char *path, std::vector<std::string> &ids) {
     for(unsigned int i = 0; i < dims[0]; i++) 
         free(dataout[i]);
     free(dataout);
+    dataspace.close();
+    ds_ids.close();
 }
 
 void biom::load_indptr(const char *path, std::vector<uint32_t> &indptr) {
@@ -148,6 +223,9 @@ void biom::load_indptr(const char *path, std::vector<uint32_t> &indptr) {
     for(unsigned int i = 0; i < dims[0]; i++)
         indptr.push_back(dataout[i]);
     free(dataout);
+
+    dataspace.close();
+    ds.close();
 }
 
 void biom::create_id_index(std::vector<std::string> &ids, 
@@ -163,7 +241,8 @@ unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indic
     uint32_t idx = obs_id_index.at(id);
     uint32_t start = obs_indptr[idx];
     uint32_t end = obs_indptr[idx + 1];
-    
+    int err;
+
     hsize_t count[1] = {end - start};
     hsize_t offset[1] = {start};
 
@@ -179,14 +258,14 @@ unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indic
     indices_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
     data_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
 
-    current_indices_out = (uint32_t*)malloc(sizeof(uint32_t) * count[0]);
-    if(current_indices_out == NULL) {
+    err = posix_memalign((void **)&current_indices_out, 32, sizeof(uint32_t) * count[0]);
+    if(current_indices_out == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
                 sizeof(uint32_t) * count[0], __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    current_data_out = (double*)malloc(sizeof(double) * count[0]);
-    if(current_data_out == NULL) {
+    err = posix_memalign((void **)&current_data_out, 32, sizeof(double) * count[0]);
+    if(current_data_out == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
                 sizeof(double) * count[0], __FILE__, __LINE__);
         exit(EXIT_FAILURE);
@@ -195,6 +274,10 @@ unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indic
     obs_indices.read((void*)current_indices_out, indices_dtype, indices_memspace, indices_dataspace);
     obs_data.read((void*)current_data_out, data_dtype, data_memspace, data_dataspace);
     
+    indices_memspace.close();
+    data_memspace.close();
+    indices_dataspace.close();
+    data_dataspace.close();
     return count[0];
 }
 
@@ -203,7 +286,7 @@ void biom::get_obs_data(std::string id, double* out) {
     unsigned int count = obs_counts_resident[idx];
     uint32_t *indices = obs_indices_resident[idx];
     double *data = obs_data_resident[idx];
-
+    
     // reset our output buffer
     for(unsigned int i = 0; i < n_samples; i++)
         out[i] = 0.0;
@@ -217,6 +300,7 @@ unsigned int biom::get_sample_data_direct(std::string id, uint32_t *& current_in
     uint32_t idx = sample_id_index.at(id);
     uint32_t start = sample_indptr[idx];
     uint32_t end = sample_indptr[idx + 1];
+    int err;
 
     hsize_t count[1] = {end - start};
     hsize_t offset[1] = {start};
@@ -233,14 +317,14 @@ unsigned int biom::get_sample_data_direct(std::string id, uint32_t *& current_in
     indices_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
     data_dataspace.selectHyperslab(H5S_SELECT_SET, count, offset); 
 
-    current_indices_out = (uint32_t*)malloc(sizeof(uint32_t) * count[0]);
-    if(current_indices_out == NULL) {
+    err = posix_memalign((void **)&current_indices_out, 32, sizeof(uint32_t) * count[0]);
+    if(current_indices_out == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
                 sizeof(uint32_t) * count[0], __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    current_data_out = (double*)malloc(sizeof(double) * count[0]);
-    if(current_data_out == NULL) {
+    err = posix_memalign((void **)&current_data_out, 32, sizeof(double) * count[0]);
+    if(current_data_out == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes; [%s]:%d\n", 
                 sizeof(double) * count[0], __FILE__, __LINE__);
         exit(EXIT_FAILURE);
@@ -248,6 +332,11 @@ unsigned int biom::get_sample_data_direct(std::string id, uint32_t *& current_in
 
     sample_indices.read((void*)current_indices_out, indices_dtype, indices_memspace, indices_dataspace);
     sample_data.read((void*)current_data_out, data_dtype, data_memspace, data_dataspace);
+
+    indices_memspace.close();
+    data_memspace.close();
+    indices_dataspace.close();
+    data_dataspace.close();
 
     return count[0];
 }

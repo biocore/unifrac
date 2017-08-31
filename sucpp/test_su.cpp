@@ -443,6 +443,65 @@ void test_biom_constructor() {
     SUITE_END();
 }
 
+void test_biom_copy_constructor() {
+    SUITE_START("biom copy constructor");
+
+    su::biom table = su::biom("test.biom");
+    su::biom table2 = su::biom(table);
+
+    uint32_t exp_n_samples = 6;
+    uint32_t exp_n_obs = 5;
+
+    std::string sids[] = {"Sample1", "Sample2", "Sample3", "Sample4", "Sample5", "Sample6"};
+    std::vector<std::string> exp_sids = _string_array_to_vector(sids, exp_n_samples);
+    
+    std::string oids[] = {"GG_OTU_1", "GG_OTU_2","GG_OTU_3", "GG_OTU_4", "GG_OTU_5"};
+    std::vector<std::string> exp_oids = _string_array_to_vector(oids, exp_n_obs);
+
+    uint32_t s_indptr[] = {0, 2, 5, 9, 11, 12, 15};
+    std::vector<uint32_t> exp_s_indptr = _uint32_array_to_vector(s_indptr, exp_n_samples + 1);
+    
+    uint32_t o_indptr[] = {0, 1, 6, 9, 13, 15};
+    std::vector<uint32_t> exp_o_indptr = _uint32_array_to_vector(o_indptr, exp_n_obs + 1);
+  
+    uint32_t exp_nnz = 15;
+
+    ASSERT(table2.n_samples == exp_n_samples);
+    ASSERT(table2.n_obs == exp_n_obs);
+    ASSERT(table2.nnz == exp_nnz);
+    ASSERT(table2.sample_ids == exp_sids);
+    ASSERT(table2.obs_ids == exp_oids);
+    ASSERT(table2.sample_indptr == exp_s_indptr);
+    ASSERT(table2.obs_indptr == exp_o_indptr);
+
+    double *a, *b;
+    a = (double*)malloc(sizeof(double) * exp_n_samples);
+    b = (double*)malloc(sizeof(double) * exp_n_samples);
+    for(unsigned int i = 0; i < exp_n_obs; i++) {
+        table.get_obs_data(table.obs_ids[i], a);
+        table2.get_obs_data(table.obs_ids[i], b);
+
+        for(unsigned int j = 0; j < exp_n_samples; j++) {
+            ASSERT(fabs(a[j] - b[j]) < 0.000001);
+        }
+    }
+
+    table2.nnz += 1;
+    table2.n_samples += 1;
+    table2.sample_ids[0] = "changed";
+    table2.obs_ids[0] = "changed2";
+    table2.sample_indptr[1] = 10;
+    table2.obs_indptr[1] = 10;
+    ASSERT(table2.nnz != table.nnz);
+    ASSERT(table2.n_samples != table.n_samples);
+    ASSERT(table2.sample_ids[0] != table.sample_ids[0]);
+    ASSERT(table2.obs_ids[0] != table.obs_ids[0]);
+    ASSERT(table2.sample_indptr != table.sample_indptr);
+    ASSERT(table2.obs_indptr != table.obs_indptr);
+
+    SUITE_END();
+}
+
 void test_biom_get_obs_data() {
     SUITE_START("biom get obs data");
 
@@ -1129,6 +1188,7 @@ int main(int argc, char** argv) {
     test_bptree_collapse_edge();
 
     test_biom_constructor();
+    test_biom_copy_constructor();
     test_biom_get_obs_data();
 
     test_propstack_constructor();
