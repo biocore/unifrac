@@ -24,15 +24,6 @@
                                               return err;                                                      \
                                           }
 
-#define PARSE_SYNC_TREE_TABLE(tree_filename, table_filename) std::ifstream ifs(tree_filename);                                      \
-                                                             std::string content = std::string(std::istreambuf_iterator<char>(ifs), \
-                                                                                               std::istreambuf_iterator<char>());   \
-                                                             su::BPTree tree = su::BPTree(content);                                 \
-                                                             su::biom table = su::biom(biom_filename);                              \
-                                                             std::unordered_set<std::string> to_keep(table.obs_ids.begin(),         \
-                                                                                                     table.obs_ids.end());          \
-                                                             su::BPTree tree_sheared = tree.shear(to_keep).collapse();
-
 using namespace su;
 using namespace std;
 
@@ -159,10 +150,13 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     CHECK_FILE(biom_filename, table_missing)
     CHECK_FILE(tree_filename, tree_missing)
     SET_METHOD(unifrac_method, unknown_method)
-    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+    //PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
 
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
+
+    //// for testing
+    su::biom table = su::biom(biom_filename); 
 
     // we resize to the largest number of possible stripes even if only computing
     // partial, however we do not allocate arrays for non-computed stripes so
@@ -172,7 +166,7 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes_total(stripe_stop);
 
     set_tasks(tasks, alpha, table.n_samples, stripe_start, stripe_stop, nthreads);
-    su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
+    su::process_stripes(biom_filename, tree_filename, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_partial_mat(*result, table, dm_stripes, stripe_start, stripe_stop);
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, stripe_start, stripe_stop);
@@ -188,7 +182,12 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     CHECK_FILE(biom_filename, table_missing)
     CHECK_FILE(tree_filename, tree_missing)
     SET_METHOD(unifrac_method, unknown_method)
-    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+    //PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+
+
+    //// for testing
+    su::biom table = su::biom(biom_filename); 
+
 
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
@@ -201,7 +200,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes_total(comb_2(table.n_samples));
 
     set_tasks(tasks, alpha, table.n_samples, 0, 0, nthreads);
-    su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
+    su::process_stripes(biom_filename, tree_filename, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_mat(*result, table);
     for(unsigned int tid = 0; tid < threads.size(); tid++) {

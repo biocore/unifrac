@@ -21,15 +21,15 @@
                 double* get(uint32_t i);
         };
 
-        void unifrac(biom &table, 
-                     BPTree &tree, 
+        void unifrac(const char* biom_filename,
+                                         const char* tree_filename,
                      Method unifrac_method,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const task_parameters* task_p);
         
-        void unifrac_vaw(biom &table, 
-                         BPTree &tree, 
+        void unifrac_vaw(const char* biom_filename,
+                                         const char* tree_filename,
                          Method unifrac_method,
                          std::vector<double*> &dm_stripes,
                          std::vector<double*> &dm_stripes_total,
@@ -77,8 +77,8 @@
         }
 
         // process the stripes described by tasks
-        void process_stripes(biom &table, 
-                             BPTree &tree_sheared, 
+        void process_stripes(const char* biom_filename,
+                             const char* tree_filename,
                              Method method,
                              bool variance_adjust,
                              std::vector<double*> &dm_stripes, 

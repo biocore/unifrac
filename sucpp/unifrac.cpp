@@ -5,6 +5,18 @@
 #include <cstdlib>
 #include <algorithm>
 #include <thread>
+#include <fstream>
+#include <iomanip>
+
+
+#define PARSE_SYNC_TREE_TABLE(tree_filename, table_filename) std::ifstream ifs(tree_filename);                                      \
+                                                             std::string content = std::string(std::istreambuf_iterator<char>(ifs), \
+                                                                                               std::istreambuf_iterator<char>());   \
+                                                             su::BPTree tree = su::BPTree(content);                                 \
+                                                             su::biom table = su::biom(biom_filename);                              \
+                                                             std::unordered_set<std::string> to_keep(table.obs_ids.begin(),         \
+                                                                                                     table.obs_ids.end());          \
+                                                             su::BPTree tree_sheared = tree.shear(to_keep).collapse();
 
 
 using namespace su;
@@ -198,17 +210,13 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
 }
 
 
-void su::unifrac(biom &table,
-                 BPTree &tree, 
+void su::unifrac(const char* biom_filename, 
+                 const char* tree_filename,
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
                  const su::task_parameters* task_p) {
 
-    if(table.n_samples != task_p->n_samples) {
-        fprintf(stderr, "Task and table n_samples not equal\n");
-        exit(EXIT_FAILURE);
-    }
 
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
@@ -238,6 +246,8 @@ void su::unifrac(biom &table,
         fprintf(stderr, "Unknown unifrac task\n");
         exit(1);
     }
+
+    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename);
 
     PropStack propstack(table.n_samples);
 
@@ -320,17 +330,13 @@ void su::unifrac(biom &table,
     free(embedded_proportions);
 }
 
-void su::unifrac_vaw(biom &table,
-                     BPTree &tree, 
+void su::unifrac_vaw(const char* biom_filename, 
+                     const char* tree_filename,
                      Method unifrac_method,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const su::task_parameters* task_p) {
 
-    if(table.n_samples != task_p->n_samples) {
-        fprintf(stderr, "Task and table n_samples not equal\n");
-        exit(EXIT_FAILURE);
-    }
 
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
@@ -361,6 +367,9 @@ void su::unifrac_vaw(biom &table,
         fprintf(stderr, "Unknown unifrac task\n");
         exit(1);
     }
+    
+    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename);
+    
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
 
@@ -461,8 +470,8 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
 }
 
 
-void su::process_stripes(biom &table, 
-                         BPTree &tree_sheared, 
+void su::process_stripes(const char* biom_filename, 
+                         const char* tree_filename,
                          Method method,
                          bool variance_adjust,
                          std::vector<double*> &dm_stripes, 
@@ -472,16 +481,16 @@ void su::process_stripes(biom &table,
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             threads[tid] = std::thread(su::unifrac_vaw, 
-                                       std::ref(table),
-                                       std::ref(tree_sheared), 
+                                       biom_filename,
+                                       tree_filename, 
                                        method, 
                                        std::ref(dm_stripes), 
                                        std::ref(dm_stripes_total), 
                                        &tasks[tid]);
         else
             threads[tid] = std::thread(su::unifrac, 
-                                       std::ref(table),
-                                       std::ref(tree_sheared), 
+                                       biom_filename,
+                                       tree_filename, 
                                        method, 
                                        std::ref(dm_stripes), 
                                        std::ref(dm_stripes_total), 
