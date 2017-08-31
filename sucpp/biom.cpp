@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdio.h>
+#include <string.h>  // for memcpy
 #include "biom.hpp"
 
 using namespace H5;
