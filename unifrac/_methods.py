@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2016-2017, QIIME 2 development team.
+# Copyright (c) 2016-2017, UniFrac development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -11,42 +11,256 @@ from operator import or_
 
 import numpy as np
 import skbio
-from q2_types.feature_table import BIOMV210Format
-from q2_types.tree import NewickFormat
 
-import q2_state_unifrac as qsu
-from q2_state_unifrac._meta import CONSOLIDATIONS
+import unifrac as qsu
+from unifrac._meta import CONSOLIDATIONS
 
 
-def unweighted(table: BIOMV210Format,
-               phylogeny: NewickFormat,
+def is_biom_v210(f):
+    import h5py
+    if not h5py.is_hdf5(f):
+        return False
+    with h5py.File(f, 'r') as fp:
+        if 'format-version' not in fp.attrs:
+            return False
+
+        version = fp.attrs.get('format-version', None)
+
+        if version is None:
+            return False
+
+        if tuple(version) != (2, 1):
+            return False
+
+    return True
+
+
+def is_newick(f):
+    sniffer = skbio.io.format.newick.newick.sniffer_function
+    return sniffer(f)[0]
+
+
+def _validate(table, phylogeny):
+    if not is_biom_v210(table):
+        raise ValueError("Table does not appear to be a BIOM-Format v2.1")
+    if not is_newick(phylogeny):
+        raise ValueError("The phylogeny does not appear to be newick")
+
+
+def unweighted(table: str,
+               phylogeny: str,
                threads: int=1,
                variance_adjusted: bool=False)-> skbio.DistanceMatrix:
-    return qsu.ssu(str(table), str(phylogeny), 'unweighted',
+    """Compute Unweighted UniFrac
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu(table, phylogeny, 'unweighted',
                    variance_adjusted, 1.0, threads)
 
 
-def weighted_normalized(table: BIOMV210Format,
-                        phylogeny: NewickFormat,
+def weighted_normalized(table: str,
+                        phylogeny: str,
                         threads: int=1,
                         variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+    """Compute weighted normalized UniFrac
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
     return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
                    variance_adjusted, 1.0, threads)
 
 
-def weighted_unnormalized(table: BIOMV210Format,
-                          phylogeny: NewickFormat,
+def weighted_unnormalized(table: str,
+                          phylogeny: str,
                           threads: int=1,
                           variance_adjusted: bool=False) -> skbio.DistanceMatrix:  # noqa
+    """Compute weighted unnormalized UniFrac
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default is 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
     return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
                    variance_adjusted, 1.0, threads)
 
 
-def generalized(table: BIOMV210Format,
-                phylogeny: NewickFormat,
+def generalized(table: str,
+                phylogeny: str,
                 threads: int=1,
                 alpha: float=1.0,
                 variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+    """Compute Generalized UniFrac
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default is 1
+    alpha : float, optional
+        The level of contribution of high abundance branches. Higher alpha
+        increases the contribution of from high abundance branches while lower
+        alpha reduces the contribution. Alpha was originally defined over the
+        range [0, 1]. Default is 1.0.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Generalized UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, but was not described in as
+    applied to Generalized UniFrac. It is feasible to do, so it is exposed
+    here.
+
+    An alpha of 1.0 is Weighted normalized UniFrac. An alpha of 0.0 is
+    approximately Unweighted UniFrac, and is if the proportions are
+    dichotomized.
+
+    References
+    ----------
+    .. [1] Chen, J., Bittinger, K., Charlson, E. S., Hoffmann C., Lewis, J.,
+       Wu, G. D., Collman R. G., Bushman, F. D. & Hongzhe L. Associating
+       microbiome composition with environmental covariates using generalized
+       UniFrac distances. Bioinformatics 28(16), 2106–2113 (2012).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
     if alpha == 1.0:
         warn("alpha of 1.0 is weighted-normalized UniFrac. "
              "Weighted-normalized is being used instead as it is more "
@@ -69,6 +283,73 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
          consolidation: str=None, method: str=None,
          threads: int=1, variance_adjusted: bool=False,
          alpha: float=None) -> skbio.DistanceMatrix:
+    """Compute meta UniFrac
+
+    Parameters
+    ----------
+    tables : tuple of str
+        Filepaths to a BIOM-Format 2.1 files. This tuple is expected to be in
+        index order with phylogenies.
+    phylogenies : tuple of str
+        Filepaths to a Newick formatted trees. This tuple is expected to be in
+        index order with tables.
+    weights : tuple of float, optional
+        The weight applied to each tree/table pair. This tuple is expected to
+        be in index order with tables and phylogenies. Default is to weight
+        each tree/table pair evenly.
+    consolidation : str, optional
+        The matrix consolidation method. The available choices are:
+        skipping_missing_matrices, missing_zero, missing_one,
+        skipping_missing_values. The default is 'skipping_missing_values'.
+    threads : int, optional
+        The number of threads to use. Default is 1
+    alpha : float, optional
+        The level of contribution of high abundance branches. Higher alpha
+        increases the contribution of from high abundance branches while lower
+        alpha reduces the contribution. Alpha was originally defined over the
+        range [0, 1]. Default is 1.0
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    UniFrac can be adapted to account for multiple genes, as originally
+    done in [1]_.
+
+    Generalized UniFrac was originally described in [2]_. Variance Adjusted
+    UniFrac was originally described in [3]_, but was not described in as
+    applied to Generalized UniFrac. It is feasible to do, so it is exposed
+    here.
+
+    References
+    ----------
+    .. [1] Lozupone C. A., Hamady M., Cantarel B. L., Coutinho P. M.,
+       Henrissat B., Gordon J. I. & Knight R. The convergence of carbohydrate
+       active gene repertoires in human gut microbes. PNAS 105(39):15076-81
+       (2008).
+    .. [2] Chen, J., Bittinger, K., Charlson, E. S., Hoffmann C., Lewis, J.,
+       Wu, G. D., Collman R. G., Bushman, F. D. & Hongzhe L. Associating
+       microbiome composition with environmental covariates using generalized
+       UniFrac distances. Bioinformatics 28(16), 2106–2113 (2012).
+    .. [3] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
     if not len(tables):
         raise ValueError("No tables specified.")
 
@@ -93,7 +374,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
                          % (method, ', '.join(METHODS.keys())))
 
     if consolidation is None:
-        raise ValueError("No consolidation specified.")
+        consolidation = 'skipping_missing_values'
     consolidation_ = CONSOLIDATIONS.get(consolidation.replace('-', '_'))
     if consolidation_ is None:
         raise ValueError("Consolidation (%s) unrecognized. Available "
@@ -114,4 +395,5 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
                                                                  phylogenies)]
     all_ids = sorted(reduce(or_, [set(dm.ids) for dm in dms]))
     dm = consolidation_(dms, [dm.ids for dm in dms], weights, all_ids)
+
     return skbio.DistanceMatrix(dm, ids=all_ids)

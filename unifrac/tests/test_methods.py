@@ -66,10 +66,6 @@ class StateUnifracTests(TestPluginBase):
         with self.assertRaisesRegex(ValueError, "No method specified."):
             meta(('a', ), ('b', ))
 
-    def test_meta_unifrac_no_consolidation(self):
-        with self.assertRaisesRegex(ValueError, "No consolidation specified."):
-            meta(('a', ), ('b', ), method='unweighted')
-
     def test_meta_unifrac_bad_method(self):
         with self.assertRaisesRegex(ValueError, "Method \(bar\) "
                                                 "unrecognized."):
