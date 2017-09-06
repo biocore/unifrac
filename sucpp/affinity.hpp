@@ -90,8 +90,8 @@ int bind_to_core(int core) {
      *
      * This method is cgroup safe.
      */
-	// https://stackoverflow.com/a/11583550/19741
-	// http://blog.saliya.org/2015/07/get-and-set-process-affinity-in-c.html
+    // https://stackoverflow.com/a/11583550/19741
+    // http://blog.saliya.org/2015/07/get-and-set-process-affinity-in-c.html
     pthread_t thread = pthread_self();
     pid_t pid = getpid();
 
@@ -106,7 +106,7 @@ int bind_to_core(int core) {
     // find which core in our cpu_set corresponds to the callers
     // request
     int target = -1;
-	for(j = 0; j < CPU_SETSIZE; j++) {
+    for(j = 0; j < CPU_SETSIZE; j++) {
         if(CPU_ISSET(j, &current_set)) {
             target++;
         }
