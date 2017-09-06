@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2016-2017, QIIME 2 development team.
+# Copyright (c) 2016-2017, UniFrac development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -9,13 +9,12 @@ import unittest
 
 import numpy as np
 import numpy.testing as npt
-from qiime2.plugin.testing import TestPluginBase
 
-from q2_state_unifrac import ssu
+from unifrac import ssu
 
 
-class StateUnifracAPITests(TestPluginBase):
-    package = 'q2_state_unifrac.tests'
+class StateUnifracAPITests(unittest.TestCase):
+    package = 'unifrac.tests'
 
     def test_meta_unifrac(self):
         t1 = self.get_data_path('t1.newick')

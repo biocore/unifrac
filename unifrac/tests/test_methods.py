@@ -10,13 +10,12 @@ import unittest
 
 import numpy as np
 import numpy.testing as npt
-from qiime2.plugin.testing import TestPluginBase
 
-from q2_state_unifrac import meta
+from unifrac import meta
 
 
-class StateUnifracTests(TestPluginBase):
-    package = 'q2_state_unifrac.tests'
+class StateUnifracTests(unittest.TestCase):
+    package = 'unifrac.tests'
 
     def test_meta_unifrac(self):
         """meta_unifrac should give correct result on sample trees"""
