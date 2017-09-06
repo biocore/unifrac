@@ -26,15 +26,11 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
+  - conda create -n test-env -c biocore --file ci/linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
-  # needed for the hdf5 dev tools
-  - conda install --yes -c conda-forge cython
-  - conda install --yes flake8 nose
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - export CC=`which h5c++`
-  - pip install -q https://github.com/qiime2/q2lint/archive/master.zip
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
@@ -46,13 +42,5 @@ script:
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; popd
   - nosetests
-  - flake8 q2_state_unifrac setup.py
-  - q2lint
+  - flake8 unifrac setup.py
   - ./sucpp/ssu
-  - for i in $(find ./ -maxdepth 1 -name 'core*' -print); do gdb $(pwd)/sucpp/ssu core* -ex "thread apply all bt" -ex "set pagination 0" -batch; done;
-  - ls -lrt
-  - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result.qza --verbose
-  - qiime state-unifrac unweighted --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix ssu_result_thread.qza --verbose --p-threads 2
-  - qiime diversity beta-phylogenetic --p-metric unweighted_unifrac --i-table table.qza --i-phylogeny tree.qza --o-distance-matrix sk_result.qza
-  - python compare_dms.py ssu_result.qza sk_result.qza
-  - python compare_dms.py ssu_result_thread.qza sk_result.qza

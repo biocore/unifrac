@@ -71,8 +71,8 @@ class PreDevelopCommand(develop):
 
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
-extensions = [Extension("q2_state_unifrac._api",
-                        sources=["q2_state_unifrac/_api" + ext,
+extensions = [Extension("unifrac._api",
+                        sources=["unifrac/_api" + ext,
                                  "sucpp/api.cpp"],
                         language="c++",
                         extra_compile_args=["-std=c++11"],
@@ -88,20 +88,16 @@ if USE_CYTHON:
     extensions = cythonize(extensions)
 
 setup(
-    name="q2-state-unifrac",
+    name="unifrac",
     version="2017.2.0",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',
     author_email="wasade@gmail.com",
-    url="https://github.com/wasade/q2-state-unifrac",
-    description="An implementation of Strided State UniFrac",
-    entry_points={
-        "qiime2.plugins":
-        ["q2-state-unifrac=q2_state_unifrac.plugin_setup:plugin"]
-    },
+    url="https://github.com/biocore/unifrac",
+    description="High performance UniFrac",
     ext_modules=extensions,
     cmdclass={'install': PreBuildCommand, 'develop': PreDevelopCommand},
     package_data={
-        'q2_state_unifrac.tests': ['data/*', ]}
+        'unifrac.tests': ['data/*', ]}
 )

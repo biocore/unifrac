@@ -1,4 +1,4 @@
-graft q2_state_unifrac
+graft unifrac
 
 include sucpp/*.biom
 include sucpp/*.tre
