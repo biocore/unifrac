@@ -46,16 +46,20 @@ bool is_file_exists(const char *fileName) {
 void destroy_stripes(vector<double*> &dm_stripes, vector<double*> &dm_stripes_total, unsigned int n_samples, unsigned int stripe_start, unsigned int stripe_stop) {
     unsigned int n_rotations = (n_samples + 1) / 2;
 
-    for(unsigned int i = 0; i < n_rotations; i++) {
+    if(stripe_stop == 0) {
+        for(unsigned int i = 0; i < n_rotations; i++) {
+            free(dm_stripes[i]);
+            if(dm_stripes_total[i] != NULL) 
+                free(dm_stripes_total[i]);
+        }
+    } else {
         // if a stripe_stop is specified, and if we're in the stripe window, do not free
-        // dm_stripes  
-        if(stripe_stop == 0)
-            free(dm_stripes[i]);
-        else if(i < stripe_start && i >= stripe_stop)
-            free(dm_stripes[i]);
-
-        if(dm_stripes_total[i] != NULL) {
-            free(dm_stripes_total[i]);
+        // dm_stripes. this is done as the pointers in dm_stripes are assigned to the partial_mat_t
+        // and subsequently freed in destroy_partial_mat. but, we do need to free dm_stripes_total
+        // if appropriate
+        for(unsigned int i = stripe_start; i < stripe_stop; i++) {
+            if(dm_stripes_total[i] != NULL) 
+                free(dm_stripes_total[i]);
         }
     }
 }
@@ -106,6 +110,18 @@ void destroy_mat(mat_t** result) {
     };
     free((*result)->sample_ids);
     free((*result)->condensed_form);
+    free(*result);
+}
+
+void destroy_partial_mat(partial_mat_t** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);
+    };
+    free((*result)->sample_ids);
+
+    unsigned int n_stripes = (*result)->stripe_stop - (*result)->stripe_start;
+    for(unsigned int i = 0; i < n_stripes; i++)
+        free((*result)->stripes[i]);
     free(*result);
 }
 
@@ -168,8 +184,13 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     // partial, however we do not allocate arrays for non-computed stripes so
     // there is a little memory waste here but should be on the order of
     // 8 bytes * N samples per vector. 
-    std::vector<double*> dm_stripes(stripe_stop); 
-    std::vector<double*> dm_stripes_total(stripe_stop);
+    std::vector<double*> dm_stripes((table.n_samples + 1) / 2); 
+    std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
+
+    if(((table.n_samples + 1) / 2) < stripe_stop) {
+        fprintf(stderr, "Stopping stripe is out-of-bounds, max %d\n", (table.n_samples + 1) / 2);
+        exit(EXIT_FAILURE);
+    }
 
     set_tasks(tasks, alpha, table.n_samples, stripe_start, stripe_stop, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
@@ -197,8 +218,8 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     // partial, however we do not allocate arrays for non-computed stripes so
     // there is a little memory waste here but should be on the order of
     // 8 bytes * N samples per vector. 
-    std::vector<double*> dm_stripes(comb_2(table.n_samples)); 
-    std::vector<double*> dm_stripes_total(comb_2(table.n_samples));
+    std::vector<double*> dm_stripes((table.n_samples + 1) / 2); 
+    std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
 
     set_tasks(tasks, alpha, table.n_samples, 0, 0, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);

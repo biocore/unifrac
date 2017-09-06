@@ -40,11 +40,11 @@ typedef struct mat {
  * stripe_Stop <uint> the logical stopping stripe in the final matrix.
  */
 typedef struct partial_mat {
-    unsigned int n_samples;  
+    uint32_t n_samples;  
     char** sample_ids;
     double** stripes;
-    unsigned int stripe_start;
-    unsigned int stripe_stop;
+    uint32_t stripe_start;
+    uint32_t stripe_stop;
 } partial_mat_t;
 
 /* Compute UniFrac
@@ -69,8 +69,8 @@ EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filenam
                              unsigned int threads, mat_t** result);
 
 void destroy_mat(mat_t** result);
+void destroy_partial_mat(partial_mat_t** result);
 
-#ifdef __cplusplus
 /* Compute a subset of a UniFrac distance matrix
  *
  * biom_filename <const char*> the filename to the biom table.
@@ -94,14 +94,12 @@ void destroy_mat(mat_t** result);
  * UNKNOWN_METHOD : the requested method is unknown.
  */
 
-// TODO: this should use an out parameter of type partial_mat_t instead of the dm_stripes
-// once done, this does not need to be wrapped in a __cplusplus tag
 compute_status partial(const char* biom_filename, const char* tree_filename, 
                        const char* unifrac_method, bool variance_adjust, double alpha,
                        unsigned int threads, unsigned int stripe_start, unsigned int stripe_stop,
-                       std::vector<double*> &dm_stripes,
-                       std::vector<double*> &dm_stripes_total);
+                       partial_mat_t** result);
 
+#ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
 void set_tasks(std::vector<su::task_parameters> &tasks,
                double alpha,
