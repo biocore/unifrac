@@ -1,10 +1,11 @@
 #include "tree.hpp"
 #include "biom.hpp"
 #include "unifrac.hpp"
+#include "affinity.hpp"
 #include <unordered_map>
 #include <cstdlib>
-#include <algorithm>
 #include <thread>
+#include <algorithm>
 
 
 using namespace su;
@@ -204,6 +205,12 @@ void su::unifrac(biom &table,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
                  const su::task_parameters* task_p) {
+    // processor affinity
+    int err = bind_to_core(task_p->tid);
+    if(err != 0) {
+        fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
+        exit(EXIT_FAILURE);
+    }
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
@@ -303,10 +310,6 @@ void su::unifrac(biom &table,
          * (see C) but that is small over large N.  
          */
         func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
-        
-        // should make this compile-time support
-        //if((tid == 0) && ((k % 1000) == 0))
-         //    progressbar((float)k / (float)(tree.nparens / 2));       
     }
     
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
@@ -326,6 +329,12 @@ void su::unifrac_vaw(biom &table,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const su::task_parameters* task_p) {
+    // processor affinity
+    int err = bind_to_core(task_p->tid);
+    if(err != 0) {
+        fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
+        exit(EXIT_FAILURE);
+    }
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
