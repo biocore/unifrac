@@ -255,7 +255,7 @@ void su::unifrac(biom &table,
 
     initialize_embedded(embedded_proportions, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
-    
+
     // - 1 to avoid root   
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
@@ -310,13 +310,6 @@ void su::unifrac(biom &table,
          * (see C) but that is small over large N.  
          */
         func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
-        
-        // should make this compile-time support
-        //if((task_p->tid == 0) && ((k % 100) == 0)) {
-        //    std::cout << task_p->start << " " << task_p->stop << " " << tipcount << std::endl;
-        //    tipcount = 0;
-        //     progressbar((float)k / (float)(tree.nparens / 2));       
-        //}
     }
     
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
