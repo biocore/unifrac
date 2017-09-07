@@ -13,7 +13,7 @@ import numpy.testing as npt
 from unifrac import ssu
 
 
-class StateUnifracAPITests(unittest.TestCase):
+class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
 
     def test_meta_unifrac(self):
