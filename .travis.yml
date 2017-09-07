@@ -26,7 +26,7 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  - conda create -n test-env -c conda-forge -c biocore --file ci/linux-64.txt python=$PYTHON_VERSION
+  - conda create -y -n test-env -c conda-forge -c biocore --file ci/linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
