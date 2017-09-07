@@ -61,6 +61,10 @@ class EdgeCasesTests(TestPluginBase):
     # These tests were mostly ported from skbio's
     # skbio/diversity/beta/tests/test_unifrac.py at SHA-256 ea901b3b6b0b
     # note that not all tests were kept since the APIs are different.
+    #
+    # The test cases below only exercise unweighted, weighted and weighted
+    # normalized UniFrac. Testing against reference implementations for the
+    # variance adjusted and gain variants are performed in the C++ test suite.
 
     package = 'q2_state_unifrac.tests'
 
