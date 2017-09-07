@@ -5,7 +5,6 @@ addons:
     packages:
       - gdb
       - apport
-      - libhdf5-serial-dev
 
 language: python
 
