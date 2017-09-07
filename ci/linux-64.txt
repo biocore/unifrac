@@ -1,4 +1,3 @@
-conda-forge 
 cython
 flake8
 nose
