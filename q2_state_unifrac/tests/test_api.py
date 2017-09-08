@@ -8,7 +8,6 @@
 import unittest
 
 import os
-import tempfile
 import numpy as np
 import numpy.testing as npt
 from qiime2.plugin.testing import TestPluginBase
@@ -18,7 +17,6 @@ from biom.util import biom_open
 from skbio import TreeNode
 from io import StringIO
 from tempfile import gettempdir
-from skbio.stats.distance import DistanceMatrixError
 
 from q2_state_unifrac import ssu
 
@@ -85,7 +83,6 @@ class EdgeCasesTests(TestPluginBase):
 
         # return value is a distance matrix, get the distance from u->v
         return ssu(ta, tr, method, False, 1.0, 1)['u', 'v']
-
 
     def weighted_unifrac(self, u_counts, v_counts, otu_ids, tree,
                          normalized=False):
@@ -192,13 +189,6 @@ class EdgeCasesTests(TestPluginBase):
         actual = self.unweighted_unifrac([1, 0], [0, 0], ['OTU1', 'OTU2'],
                                          tree)
         expected = 1.0
-        self.assertEqual(actual, expected)
-
-    def test_weighted_minimal_trees(self):
-        # two tips
-        tree = TreeNode.read(StringIO('(OTU1:0.25, OTU2:0.25)root;'))
-        actual = self.weighted_unifrac([1, 0], [0, 0], ['OTU1', 'OTU2'], tree)
-        expected = 0.25
         self.assertEqual(actual, expected)
 
     def test_unweighted_root_not_observed(self):
