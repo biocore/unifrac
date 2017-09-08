@@ -20,12 +20,13 @@ before_install:
   - ulimit -c
   - ulimit -a -S
   - ulimit -a -H
-  - cat /proc/sys/kernel/core_pattern
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
+  # linking against libhdf5_cpp fails right now if we do not use this conda environment.
+  # it is unclear why at this time.
   - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
   # needed for the hdf5 dev tools
@@ -34,7 +35,6 @@ install:
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - export CC=`which h5c++`
-  - pip install -q https://github.com/qiime2/q2lint/archive/master.zip
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
@@ -47,5 +47,4 @@ script:
   - pushd sucpp; ./test_su; popd
   - nosetests
   - flake8 unifrac setup.py
-  - q2lint
   - ./sucpp/ssu

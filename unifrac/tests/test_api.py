@@ -9,6 +9,7 @@ import unittest
 import os
 from io import StringIO
 from tempfile import gettempdir
+import pkg_resources
 
 import numpy as np
 import numpy.testing as npt
@@ -21,6 +22,11 @@ from unifrac import ssu
 
 class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
+
+    def get_data_path(self, filename):
+        # adapted from qiime2.plugin.testing.TestPluginBase
+        return pkg_resources.resource_filename(self.package,
+                                               'data/%s' % filename)
 
     def test_meta_unifrac(self):
         t1 = self.get_data_path('t1.newick')
