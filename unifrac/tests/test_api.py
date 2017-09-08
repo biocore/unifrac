@@ -59,7 +59,7 @@ class UnifracAPITests(unittest.TestCase):
             ssu(e1, t1, 'unweightedfoo', False, 1.0, 1)
 
 
-class EdgeCasesTests(TestPluginBase):
+class EdgeCasesTests(TestCase):
     # These tests were mostly ported from skbio's
     # skbio/diversity/beta/tests/test_unifrac.py at SHA-256 ea901b3b6b0b
     # note that not all tests were kept since the APIs are different.
@@ -69,7 +69,7 @@ class EdgeCasesTests(TestPluginBase):
     # implementations) the variance adjusted and generalized variants of the
     # algorithm.
 
-    package = 'q2_state_unifrac.tests'
+    package = 'unifrac.tests'
 
     def _work(self, u_counts, v_counts, otu_ids, tree, method):
         data = np.array([u_counts, v_counts]).T
