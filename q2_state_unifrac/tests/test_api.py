@@ -61,8 +61,9 @@ class EdgeCasesTests(TestPluginBase):
     # note that not all tests were kept since the APIs are different.
     #
     # The test cases below only exercise unweighted, weighted and weighted
-    # normalized UniFrac. Testing against reference implementations for the
-    # variance adjusted and gain variants are performed in the C++ test suite.
+    # normalized UniFrac. The C++ test suite verifies (against reference
+    # implementations) the variance adjusted and generalized variants of the
+    # algorithm.
 
     package = 'q2_state_unifrac.tests'
 
