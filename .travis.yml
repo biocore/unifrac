@@ -26,20 +26,26 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  - h5c++ --version
-  - export CC=`which h5c++`
-  - pushd sucpp; make test; make main; make api; make capi_test; popd 
-  - conda create -y -n test-env -c conda-forge -c biocore --file ci/linux-64.txt python=$PYTHON_VERSION
+  - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
+  # needed for the hdf5 dev tools
+  - conda install --yes -c conda-forge cython
+  - conda install --yes flake8 nose
+  - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
+  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
+  - export CC=`which h5c++`
+  - pip install -q https://github.com/qiime2/q2lint/archive/master.zip
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
      else
         pip install . || travis_terminate 1;
      fi'
+  - pushd sucpp; make test; make main; make api; make capi_test; popd 
 script:
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; popd
   - nosetests
   - flake8 unifrac setup.py
+  - q2lint
   - ./sucpp/ssu
