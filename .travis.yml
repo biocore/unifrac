@@ -27,6 +27,7 @@ before_install:
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
   - export CC=`which h5c++`
+  - pushd sucpp; make test; make main; make api; make capi_test; popd 
   - conda create -y -n test-env -c conda-forge -c biocore --file ci/linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
   # verify both installation methods
@@ -35,7 +36,6 @@ install:
      else
         pip install . || travis_terminate 1;
      fi'
-  - pushd sucpp; make test; make main; make api; make capi_test; popd 
 script:
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; popd
