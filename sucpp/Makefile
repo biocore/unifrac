@@ -39,7 +39,7 @@ main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp
+	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc 
 	cp libssu.so ${CONDA_PREFIX}/lib/
 
 capi_test: api
