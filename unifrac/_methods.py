@@ -75,7 +75,6 @@ def unweighted(table: str,
         If the tree file is not found
         If the table is not found
     ValueError
-        If an unknown method is requested.
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
@@ -128,7 +127,6 @@ def weighted_normalized(table: str,
         If the tree file is not found
         If the table is not found
     ValueError
-        If an unknown method is requested.
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
@@ -179,7 +177,6 @@ def weighted_unnormalized(table: str,
         If the tree file is not found
         If the table is not found
     ValueError
-        If an unknown method is requested.
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
@@ -236,7 +233,6 @@ def generalized(table: str,
         If the tree file is not found
         If the table is not found
     ValueError
-        If an unknown method is requested.
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
@@ -299,8 +295,12 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
         each tree/table pair evenly.
     consolidation : str, optional
         The matrix consolidation method. The available choices are:
-        skipping_missing_matrices, missing_zero, missing_one,
-        skipping_missing_values. The default is 'skipping_missing_values'.
+        'skipping_missing_matrices', 'missing_zero', 'missing_one',
+        'skipping_missing_values'. The default is 'skipping_missing_values'.
+    method : str
+        The UniFrac method to use. The available choices are:
+        'unweighted', 'weighted_unnormalized', 'weighted_normalized', and
+        'generalized'.
     threads : int, optional
         The number of threads to use. Default is 1
     alpha : float, optional
@@ -322,7 +322,6 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
         If the tree file is not found
         If the table is not found
     ValueError
-        If an unknown method is requested.
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
