@@ -1,28 +1,32 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2016-2017, QIIME 2 development team.
+# Copyright (c) 2016-2017, UniFrac development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 import unittest
-
 import os
+from io import StringIO
+from tempfile import gettempdir
+import pkg_resources
+
 import numpy as np
 import numpy.testing as npt
-from qiime2.plugin.testing import TestPluginBase
-
 from biom import Table
 from biom.util import biom_open
 from skbio import TreeNode
-from io import StringIO
-from tempfile import gettempdir
 
-from q2_state_unifrac import ssu
+from unifrac import ssu
 
 
-class StateUnifracAPITests(TestPluginBase):
-    package = 'q2_state_unifrac.tests'
+class UnifracAPITests(unittest.TestCase):
+    package = 'unifrac.tests'
+
+    def get_data_path(self, filename):
+        # adapted from qiime2.plugin.testing.TestPluginBase
+        return pkg_resources.resource_filename(self.package,
+                                               'data/%s' % filename)
 
     def test_meta_unifrac(self):
         t1 = self.get_data_path('t1.newick')
@@ -55,7 +59,7 @@ class StateUnifracAPITests(TestPluginBase):
             ssu(e1, t1, 'unweightedfoo', False, 1.0, 1)
 
 
-class EdgeCasesTests(TestPluginBase):
+class EdgeCasesTests(unittest.TestCase):
     # These tests were mostly ported from skbio's
     # skbio/diversity/beta/tests/test_unifrac.py at SHA-256 ea901b3b6b0b
     # note that not all tests were kept since the APIs are different.
@@ -65,7 +69,7 @@ class EdgeCasesTests(TestPluginBase):
     # implementations) the variance adjusted and generalized variants of the
     # algorithm.
 
-    package = 'q2_state_unifrac.tests'
+    package = 'unifrac.tests'
 
     def _work(self, u_counts, v_counts, otu_ids, tree, method):
         data = np.array([u_counts, v_counts]).T

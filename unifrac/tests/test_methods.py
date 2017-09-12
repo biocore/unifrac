@@ -5,18 +5,22 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
-
 import unittest
+import pkg_resources
 
 import numpy as np
 import numpy.testing as npt
-from qiime2.plugin.testing import TestPluginBase
 
-from q2_state_unifrac import meta
+from unifrac import meta
 
 
-class StateUnifracTests(TestPluginBase):
-    package = 'q2_state_unifrac.tests'
+class StateUnifracTests(unittest.TestCase):
+    package = 'unifrac.tests'
+
+    def get_data_path(self, filename):
+        # adapted from qiime2.plugin.testing.TestPluginBase
+        return pkg_resources.resource_filename(self.package,
+                                               'data/%s' % filename)
 
     def test_meta_unifrac(self):
         """meta_unifrac should give correct result on sample trees"""
@@ -65,10 +69,6 @@ class StateUnifracTests(TestPluginBase):
     def test_meta_unifrac_no_method(self):
         with self.assertRaisesRegex(ValueError, "No method specified."):
             meta(('a', ), ('b', ))
-
-    def test_meta_unifrac_no_consolidation(self):
-        with self.assertRaisesRegex(ValueError, "No consolidation specified."):
-            meta(('a', ), ('b', ), method='unweighted')
 
     def test_meta_unifrac_bad_method(self):
         with self.assertRaisesRegex(ValueError, "Method \(bar\) "
