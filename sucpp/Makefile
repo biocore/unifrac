@@ -1,4 +1,4 @@
-CXX := h5c++
+CXX := ~/hdf5test/bin/h5c++
 
 PLATFORM := $(shell uname -s)
 COMPILER := $(shell ($(CXX) -v 2>&1) | tr A-Z a-z )
@@ -33,6 +33,7 @@ endif
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
+	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o unifrac_task.o api.o
 
 main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp

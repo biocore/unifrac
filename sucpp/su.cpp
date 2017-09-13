@@ -63,33 +63,14 @@ int mode_partial(std::string table_filename, std::string tree_filename,
         fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);
     }
-    
-    std::ofstream output;
-    output.open(output_filename, std::ios::binary);
- 
-    std::string magic("SSU-PARTIAL-00");
-    output << magic;
-    output.write(reinterpret_cast<const char*>(&result->n_samples), sizeof(uint32_t));
-    // // // // /// // WRITE OUT what stripes are present up front, so a collection of files 
-    // can be surveyed rapidly to test for consistency
-    for(unsigned int i = 0; i < result->n_samples; i++) {
-        uint16_t length = strlen(result->sample_ids[i]);
-        output.write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
-        output << result->sample_ids[i];
-    }
-    uint32_t n_stripes = result->stripe_stop - result->stripe_start;
-    output.write(reinterpret_cast<const char*>(&n_stripes), sizeof(uint32_t));
-    for(unsigned int i = 0; i < n_stripes; i++) {
-        uint32_t current_stripe = i + result->stripe_start;
-        output.write(reinterpret_cast<const char*>(&current_stripe), sizeof(uint32_t));
-        
-        /// :( streamsize didn't seem to work. probably a fancy way to do this, but the regular loop is fast too
-        //output.write(reinterpret_cast<const char*>(&result->stripes[i]), std::streamsize(sizeof(double) * result->n_samples));
-        for(unsigned int j = 0; j < result->n_samples; j++)
-            output.write(reinterpret_cast<const char*>(&result->stripes[i][j]), sizeof(double));
-    }
-    // // // // // WRITE OUT an end
+   
+    io_status err = write_partial(output_filename.c_str(), result);
     destroy_partial_mat(&result);
+
+    if(err != write_okay){
+        fprintf(stderr, "Write failed: %s\n", err == open_error ? "could not open output" : "unknown error");
+        return EXIT_FAILURE;
+    } 
 
     return EXIT_SUCCESS;
 }
