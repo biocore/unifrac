@@ -263,6 +263,10 @@ void su::unifrac(biom &table,
 
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
+
+        if(task_p->bypass_tips && tree.isleaf(node))
+            continue;
+
         embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
 
         /*
@@ -396,6 +400,9 @@ void su::unifrac_vaw(biom &table,
 
         set_proportions(node_proportions, tree, node, table, propstack);
         set_proportions(node_counts, tree, node, table, countstack, false);
+
+        if(task_p->bypass_tips && tree.isleaf(node))
+            continue;
 
         embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
         embed_proportions(embedded_counts, node_counts, task_p->n_samples);

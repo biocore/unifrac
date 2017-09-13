@@ -54,6 +54,7 @@ typedef struct partial_mat {
  * unifrac_method <const char*> the requested unifrac method.
  * variance_adjust <bool> whether to apply variance adjustment.
  * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
  * threads <uint> the number of threads to use.
  * result <mat*> the resulting distance matrix in condensed form
  *
@@ -66,7 +67,7 @@ typedef struct partial_mat {
  */
 EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename, 
                              const char* unifrac_method, bool variance_adjust, double alpha,
-                             unsigned int threads, mat_t** result);
+                             bool bypass_tips, unsigned int threads, mat_t** result);
 
 void destroy_mat(mat_t** result);
 
@@ -78,6 +79,7 @@ void destroy_mat(mat_t** result);
  * unifrac_method <const char*> the requested unifrac method.
  * variance_adjust <bool> whether to apply variance adjustment.
  * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
  * threads <uint> the number of threads to use.
  * stripe_start <uint> the starting stripe to compute
  * stripe_stop <uint> the last stripe to compute
@@ -97,7 +99,7 @@ void destroy_mat(mat_t** result);
 // TODO: this should use an out parameter of type partial_mat_t instead of the dm_stripes
 // once done, this does not need to be wrapped in a __cplusplus tag
 compute_status partial(const char* biom_filename, const char* tree_filename, 
-                       const char* unifrac_method, bool variance_adjust, double alpha,
+                       const char* unifrac_method, bool variance_adjust, double alpha, bool bypass_tips,
                        unsigned int threads, unsigned int stripe_start, unsigned int stripe_stop,
                        std::vector<double*> &dm_stripes,
                        std::vector<double*> &dm_stripes_total);
@@ -107,6 +109,7 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
                double alpha,
                unsigned int n_samples,
                unsigned int stripe_start, 
-               unsigned int stripe_stop, 
+               unsigned int stripe_stop,
+               bool bypass_tips,
                unsigned int nthreads);
 #endif

@@ -17,6 +17,7 @@ void usage() {
     std::cout << "    -o\t\tThe output distance matrix." << std::endl;
     std::cout << "    -n\t\t[OPTIONAL] The number of threads, default is 1." << std::endl;
     std::cout << "    -a\t\t[OPTIONAL] Generalized UniFrac alpha, default is 1." << std::endl;
+    std::cout << "    -f\t\t[OPTIONAL] Bypass tips, reduces compute by about 50%." << std::endl;
     std::cout << "    --vaw\t[OPTIONAL] Variance adjusted, default is to not adjust for variance." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
@@ -96,7 +97,9 @@ int main(int argc, char **argv){
     }
     
     bool vaw = input.cmdOptionExists("--vaw"); 
+    bool bypass_tips = input.cmdOptionExists("-f");
     double g_unifrac_alpha;
+
     if(gunifrac_arg.empty()) {
         g_unifrac_alpha = 1.0;
     } else {
@@ -106,7 +109,7 @@ int main(int argc, char **argv){
     mat_t *result = NULL;
     compute_status status;
     status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                     vaw, g_unifrac_alpha, nthreads, &result);
+                     vaw, g_unifrac_alpha, bypass_tips, nthreads, &result);
     if(status != okay || result == NULL) {
         fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);
