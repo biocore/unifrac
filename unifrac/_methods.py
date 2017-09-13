@@ -50,7 +50,8 @@ def _validate(table, phylogeny):
 def unweighted(table: str,
                phylogeny: str,
                threads: int=1,
-               variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+               variance_adjusted: bool=False,
+               bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute Unweighted UniFrac
 
     Parameters
@@ -102,7 +103,8 @@ def unweighted(table: str,
 def weighted_normalized(table: str,
                         phylogeny: str,
                         threads: int=1,
-                        variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+                        variance_adjusted: bool=False,
+                        bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute weighted normalized UniFrac
 
     Parameters
@@ -152,7 +154,8 @@ def weighted_normalized(table: str,
 def weighted_unnormalized(table: str,
                           phylogeny: str,
                           threads: int=1,
-                          variance_adjusted: bool=False) -> skbio.DistanceMatrix:  # noqa
+                          variance_adjusted: bool=False,
+                          bypass_tips: bool=False) -> skbio.DistanceMatrix:  # noqa
     """Compute weighted unnormalized UniFrac
 
     Parameters
@@ -203,7 +206,8 @@ def generalized(table: str,
                 phylogeny: str,
                 threads: int=1,
                 alpha: float=1.0,
-                variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+                variance_adjusted: bool=False,
+                bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute Generalized UniFrac
 
     Parameters
@@ -278,7 +282,7 @@ METHODS = {'unweighted': unweighted,
 def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
          consolidation: str=None, method: str=None,
          threads: int=1, variance_adjusted: bool=False,
-         alpha: float=None) -> skbio.DistanceMatrix:
+         alpha: float=None, bypass_tips: bool=False) -> skbio.DistanceMatrix:
     """Compute meta UniFrac
 
     Parameters
@@ -385,7 +389,9 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
 
-    kwargs = {'threads': threads, 'variance_adjusted': variance_adjusted}
+    kwargs = {'threads': threads,
+              'bypass_tips': bypass_tips,
+              'variance_adjusted': variance_adjusted}
     if alpha is not None:
         kwargs['alpha'] = alpha
 
