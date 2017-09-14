@@ -64,6 +64,9 @@ def unweighted(table: str,
         The number of threads to use. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -97,7 +100,7 @@ def unweighted(table: str,
     """
     _validate(table, phylogeny)
     return qsu.ssu(table, phylogeny, 'unweighted',
-                   variance_adjusted, 1.0, threads)
+                   variance_adjusted, 1.0, bypass_tips, threads)
 
 
 def weighted_normalized(table: str,
@@ -117,6 +120,9 @@ def weighted_normalized(table: str,
         The number of threads to use. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -148,7 +154,7 @@ def weighted_normalized(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
-                   variance_adjusted, 1.0, threads)
+                   variance_adjusted, 1.0, bypass_tips, threads)
 
 
 def weighted_unnormalized(table: str,
@@ -168,6 +174,9 @@ def weighted_unnormalized(table: str,
         The number of threads to use. Default is 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -199,7 +208,7 @@ def weighted_unnormalized(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
-                   variance_adjusted, 1.0, threads)
+                   variance_adjusted, 1.0, bypass_tips, threads)
 
 
 def generalized(table: str,
@@ -225,6 +234,9 @@ def generalized(table: str,
         range [0, 1]. Default is 1.0.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -270,7 +282,7 @@ def generalized(table: str,
                                    variance_adjusted)
     else:
         return qsu.ssu(str(table), str(phylogeny), 'generalized',
-                       variance_adjusted, alpha, threads)
+                       variance_adjusted, alpha, bypass_tips, threads)
 
 
 METHODS = {'unweighted': unweighted,
@@ -307,6 +319,9 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
         'generalized'.
     threads : int, optional
         The number of threads to use. Default is 1
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
