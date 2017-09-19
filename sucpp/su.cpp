@@ -31,6 +31,14 @@ void usage() {
     std::cout << "    For Variance Adjusted UniFrac, please see: " << std::endl;
     std::cout << "        Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118" << std::endl;
     std::cout << std::endl;
+    std::cout << "Runtime progress can be obtained by issuing a SIGUSR1 signal. If running with " << std::endl;
+    std::cout << "multiple threads, this signal will only be honored if issued to the master PID. " << std::endl;
+    std::cout << "The report will yield the following information: " << std::endl;
+    std::cout << std::endl;
+    std::cout << "tid:<thread ID> k:<postorder node index> total:<number of nodes>" << std::endl;
+    std::cout << std::endl;
+    std::cout << "The proportion of the tree that has been evaluated can be determined from (k / total)." << std::endl;
+    std::cout << std::endl;
 }
 
 void err(std::string msg) {
