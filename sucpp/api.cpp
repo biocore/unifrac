@@ -253,7 +253,7 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     
     uint32_t n_stripes = result->stripe_stop - result->stripe_start;
     std::string magic(PARTIAL_MAGIC);
-    uint16_t magic_len = magic.length();
+    uint32_t magic_len = magic.length();
 
     /* header information */
     output.write(reinterpret_cast<const char*>(&magic_len),                 sizeof(uint16_t));
@@ -281,71 +281,68 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     
     /* footer */
     output << magic;
+    output.close();
+
     return write_okay;
 }
 
 IOStatus _is_partial_file(const char* input_filename) {
     std::ifstream input;
-    input.open(input_filename, std::ios::binary);
+    input.open(input_filename, std::ios::in | std::ios::binary);
     if(!input.is_open()) 
         return open_error;
 
-    char buf[128];
     char magic[32];
-    int magic_len;
-    input.read(buf, 2);
-    magic_len = atoi(buf);
+    uint16_t magic_len;
 
+    input.read((char*)&magic_len, 2);
+    
     // if the length of the magic is unexpected then bail
-    if(magic_len < 0 || magic_len > 32) {
+    if(magic_len <= 0 || magic_len > 32) {
         return magic_incompatible;
     }
 
-    input.read(buf, magic_len);
-    strcpy(magic, buf);
+    input.read(magic, magic_len);
     if(strcmp(magic, PARTIAL_MAGIC) != 0) {
         return magic_incompatible;
     }
-
+    
     input.close(); 
     return read_okay;
 }
 
-/* it is assumed this define is a multiple of sizeof(double) which should be 8 */
-#define LOAD_BUFFER_SIZE 2048
-IOStatus read_partial(const char* input_filename, partial_mat_t* &result) {
+IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     IOStatus err = _is_partial_file(input_filename);
+
     if(err != read_okay)
         return err;
 
     std::ifstream input;
     input.open(input_filename, std::ios::binary);
 
-    char buf[LOAD_BUFFER_SIZE];
-
     /* load header */
-    input.read(buf, 2);  // magic length
-    int magic_len = atoi(buf);
+    uint16_t magic_len;
+    input.read((char*)&magic_len, 2);  // magic length
     
-    input.read(buf, magic_len);  // magic
     char header_magic[32];
-    strcpy(header_magic, buf);
-
-    input.read(buf, 4);  // number of samples
-    int n_samples = atoi(buf);
+    input.read(header_magic, magic_len);  // magic
+    header_magic[magic_len] = '\0';
     
-    input.read(buf, 4);  // number of stripes
-    int n_stripes = atoi(buf);
+    uint32_t n_samples;
+    input.read((char*)&n_samples, 4);  // number of samples
+   
+    uint32_t n_stripes; 
+    input.read((char*)&n_stripes, 4);  // number of stripes
+   
+    uint32_t stripe_start; 
+    input.read((char*)&stripe_start, 4);  // stripe start
     
-    input.read(buf, 4);  // stripe start
-    int stripe_start = atoi(buf);
+    uint32_t stripe_total;
+    input.read((char*)&stripe_total, 4);  // stripe total
+   
+    bool is_upper_triangle; 
+    input.read((char*)&is_upper_triangle, 1);  // is_upper_triangle
     
-    input.read(buf, 4);  // stripe total
-    int stripe_total = atoi(buf);
-    
-    input.read(buf, 1);  // is_upper_triangle
-    int is_upper_triangle = atoi(buf);   // this may not work...
-
     /* sanity check header */
     if(n_samples <= 0 || n_stripes <= 0 || stripe_start < 0 || stripe_total <= 0 || is_upper_triangle < 0)
         return bad_header;
@@ -353,7 +350,7 @@ IOStatus read_partial(const char* input_filename, partial_mat_t* &result) {
         return bad_header;
 
     /* initialize the partial result structure */
-    result = (partial_mat_t*)malloc(sizeof(partial_mat));
+    partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
     result->n_samples = n_samples;
     result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
     result->stripes = (double**)malloc(sizeof(double*) * (n_stripes));
@@ -364,44 +361,29 @@ IOStatus read_partial(const char* input_filename, partial_mat_t* &result) {
     
     /* load samples */
     for(int i = 0; i < n_samples; i++) {
-        input.read(buf, 2);
-        int sample_length = atoi(buf);
-        if(sample_length < 0)
-            return read_error;
-        input.read(buf, sample_length);
-        result->sample_ids[i] = (char*)malloc(sizeof(char) * sample_length);
-        strcpy(result->sample_ids[i], buf);
+        uint16_t sample_length;
+        input.read((char*)&sample_length, 2);
+        result->sample_ids[i] = (char*)malloc(sizeof(char) * (sample_length + 1));
+        input.read(result->sample_ids[i], sample_length);
+        result->sample_ids[i][sample_length + 1] = '\0';
     }
 
     /* load stripes */
-    int n_samples_per_buffer = LOAD_BUFFER_SIZE / sizeof(double);
     int current_to_load;
-    int loaded = 0;
     for(int i = 0; i < n_stripes; i++) {
         result->stripes[i] = (double*)malloc(sizeof(double) * n_samples);
-        int remaining_to_load = n_samples;
-        do {
-            current_to_load = (remaining_to_load > n_samples_per_buffer) ? n_samples_per_buffer : remaining_to_load;
-            remaining_to_load -= current_to_load;
-
-            if(remaining_to_load < 0) {
-                /* this should not be possible */
-                fprintf(stderr, "Error loading stripes.\n");
-                exit(EXIT_FAILURE);
-            }
-            input.read(buf, sizeof(double) * remaining_to_load);
-            memcpy(&result->stripes[i][loaded], &buf, sizeof(double) * remaining_to_load);
-            loaded += current_to_load;
-        } while(remaining_to_load > 0);
+        input.read(reinterpret_cast<char*>(result->stripes[i]), sizeof(double) * n_samples); 
     }
     
     /* sanity check the footer */
-    input.read(buf, magic_len);  
     char footer_magic[32];
-    strcpy(footer_magic, buf);
+    input.read(footer_magic, magic_len);
+    footer_magic[magic_len] = '\0';
+
     if(strcmp(header_magic, footer_magic) != 0) {
         return magic_incompatible;
     }
-       
+
+    (*result_out) = result; 
     return read_okay; 
 }

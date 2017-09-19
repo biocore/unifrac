@@ -48,13 +48,57 @@ void SUITE_END() {
 //    SUITE_END();
 //}
 //
-void test_write_partial_mat() {
-    SUITE_START("test write partial_mat_t");
-    SUITE_END();
-}
+void test_read_write_partial_mat() {
+    SUITE_START("test read/write partial_mat_t");
 
-void test_read_partial_mat() {
-    SUITE_START("test read partial_mat_t");
+    partial_mat_t pm;
+    pm.n_samples = 5;
+    pm.sample_ids = (char**)malloc(sizeof(char*) * 5);
+    pm.sample_ids[0] = (char*)malloc(sizeof(char) * 2);
+    pm.sample_ids[0][0] = 'A'; pm.sample_ids[0][1] = '\0';
+    pm.sample_ids[1] = (char*)malloc(sizeof(char) * 2);
+    pm.sample_ids[1][0] = 'B'; pm.sample_ids[1][1] = '\0';
+    pm.sample_ids[2] = (char*)malloc(sizeof(char) * 3);
+    pm.sample_ids[2][0] = 'C'; pm.sample_ids[2][1] = 'x'; pm.sample_ids[2][2] = '\0';
+    pm.sample_ids[3] = (char*)malloc(sizeof(char) * 2);
+    pm.sample_ids[3][0] = 'D'; pm.sample_ids[3][1] = '\0';
+    pm.sample_ids[4] = (char*)malloc(sizeof(char) * 2);
+    pm.sample_ids[4][0] = 'E'; pm.sample_ids[4][1] = '\0';
+
+    pm.stripes = (double**)malloc(sizeof(double*) * 3);
+    pm.stripes[0] = (double*)malloc(sizeof(double) * 5);
+    pm.stripes[0][0] = 1; pm.stripes[0][1] = 2; pm.stripes[0][2] = 3; pm.stripes[0][3] = 4; pm.stripes[0][4] = 5;
+    pm.stripes[1] = (double*)malloc(sizeof(double) * 5);
+    pm.stripes[1][0] = 6; pm.stripes[1][1] = 7; pm.stripes[1][2] = 8; pm.stripes[1][3] = 9; pm.stripes[1][4] = 10;
+    pm.stripes[2] = (double*)malloc(sizeof(double) * 5);
+    pm.stripes[2][0] = 11; pm.stripes[2][1] = 12; pm.stripes[2][2] = 13; pm.stripes[2][3] = 14; pm.stripes[2][4] = 15;
+    pm.stripe_start = 0;
+    pm.stripe_stop = 3;
+    pm.stripe_total = 3;
+    pm.is_upper_triangle = true;
+    
+    io_status err = write_partial("/tmp/ssu_io.dat", &pm);
+    ASSERT(err == write_okay);
+
+    partial_mat_t *obs = NULL;
+    err = read_partial("/tmp/ssu_io.dat", &obs);
+    
+    ASSERT(err == read_okay);
+    ASSERT(obs->n_samples == 5);
+    ASSERT(obs->stripe_start == 0);
+    ASSERT(obs->stripe_stop == 3);
+    ASSERT(obs->stripe_total == 3);
+    ASSERT(strcmp(obs->sample_ids[0], "A") == 0);
+    ASSERT(strcmp(obs->sample_ids[1], "B") == 0);
+    ASSERT(strcmp(obs->sample_ids[2], "Cx") == 0);
+    ASSERT(strcmp(obs->sample_ids[3], "D") == 0);
+    ASSERT(strcmp(obs->sample_ids[4], "E") == 0);
+
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 5; j++) {
+            ASSERT(obs->stripes[i][j] == ((i * 5) + j + 1));
+        }
+    }
     SUITE_END();
 }
 
@@ -68,8 +112,7 @@ int main(int argc, char** argv) {
 
     //test_write_mat();
     //test_read_mat();
-    test_write_partial_mat();
-    test_read_partial_mat();
+    test_read_write_partial_mat();
     //test_merge_partial_mat();
 
     printf("\n");
