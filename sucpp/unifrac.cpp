@@ -254,6 +254,9 @@ void su::unifrac(biom &table,
 	if(task_p->tid == 0) {
         if (signal(SIGUSR1, sig_handler) == SIG_ERR)
             fprintf(stderr, "Can't catch SIGUSR1\n");
+        
+        report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+        pthread_mutex_init(&printf_mutex, NULL);
     }
 
     void (*func)(std::vector<double*>&,  // dm_stripes
@@ -369,6 +372,7 @@ void su::unifrac(biom &table,
     }
     
     free(embedded_proportions);
+    free(report_status);
 }
 
 void su::unifrac_vaw(biom &table,
@@ -394,6 +398,9 @@ void su::unifrac_vaw(biom &table,
 	if(task_p->tid == 0) {
         if (signal(SIGUSR1, sig_handler) == SIG_ERR)
             fprintf(stderr, "Can't catch SIGUSR1\n");
+        
+        report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+        pthread_mutex_init(&printf_mutex, NULL);
     }
 
     void (*func)(std::vector<double*>&,  // dm_stripes
@@ -477,7 +484,9 @@ void su::unifrac_vaw(biom &table,
     free(embedded_proportions);
     free(embedded_counts);
     free(sample_total_counts);
+    free(report_status);
 }
+
 void su::set_proportions(double* props, 
                          BPTree &tree, 
                          uint32_t node, 
@@ -542,12 +551,6 @@ void su::process_stripes(biom &table,
                          std::vector<std::thread> &threads,
                          std::vector<su::task_parameters> &tasks) {
 
-    // for thread status reporting, and safe multithreaded output to console
-    if(report_status != NULL)
-        free(report_status);
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
-    pthread_mutex_init(&printf_mutex, NULL);
-
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             threads[tid] = std::thread(su::unifrac_vaw, 
@@ -570,5 +573,4 @@ void su::process_stripes(biom &table,
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid].join();
     }
-    free(report_status);
 }
