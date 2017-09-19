@@ -44,7 +44,7 @@ install:
   - pushd sucpp; make test; make main; make api; make capi_test; popd 
 script:
   - ulimit -c unlimited -S
-  - pushd sucpp; ./test_su; popd
+  - pushd sucpp; ./test_su; ./test_api; popd
   - nosetests
   - flake8 q2_state_unifrac setup.py
   - q2lint

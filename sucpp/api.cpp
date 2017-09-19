@@ -82,6 +82,21 @@ void initialize_mat(mat_t* &result, biom &table, bool is_upper_triangle) {
     }
 }
 
+void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_samples, bool is_upper_triangle) {
+    result = (mat_t*)malloc(sizeof(mat));
+    result->n_samples = n_samples;
+    
+    result->cf_size = su::comb_2(n_samples); 
+    result->is_upper_triangle = is_upper_triangle;
+    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
+    result->condensed_form = (double*)malloc(sizeof(double) * su::comb_2(n_samples));
+
+    for(unsigned int i = 0; i < n_samples; i++) {
+        // adopt the IDs
+        result->sample_ids[i] = sample_ids[i]; 
+        sample_ids[i] = NULL;
+    }
+}
 
 void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<double*> &dm_stripes, unsigned int stripe_start, unsigned int stripe_stop, bool is_upper_triangle) {
     result = (partial_mat_t*)malloc(sizeof(partial_mat));
@@ -118,13 +133,19 @@ void destroy_mat(mat_t** result) {
 
 void destroy_partial_mat(partial_mat_t** result) {
     for(unsigned int i = 0; i < (*result)->n_samples; i++) {
-        free((*result)->sample_ids[i]);
+        if((*result)->sample_ids[i] != NULL)
+            free((*result)->sample_ids[i]);
     };
-    free((*result)->sample_ids);
+    if((*result)->sample_ids != NULL)
+        free((*result)->sample_ids);
 
     unsigned int n_stripes = (*result)->stripe_stop - (*result)->stripe_start;
     for(unsigned int i = 0; i < n_stripes; i++)
-        free((*result)->stripes[i]);
+        if((*result)->stripes[i] != NULL)
+            free((*result)->stripes[i]);
+    if((*result)->stripes != NULL)
+        free((*result)->stripes);
+
     free(*result);
 }
 
@@ -387,3 +408,85 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     (*result_out) = result; 
     return read_okay; 
 }
+
+MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result) {
+    if(n_partials <= 0) {
+        fprintf(stderr, "Zero or less partials.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // sanity check
+    int n_samples = partial_mats[0]->n_samples;
+    bool *stripe_map = (bool*)calloc(sizeof(bool), partial_mats[0]->stripe_total);
+    int stripe_count = 0;
+
+    for(int i = 0; i < n_partials; i++) {
+        if(partial_mats[i]->n_samples != n_samples) {
+            free(stripe_map);
+            return partials_mismatch;
+        }
+
+        if(partial_mats[0]->stripe_total != partial_mats[i]->stripe_total) {
+            free(stripe_map);
+            return partials_mismatch;
+        }
+        if(partial_mats[0]->is_upper_triangle != partial_mats[i]->is_upper_triangle) {
+            free(stripe_map);
+            return square_mismatch;
+        }
+        for(int j = 0; j < n_samples; j++) {
+            if(strcmp(partial_mats[0]->sample_ids[j], partial_mats[i]->sample_ids[j]) != 0) {
+                free(stripe_map);
+                return sample_id_consistency;
+            }
+        }
+        for(int j = partial_mats[i]->stripe_start; j < partial_mats[i]->stripe_stop; j++) {
+            if(stripe_map[j]) {
+                free(stripe_map);
+                return stripes_overlap;
+            }
+            stripe_map[j] = true;
+            stripe_count += 1;
+        }
+    }
+    free(stripe_map);
+
+    if(stripe_count != partial_mats[0]->stripe_total)
+        return incomplete_stripe_set;
+
+    std::vector<double*> stripes(partial_mats[0]->stripe_total);
+    std::vector<double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
+
+    for(int i = 0; i < n_partials; i++) {
+        for(int j = partial_mats[i]->stripe_start; j < partial_mats[i]->stripe_stop; j++) {
+            // as this is potentially a large amount of memory, don't copy, just adopt
+            stripes[j] = partial_mats[i]->stripes[j];
+            partial_mats[i]->stripes[j] = NULL;
+        }
+    }
+
+    std::vector<su::task_parameters> tasks(nthreads);
+    std::vector<std::thread> threads(nthreads);
+    set_tasks(tasks, 0.0, n_samples, 0, 0, nthreads);
+
+    initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
+    
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid] = std::thread(su::stripes_to_condensed_form, 
+                                   std::ref(stripes), 
+                                   n_samples,
+                                   std::ref((*result)->condensed_form),
+                                   tasks[tid].start,
+                                   tasks[tid].stop);
+    } 
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        threads[tid].join();
+    }
+
+    destroy_stripes(stripes, stripes_totals, n_samples, 0, 0);
+    for(int i = 0; i < n_partials; i++)
+        destroy_partial_mat(&partial_mats[i]);
+
+    return merge_okay;
+}
+

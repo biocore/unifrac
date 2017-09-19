@@ -14,7 +14,7 @@
 
 typedef enum compute_status {okay, tree_missing, table_missing, unknown_method} ComputeStatus;
 typedef enum io_status {read_okay, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
-typedef enum merge_status {merge_okay, incomplete_stripe_set, sample_id_consistency, square_mismatch} MergeStatus; 
+typedef enum merge_status {merge_okay, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus; 
 
 /* a result matrix
  *
@@ -194,6 +194,7 @@ EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
 /* Merge partial results
  *
  * results <partial_mat_t**> an array of partial_mat_t*
+ * n_partials <int> number of partial mats
  * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
  * The following error codes are returned:
@@ -203,7 +204,7 @@ EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-/////EXTERN MergeStatus merge_partial(const partial_mat_t** partial_mats, mat_t** result);
+EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result);
 
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
