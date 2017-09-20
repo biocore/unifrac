@@ -17,6 +17,7 @@ void usage() {
     std::cout << "    -o\t\tThe output distance matrix." << std::endl;
     std::cout << "    -n\t\t[OPTIONAL] The number of threads, default is 1." << std::endl;
     std::cout << "    -a\t\t[OPTIONAL] Generalized UniFrac alpha, default is 1." << std::endl;
+    std::cout << "    -f\t\t[OPTIONAL] Bypass tips, reduces compute by about 50%." << std::endl;
     std::cout << "    --vaw\t[OPTIONAL] Variance adjusted, default is to not adjust for variance." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
@@ -29,6 +30,14 @@ void usage() {
     std::cout << "        Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342" << std::endl;
     std::cout << "    For Variance Adjusted UniFrac, please see: " << std::endl;
     std::cout << "        Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Runtime progress can be obtained by issuing a SIGUSR1 signal. If running with " << std::endl;
+    std::cout << "multiple threads, this signal will only be honored if issued to the master PID. " << std::endl;
+    std::cout << "The report will yield the following information: " << std::endl;
+    std::cout << std::endl;
+    std::cout << "tid:<thread ID> k:<postorder node index> total:<number of nodes>" << std::endl;
+    std::cout << std::endl;
+    std::cout << "The proportion of the tree that has been evaluated can be determined from (k / total)." << std::endl;
     std::cout << std::endl;
 }
 
@@ -96,7 +105,9 @@ int main(int argc, char **argv){
     }
     
     bool vaw = input.cmdOptionExists("--vaw"); 
+    bool bypass_tips = input.cmdOptionExists("-f");
     double g_unifrac_alpha;
+
     if(gunifrac_arg.empty()) {
         g_unifrac_alpha = 1.0;
     } else {
@@ -106,7 +117,7 @@ int main(int argc, char **argv){
     mat_t *result = NULL;
     compute_status status;
     status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                     vaw, g_unifrac_alpha, nthreads, &result);
+                     vaw, g_unifrac_alpha, bypass_tips, nthreads, &result);
     if(status != okay || result == NULL) {
         fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);

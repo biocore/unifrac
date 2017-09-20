@@ -114,6 +114,7 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
                unsigned int n_samples,
                unsigned int stripe_start, 
                unsigned int stripe_stop, 
+               bool bypass_tips,
                unsigned int nthreads) {
 
     // compute from start to the max possible stripe if stop doesn't make sense
@@ -137,6 +138,7 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
     for(unsigned int tid = 0; tid < nthreads; tid++) {
         tasks[tid].tid = tid;
         tasks[tid].start = start; // stripe start
+        tasks[tid].bypass_tips = bypass_tips;
 
         if(tid < n_fullbins) {
             tasks[tid].stop = start + fullchunk;  // stripe end 
@@ -152,7 +154,7 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
 }
 
 compute_status partial(const char* biom_filename, const char* tree_filename, 
-                       const char* unifrac_method, bool variance_adjust, double alpha,
+                       const char* unifrac_method, bool variance_adjust, double alpha, bool bypass_tips,
                        unsigned int nthreads, unsigned int stripe_start, unsigned int stripe_stop,
                        partial_mat_t** result) {
 
@@ -171,7 +173,7 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes(stripe_stop); 
     std::vector<double*> dm_stripes_total(stripe_stop);
 
-    set_tasks(tasks, alpha, table.n_samples, stripe_start, stripe_stop, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, stripe_start, stripe_stop, bypass_tips, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_partial_mat(*result, table, dm_stripes, stripe_start, stripe_stop);
@@ -183,7 +185,7 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
 
 compute_status one_off(const char* biom_filename, const char* tree_filename, 
                        const char* unifrac_method, bool variance_adjust, double alpha,
-                       unsigned int nthreads, mat_t** result) {
+                       bool bypass_tips, unsigned int nthreads, mat_t** result) {
 
     CHECK_FILE(biom_filename, table_missing)
     CHECK_FILE(tree_filename, tree_missing)
@@ -200,7 +202,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes(comb_2(table.n_samples)); 
     std::vector<double*> dm_stripes_total(comb_2(table.n_samples));
 
-    set_tasks(tasks, alpha, table.n_samples, 0, 0, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, 0, 0, bypass_tips, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_mat(*result, table);

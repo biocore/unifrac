@@ -32,7 +32,7 @@ class UnifracAPITests(unittest.TestCase):
         t1 = self.get_data_path('t1.newick')
         e1 = self.get_data_path('e1.biom')
 
-        result = ssu(e1, t1, 'unweighted', False, 1.0, 1)
+        result = ssu(e1, t1, 'unweighted', False, 1.0, False, 1)
 
         u1_distances = np.array([[0, 10/16., 8/13.],
                                  [10/16., 0, 8/17.],
@@ -44,19 +44,19 @@ class UnifracAPITests(unittest.TestCase):
     def test_ssu_bad_tree(self):
         e1 = self.get_data_path('e1.biom')
         with self.assertRaisesRegex(IOError, "Tree file not found."):
-            ssu(e1, 'bad-file', 'unweighted', False, 1.0, 1)
+            ssu(e1, 'bad-file', 'unweighted', False, 1.0, False, 1)
 
     def test_ssu_bad_table(self):
         t1 = self.get_data_path('t1.newick')
         with self.assertRaisesRegex(IOError, "Table file not found."):
-            ssu('bad-file', t1, 'unweighted', False, 1.0, 1)
+            ssu('bad-file', t1, 'unweighted', False, 1.0, False, 1)
 
     def test_ssu_bad_method(self):
         t1 = self.get_data_path('t1.newick')
         e1 = self.get_data_path('e1.biom')
 
         with self.assertRaisesRegex(ValueError, "Unknown method."):
-            ssu(e1, t1, 'unweightedfoo', False, 1.0, 1)
+            ssu(e1, t1, 'unweightedfoo', False, 1.0, False, 1)
 
 
 class EdgeCasesTests(unittest.TestCase):
@@ -87,7 +87,7 @@ class EdgeCasesTests(unittest.TestCase):
         tree.write(tr)
 
         # return value is a distance matrix, get the distance from u->v
-        return ssu(ta, tr, method, False, 1.0, 1)['u', 'v']
+        return ssu(ta, tr, method, False, 1.0, False, 1)['u', 'v']
 
     def weighted_unifrac(self, u_counts, v_counts, otu_ids, tree,
                          normalized=False):
