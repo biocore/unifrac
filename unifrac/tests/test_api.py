@@ -42,7 +42,7 @@ class UnifracAPITests(unittest.TestCase):
         exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
                                              ids=ids, otu_ids=otu_ids,
                                              tree=tree_inmem)
-        obs = ssu(table, tree, 'unweighted', False, 1.0, 1)
+        obs = ssu(table, tree, 'unweighted', False, 1.0, False, 1)
         npt.assert_almost_equal(obs.data, exp.data)
 
     def test_meta_unifrac(self):
