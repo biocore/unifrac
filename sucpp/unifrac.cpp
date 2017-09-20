@@ -12,7 +12,7 @@
 static pthread_mutex_t printf_mutex;
 
 int sync_printf(const char *format, ...) {
-	// https://stackoverflow.com/a/23587285/19741
+    // https://stackoverflow.com/a/23587285/19741
     va_list args;
     va_start(args, format);
 
@@ -251,7 +251,7 @@ void su::unifrac(biom &table,
 
     // register a signal handler so we can ask the master thread for its
     // progress
-	if(task_p->tid == 0) {
+    if(task_p->tid == 0) {
         if (signal(SIGUSR1, sig_handler) == SIG_ERR)
             fprintf(stderr, "Can't catch SIGUSR1\n");
         
@@ -357,7 +357,7 @@ void su::unifrac(biom &table,
          */
         func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
 
-		if(__builtin_expect(report_status[task_p->tid], false)) {
+        if(__builtin_expect(report_status[task_p->tid], false)) {
             sync_printf("tid:%d\tk:%d\ttotal:%d\n", task_p->tid, k, (tree.nparens / 2) - 1);
             report_status[task_p->tid] = false;
         }
@@ -395,7 +395,7 @@ void su::unifrac_vaw(biom &table,
 
     // register a signal handler so we can ask the master thread for its
     // progress
-	if(task_p->tid == 0) {
+    if(task_p->tid == 0) {
         if (signal(SIGUSR1, sig_handler) == SIG_ERR)
             fprintf(stderr, "Can't catch SIGUSR1\n");
         
@@ -466,7 +466,7 @@ void su::unifrac_vaw(biom &table,
         embed_proportions(embedded_counts, node_counts, task_p->n_samples);
 
         func(dm_stripes, dm_stripes_total, embedded_proportions, embedded_counts, sample_total_counts, length, task_p);
-		
+        
         if(__builtin_expect(report_status[task_p->tid], false)) {
             sync_printf("tid:%d\tk:%d\ttotal:%d\n", task_p->tid, k, (tree.nparens / 2) - 1);
             report_status[task_p->tid] = false;
