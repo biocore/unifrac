@@ -256,8 +256,7 @@ void su::unifrac(biom &table,
     initialize_embedded(embedded_proportions, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
-    // - 1 to avoid root   
-    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
+    for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
 
@@ -386,8 +385,7 @@ void su::unifrac_vaw(biom &table,
     initialize_sample_counts(sample_total_counts, task_p, table);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
-    // - 1 to avoid root   
-    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
+    for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
 
