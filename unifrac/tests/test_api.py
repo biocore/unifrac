@@ -13,9 +13,10 @@ import pkg_resources
 
 import numpy as np
 import numpy.testing as npt
-from biom import Table
+from biom import Table, load_table
 from biom.util import biom_open
 from skbio import TreeNode
+import skbio.diversity
 
 from unifrac import ssu
 
@@ -27,6 +28,22 @@ class UnifracAPITests(unittest.TestCase):
         # adapted from qiime2.plugin.testing.TestPluginBase
         return pkg_resources.resource_filename(self.package,
                                                'data/%s' % filename)
+
+    def test_unweighted_root_eval_issue_46(self):
+        tree = self.get_data_path('crawford.tre')
+        table = self.get_data_path('crawford.biom')
+
+        table_inmem = load_table(table)
+        tree_inmem = skbio.TreeNode.read(tree)
+
+        ids = table_inmem.ids()
+        otu_ids = table_inmem.ids(axis='observation')
+        cnts = table_inmem.matrix_data.astype(int).toarray().T
+        exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
+                                             ids=ids, otu_ids=otu_ids,
+                                             tree=tree_inmem)
+        obs = ssu(table, tree, 'unweighted', False, 1.0, 1)
+        npt.assert_almost_equal(obs.data, exp.data)
 
     def test_meta_unifrac(self):
         t1 = self.get_data_path('t1.newick')
