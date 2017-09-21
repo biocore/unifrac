@@ -14,7 +14,9 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma -march=native -fPIC 
+ifeq ($(PREFIX),)
+	PREFIX := $(CONDA_PREFIX)
+endif
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
@@ -24,12 +26,13 @@ else
 	LDDFLAGS = -shared
 endif
 
-ifeq ($(AVX2),1)
-	CPPFLAGS += -mavx2
+ifdef $(PERFORMING_CONDA_BUILD)
+	CPPFLAGS += -mtune=generic
 else
-	CPPFLAGS += -mavx
+	CPPFLAGS += -mfma -march=native
 endif
 
+CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC 
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
