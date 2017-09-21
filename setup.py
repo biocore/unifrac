@@ -20,9 +20,7 @@ SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      'sucpp/')
 
 
-CONDA_PREFIX = os.environ.get('CONDA_PREFIX')
-if CONDA_PREFIX is None:
-    raise ValueError("Cannot build outside of a conda environment")
+PREFIX = os.environ.get('PREFIX', "")
 
 
 # https://stackoverflow.com/a/33308902/379593
@@ -55,8 +53,9 @@ class PreBuildCommand(install):
     """Pre-installation for development mode."""
     def run(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
-        self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-                       os.path.join(CONDA_PREFIX, 'lib/'))
+        if PREFIX:
+            self.copy_file(os.path.join(SUCPP, 'libssu.so'),
+                           os.path.join(PREFIX, 'lib/'))
         install.run(self)
 
 
@@ -64,10 +63,16 @@ class PreDevelopCommand(develop):
     """Pre-installation for development mode (i.e. `pip install -e ...`)."""
     def run(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
-        self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-                       os.path.join(CONDA_PREFIX, 'lib/'))
+        if PREFIX:
+            self.copy_file(os.path.join(SUCPP, 'libssu.so'),
+                           os.path.join(PREFIX, 'lib/'))
         develop.run(self)
 
+
+if sys.platform == "darwin":
+    LINK_ARGS = ['-Wl,sucpp/libssu.so']
+else:
+    LINK_ARGS = []
 
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
@@ -76,11 +81,8 @@ extensions = [Extension("unifrac._api",
                                  "sucpp/api.cpp"],
                         language="c++",
                         extra_compile_args=["-std=c++11"],
-                        extra_link_args=["-std=c++11",
-                                         '-Wl,-rpath',
-                                         '-Wl,%s/lib/libssu.so' % CONDA_PREFIX],  # noqa
+                        extra_link_args=["-std=c++11"] + LINK_ARGS,
                         include_dirs=[np.get_include()] + ['sucpp/'],
-                        library_dirs=[os.getcwd() + '/sucpp/'],
                         libraries=['ssu'])]
 
 if USE_CYTHON:
