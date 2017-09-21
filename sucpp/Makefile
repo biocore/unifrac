@@ -26,7 +26,7 @@ else
 	LDDFLAGS = -shared
 endif
 
-ifdef $(PERFORMING_CONDA_BUILD)
+ifeq ($(PERFORMING_CONDA_BUILD),True)
 	CPPFLAGS += -mtune=generic
 else
 	CPPFLAGS += -mfma -march=native
