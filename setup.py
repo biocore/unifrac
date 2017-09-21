@@ -69,10 +69,10 @@ class PreDevelopCommand(develop):
         develop.run(self)
 
 
-if PREFIX:
-    LINKERPATH = '-Wl,%s/lib/libssu.so' % PREFIX
+if sys.platform == "darwin":
+    LINK_ARGS = ['-Wl,sucpp/libssu.so']
 else:
-    LINKERPATH = '-Wl,sucpp/libssu.so'
+    LINK_ARGS = []
 
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
@@ -81,11 +81,8 @@ extensions = [Extension("unifrac._api",
                                  "sucpp/api.cpp"],
                         language="c++",
                         extra_compile_args=["-std=c++11"],
-                        extra_link_args=["-std=c++11",
-                                         '-Wl,-rpath',
-                                         LINKERPATH],  # noqa
+                        extra_link_args=["-std=c++11"] + LINK_ARGS,
                         include_dirs=[np.get_include()] + ['sucpp/'],
-                        library_dirs=[os.getcwd() + '/sucpp/'],
                         libraries=['ssu'])]
 
 if USE_CYTHON:

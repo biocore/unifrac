@@ -39,16 +39,16 @@ test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 
 main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp 
-	cp ssu ${CONDA_PREFIX}/bin/
+	cp ssu ${PREFIX}/bin/
 
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
 	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc 
-	cp libssu.so ${CONDA_PREFIX}/lib/
+	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
-	gcc -std=c99 capi_test.c -lssu -L${CONDA_PREFIX}/lib -o capi_test
-	LD_LIBRARY_PATH=${CONDA_PREFIX}/lib ./capi_test
+	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -o capi_test
+	LD_LIBRARY_PATH=${PREFIX}/lib ./capi_test
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
