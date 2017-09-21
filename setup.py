@@ -91,7 +91,7 @@ if USE_CYTHON:
 
 setup(
     name="unifrac",
-    version="0.9.0",
+    version="0.9.1",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',
