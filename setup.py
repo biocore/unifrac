@@ -65,13 +65,14 @@ class PreDevelopCommand(develop):
         self.execute(compile_ssu, [], 'Compiling SSU')
         if PREFIX:
             self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-                           os.path.join(CONDA_PREFIX, 'lib/'))
+                           os.path.join(PREFIX, 'lib/'))
         develop.run(self)
 
+
 if PREFIX:
-    LINKERPATH ='-Wl,%s/lib/libssu.so' % PREFIX
+    LINKERPATH = '-Wl,%s/lib/libssu.so' % PREFIX
 else:
-    LINKERPATH ='-Wl,sucpp/libssu.so'
+    LINKERPATH = '-Wl,sucpp/libssu.so'
 
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
