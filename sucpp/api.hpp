@@ -89,7 +89,7 @@ EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filenam
  * write_okay : no problems
  * open_error : could not open the file
  */
-////EXTERN IOStatus write_mat(const char* filename, mat_t* result);
+EXTERN IOStatus write_mat(const char* filename, mat_t* result);
 
 /* Read a matrix object
  *

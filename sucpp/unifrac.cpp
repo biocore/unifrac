@@ -250,14 +250,14 @@ void su::unifrac(biom &table,
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
     // - 1 to avoid root   
-    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
+    for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
 
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
         embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
-
+            fprintf(stderr, "%d %d %f\n", k, node, length);
         /*
          * The values in the example vectors correspond to index positions of an 
          * element in the resulting distance matrix. So, in the example below, 

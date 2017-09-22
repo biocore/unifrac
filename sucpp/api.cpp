@@ -31,7 +31,7 @@
                                                              su::biom table = su::biom(biom_filename);                              \
                                                              std::unordered_set<std::string> to_keep(table.obs_ids.begin(),         \
                                                                                                      table.obs_ids.end());          \
-                                                             su::BPTree tree_sheared = tree.shear(to_keep).collapse();
+                                                             su::BPTree tree_sheared = tree.shear(to_keep);//.collapse();
 
 using namespace su;
 using namespace std;
@@ -90,7 +90,7 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
     result->is_upper_triangle = is_upper_triangle;
     result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
     result->condensed_form = (double*)malloc(sizeof(double) * su::comb_2(n_samples));
-
+    
     for(unsigned int i = 0; i < n_samples; i++) {
         // adopt the IDs
         result->sample_ids[i] = sample_ids[i]; 
@@ -266,6 +266,36 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     return okay;
 }
 
+IOStatus write_mat(const char* output_filename, mat_t* result) {
+    std::ofstream output;
+    output.open(output_filename);
+  
+    uint32_t comb_N = su::comb_2(result->n_samples);
+    uint32_t comb_N_minus;
+    double v;
+    for(unsigned int i = 0; i < result->n_samples; i++)
+        output << "\t" << result->sample_ids[i];
+    output << std::endl;
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        output << result->sample_ids[i];
+        for(unsigned int j = 0; j < result->n_samples; j++) {
+            if(i < j) { // upper triangle
+                comb_N_minus = su::comb_2(result->n_samples - i);
+                v = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
+            } else if (i > j) { // lower triangle
+                comb_N_minus = su::comb_2(result->n_samples - j);
+                v = result->condensed_form[comb_N - comb_N_minus + (i - j - 1)];
+            } else {
+                v = 0.0;
+            }
+            output << std::setprecision(16) << "\t" << v;
+        }
+        output << std::endl;
+    }
+
+    return write_okay;
+}
+
 IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     std::ofstream output;
     output.open(output_filename, std::ios::binary);
@@ -386,7 +416,7 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
         input.read((char*)&sample_length, 2);
         result->sample_ids[i] = (char*)malloc(sizeof(char) * (sample_length + 1));
         input.read(result->sample_ids[i], sample_length);
-        result->sample_ids[i][sample_length + 1] = '\0';
+        result->sample_ids[i][sample_length] = '\0';
     }
 
     /* load stripes */
@@ -451,16 +481,17 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
     }
     free(stripe_map);
 
-    if(stripe_count != partial_mats[0]->stripe_total)
+    if(stripe_count != partial_mats[0]->stripe_total) {
         return incomplete_stripe_set;
+    }
 
     std::vector<double*> stripes(partial_mats[0]->stripe_total);
     std::vector<double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
-
     for(int i = 0; i < n_partials; i++) {
-        for(int j = partial_mats[i]->stripe_start; j < partial_mats[i]->stripe_stop; j++) {
+        int n_stripes = partial_mats[i]->stripe_stop - partial_mats[i]->stripe_start;
+        for(int j = 0; j < n_stripes; j++) {
             // as this is potentially a large amount of memory, don't copy, just adopt
-            stripes[j] = partial_mats[i]->stripes[j];
+            stripes[j + partial_mats[i]->stripe_start] = partial_mats[i]->stripes[j];
             partial_mats[i]->stripes[j] = NULL;
         }
     }
@@ -470,7 +501,6 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
     set_tasks(tasks, 0.0, n_samples, 0, 0, nthreads);
 
     initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
-    
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid] = std::thread(su::stripes_to_condensed_form, 
                                    std::ref(stripes), 

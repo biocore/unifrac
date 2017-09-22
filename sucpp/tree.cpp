@@ -110,7 +110,7 @@ BPTree BPTree::collapse() {
 
     for(uint32_t i = 0; i < this->nparens / 2; i++) {
         current = this->preorderselect(i);
-        
+
         if(this->isleaf(current)) {
             collapsemask[current] = true;
             collapsemask[this->close(current)] = true;
