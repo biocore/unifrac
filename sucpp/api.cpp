@@ -129,7 +129,7 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
     unsigned int fullchunk = ((stripe_stop - stripe_start) + nthreads - 1) / nthreads;  // this computes the ceiling
     unsigned int smallchunk = (stripe_stop - stripe_start) / nthreads;
 
-    unsigned int n_fullbins = (stripe_start - stripe_stop) % nthreads;
+    unsigned int n_fullbins = (stripe_stop - stripe_start) % nthreads;
     if(n_fullbins == 0)
         n_fullbins = nthreads;
 

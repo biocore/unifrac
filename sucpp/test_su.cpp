@@ -1130,6 +1130,15 @@ void test_set_tasks() {
         ASSERT(obs4[i].stop == exp4[i].stop);
         ASSERT(obs4[i].tid == exp4[i].tid);
     }
+    
+    // set_tasks boundary bug
+    std::vector<su::task_parameters> obs16(16);
+    std::vector<su::task_parameters> exp16(16);
+    set_tasks(obs16, 1.0, 9511, 0, 0, false, 16);
+    exp16[15].start = 4459;
+    exp16[15].stop = 4756;
+    ASSERT(obs16[15].start == exp16[15].start);
+    ASSERT(obs16[15].stop == exp16[15].stop);
     SUITE_END();
 }
 
