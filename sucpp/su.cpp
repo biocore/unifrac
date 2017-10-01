@@ -12,7 +12,8 @@
 
 void usage() {
     std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]" << std::endl;
-    std::cout << "    [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe]" << std::endl;
+    std::cout << "    [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]" << std::endl;
+    std::cout << "    [--n-partials number_of_partitions]" << std::endl;
     std::cout << std::endl;
     std::cout << "    -i\t\tThe input BIOM table." << std::endl;
     std::cout << "    -t\t\tThe input phylogeny in newick." << std::endl;
