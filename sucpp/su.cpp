@@ -13,7 +13,7 @@
 void usage() {
     std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]" << std::endl;
     std::cout << "    [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]" << std::endl;
-    std::cout << "    [--n-partials number_of_partitions]" << std::endl;
+    std::cout << "    [--n-partials number_of_partitions] [--report-bare]" << std::endl;
     std::cout << std::endl;
     std::cout << "    -i\t\tThe input BIOM table." << std::endl;
     std::cout << "    -t\t\tThe input phylogeny in newick." << std::endl;
@@ -32,6 +32,7 @@ void usage() {
     std::cout << "    --stop\t[OPTIONAL] If mode==partial, the stopping stripe." << std::endl;
     std::cout << "    --partial-pattern\t[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge." << std::endl;
     std::cout << "    --n-partials\t[OPTIONAL] If mode==partial-report, the number of partitions to compute." << std::endl;
+    std::cout << "    --report-bare\t[OPTIONAL] If mode==partial-report, produce barebones output." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
     std::cout << "    For UniFrac, please see:" << std::endl;
@@ -74,7 +75,7 @@ void err(std::string msg) {
     usage();
 }
 
-int mode_partial_report(const std::string table_filename, int npartials) {
+int mode_partial_report(const std::string table_filename, int npartials, bool bare) {
     if(table_filename.empty()) {
         err("table filename missing");
         return EXIT_FAILURE;
@@ -82,8 +83,11 @@ int mode_partial_report(const std::string table_filename, int npartials) {
 
     su::biom table = su::biom(table_filename.c_str());
     int total_stripes = (table.n_samples + 1) / 2;
-    std::cout << "Total samples: " << table.n_samples << std::endl;
-    std::cout << "Total stripes: " << total_stripes << std::endl;
+
+    if(!bare) {
+        std::cout << "Total samples: " << table.n_samples << std::endl;
+        std::cout << "Total stripes: " << total_stripes << std::endl;
+    }
 
     unsigned int fullchunk = (total_stripes + npartials - 1) / npartials;  // this computes the ceiling
     unsigned int smallchunk = total_stripes / npartials;
@@ -97,11 +101,17 @@ int mode_partial_report(const std::string table_filename, int npartials) {
     for(unsigned int p = 0; p < npartials; p++) {
         if(p < n_fullbins) {
             stop = start + fullchunk;
-            std::cout << "Partition " << p << ", suggested start and stop: " << start << ", " << stop << std::endl;
+            if(bare) 
+                std::cout << start << "\t" << stop << std::endl;
+            else
+                std::cout << "Partition " << p << ", suggested start and stop: " << start << ", " << stop << std::endl;
             start = start + fullchunk;
         } else {
             stop = start + smallchunk;  // stripe end 
-            std::cout << "Partition " << p << ", suggested start and stop: " << start << ", " << stop << std::endl;
+            if(bare) 
+                std::cout << start << "\t" << stop << std::endl;
+            else
+                std::cout << "Partition " << p << ", suggested start and stop: " << start << ", " << stop << std::endl;
             start = start + smallchunk;
         }
     }
@@ -271,6 +281,7 @@ int main(int argc, char **argv){
     const std::string &stop_arg = input.getCmdOption("--stop");
     const std::string &partial_pattern = input.getCmdOption("--partial-pattern");
     const std::string &npartials = input.getCmdOption("--n-partials");
+    const std::string &report_bare = input.getCmdOption("--report-bare");
 
     if(nthreads_arg.empty()) {
         nthreads = 1;
@@ -279,6 +290,7 @@ int main(int argc, char **argv){
     }
     
     bool vaw = input.cmdOptionExists("--vaw"); 
+    bool bare = input.cmdOptionExists("--report-bare"); 
     bool bypass_tips = input.cmdOptionExists("-f");
     double g_unifrac_alpha;
 
@@ -313,7 +325,7 @@ int main(int argc, char **argv){
     else if(mode_arg == "merge-partial")
         return mode_merge_partial(output_filename, partial_pattern, nthreads);
     else if(mode_arg == "partial-report")
-        return mode_partial_report(table_filename, n_partials);
+        return mode_partial_report(table_filename, n_partials, bare);
     else 
         err("Unknown mode. Valid options are: one-off, partial, merge-partial");
 
