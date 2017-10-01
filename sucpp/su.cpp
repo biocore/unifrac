@@ -80,6 +80,11 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
         err("table filename missing");
         return EXIT_FAILURE;
     }
+    
+    if(npartials < 1) {
+        err("--n-partials cannot be < 1");
+        exit(EXIT_FAILURE);
+    }
 
     su::biom table = su::biom(table_filename.c_str());
     int total_stripes = (table.n_samples + 1) / 2;
@@ -317,7 +322,7 @@ int main(int argc, char **argv){
         n_partials = 1;
     else
         n_partials = atoi(npartials.c_str());
-
+   
     if(mode_arg.empty() || mode_arg == "one-off")
         return mode_one_off(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads);
     else if(mode_arg == "partial")
