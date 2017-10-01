@@ -47,7 +47,7 @@ void usage() {
     std::cout << "multiple threads, this signal will only be honored if issued to the master PID. " << std::endl;
     std::cout << "The report will yield the following information: " << std::endl;
     std::cout << std::endl;
-    std::cout << "tid:<thread ID> k:<postorder node index> total:<number of nodes>" << std::endl;
+    std::cout << "tid:<thread ID> start:<starting stripe> stop:<stopping stripe> k:<postorder node index> total:<number of nodes>" << std::endl;
     std::cout << std::endl;
     std::cout << "The proportion of the tree that has been evaluated can be determined from (k / total)." << std::endl;
     std::cout << std::endl;
@@ -74,7 +74,7 @@ void err(std::string msg) {
     usage();
 }
 
-int mode_partial_report(std::string table_filename, unsigned int npartials) {
+int mode_partial_report(const std::string table_filename, int npartials) {
     if(table_filename.empty()) {
         err("table filename missing");
         return EXIT_FAILURE;
@@ -83,12 +83,12 @@ int mode_partial_report(std::string table_filename, unsigned int npartials) {
     su::biom table = su::biom(table_filename.c_str());
     std::cout << "Total samples: " << table.n_samples << std::endl;
 
-    unsigned int fullchunk = (table.n_samples + nthreads - 1) / nthreads;  // this computes the ceiling
-    unsigned int smallchunk = table.n_samples / nthreads;
+    unsigned int fullchunk = (table.n_samples + npartials - 1) / npartials;  // this computes the ceiling
+    unsigned int smallchunk = table.n_samples / npartials;
     
     unsigned int n_fullbins = table.n_samples % npartials;
     if(n_fullbins == 0)
-        n_fullbins = nthreads;
+        n_fullbins = npartials;
 
     unsigned int start = 0;
     unsigned int stop = 0;
@@ -108,6 +108,11 @@ int mode_partial_report(std::string table_filename, unsigned int npartials) {
 int mode_merge_partial(std::string output_filename,
 					   std::string partial_pattern,
 					   unsigned int nthreads) {
+    if(output_filename.empty()) {
+        err("output filename missing");
+        return EXIT_FAILURE;
+    }
+
     if(partial_pattern.empty()) {
         std::string msg("Partial file pattern missing. For instance, if your partial results\n" \
                         "are named 'ssu.unweighted.start0.partial', 'ssu.unweighted.start10.partial', \n" \
@@ -155,8 +160,13 @@ int mode_merge_partial(std::string output_filename,
 
 int mode_partial(std::string table_filename, std::string tree_filename, 
                  std::string output_filename, std::string method_string,
-                 bool vaw, double g_unifrac_alpha, unsigned int nthreads,
-                 int start_stripe, int stop_stripe) {
+                 bool vaw, double g_unifrac_alpha, bool bypass_tips, 
+                 unsigned int nthreads, int start_stripe, int stop_stripe) {
+    if(output_filename.empty()) {
+        err("output filename missing");
+        return EXIT_FAILURE;
+    }
+
     if(table_filename.empty()) {
         err("table filename missing");
         return EXIT_FAILURE;
@@ -184,7 +194,7 @@ int mode_partial(std::string table_filename, std::string tree_filename,
     partial_mat_t *result = NULL;
     compute_status status;
     status = partial(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                     vaw, g_unifrac_alpha, nthreads, start_stripe, stop_stripe, &result);
+                     vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe, &result);
     if(status != okay || result == NULL) {
         fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);
@@ -203,7 +213,12 @@ int mode_partial(std::string table_filename, std::string tree_filename,
 
 int mode_one_off(std::string table_filename, std::string tree_filename, 
                  std::string output_filename, std::string method_string,
-                 bool vaw, double g_unifrac_alpha, unsigned int nthreads) {
+                 bool vaw, double g_unifrac_alpha, bool bypass_tips,
+                 unsigned int nthreads) {
+    if(output_filename.empty()) {
+        err("output filename missing");
+        return EXIT_FAILURE;
+    }
 
     if(table_filename.empty()) {
         err("table filename missing");
@@ -223,7 +238,7 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
     mat_t *result = NULL;
     compute_status status;
     status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                     vaw, g_unifrac_alpha, nthreads, &result);
+                     vaw, g_unifrac_alpha, bypass_tips, nthreads, &result);
     if(status != okay || result == NULL) {
         fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
         exit(EXIT_FAILURE);
@@ -255,11 +270,6 @@ int main(int argc, char **argv){
     const std::string &partial_pattern = input.getCmdOption("--partial-pattern");
     const std::string &npartials = input.getCmdOption("--n-partials");
 
-    if(output_filename.empty()) {
-        err("output filename missing");
-        return EXIT_FAILURE;
-    }
-
     if(nthreads_arg.empty()) {
         nthreads = 1;
     } else {
@@ -290,18 +300,18 @@ int main(int argc, char **argv){
 
     int n_partials;
     if(npartials.empty()) 
-        n_partials = 0;
+        n_partials = 1;
     else
         n_partials = atoi(npartials.c_str());
 
     if(mode_arg.empty() || mode_arg == "one-off")
-        return mode_one_off(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, nthreads);
+        return mode_one_off(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads);
     else if(mode_arg == "partial")
-        return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, nthreads, start_stripe, stop_stripe);
+        return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
         return mode_merge_partial(output_filename, partial_pattern, nthreads);
     else if(mode_arg == "partial-report")
-        return mode_partial_report(table_filename, npartials);
+        return mode_partial_report(table_filename, n_partials);
     else 
         err("Unknown mode. Valid options are: one-off, partial, merge-partial");
 

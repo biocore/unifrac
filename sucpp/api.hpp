@@ -133,8 +133,8 @@ EXTERN IOStatus write_mat(const char* filename, mat_t* result);
 
 EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filename, 
                              const char* unifrac_method, bool variance_adjust, double alpha,
-                             unsigned int threads, unsigned int stripe_start, unsigned int stripe_stop,
-                             partial_mat_t** result);
+                             bool bypass_tips, unsigned int threads, unsigned int stripe_start, 
+                             unsigned int stripe_stop, partial_mat_t** result);
 
 /* Write a partial matrix object
  *

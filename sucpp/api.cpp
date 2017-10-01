@@ -515,7 +515,7 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
 
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
-    set_tasks(tasks, 0.0, n_samples, 0, 0, nthreads);
+    set_tasks(tasks, 0.0, n_samples, 0, 0, false, nthreads);
 
     initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
