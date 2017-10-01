@@ -253,7 +253,7 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
 
 int main(int argc, char **argv){
     InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h") || input.cmdOptionExists("--help")) {
+    if(input.cmdOptionExists("-h") || input.cmdOptionExists("--help") || argc == 1) {
         usage();
         return EXIT_SUCCESS;
     }
