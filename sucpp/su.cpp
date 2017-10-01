@@ -20,6 +20,7 @@ void usage() {
     std::cout << "    -o\t\tThe output distance matrix." << std::endl;
     std::cout << "    -n\t\t[OPTIONAL] The number of threads, default is 1." << std::endl;
     std::cout << "    -a\t\t[OPTIONAL] Generalized UniFrac alpha, default is 1." << std::endl;
+    std::cout << "    -f\t\t[OPTIONAL] Bypass tips, reduces compute by about 50%." << std::endl;
     std::cout << "    --vaw\t[OPTIONAL] Variance adjusted, default is to not adjust for variance." << std::endl;
     std::cout << "    --mode\t[OPTIONAL] Mode of operation:" << std::endl;
     std::cout << "    \t\t    one-off : [DEFAULT] compute UniFrac." << std::endl;
@@ -266,7 +267,9 @@ int main(int argc, char **argv){
     }
     
     bool vaw = input.cmdOptionExists("--vaw"); 
+    bool bypass_tips = input.cmdOptionExists("-f");
     double g_unifrac_alpha;
+
     if(gunifrac_arg.empty()) {
         g_unifrac_alpha = 1.0;
     } else {

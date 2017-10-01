@@ -65,6 +65,7 @@ void destroy_partial_mat(partial_mat_t** result);
  * unifrac_method <const char*> the requested unifrac method.
  * variance_adjust <bool> whether to apply variance adjustment.
  * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
  * threads <uint> the number of threads to use.
  * result <mat_t**> the resulting distance matrix in condensed form, this is initialized within the method so using **
  *
@@ -77,7 +78,7 @@ void destroy_partial_mat(partial_mat_t** result);
  */
 EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename, 
                              const char* unifrac_method, bool variance_adjust, double alpha,
-                             unsigned int threads, mat_t** result);
+                             bool bypass_tips, unsigned int threads, mat_t** result);
 
 /* Write a matrix object
  *
@@ -112,6 +113,7 @@ EXTERN IOStatus write_mat(const char* filename, mat_t* result);
  * unifrac_method <const char*> the requested unifrac method.
  * variance_adjust <bool> whether to apply variance adjustment.
  * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
  * threads <uint> the number of threads to use.
  * stripe_start <uint> the starting stripe to compute
  * stripe_stop <uint> the last stripe to compute
@@ -212,6 +214,7 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
                double alpha,
                unsigned int n_samples,
                unsigned int stripe_start, 
-               unsigned int stripe_stop, 
+               unsigned int stripe_stop,
+               bool bypass_tips,
                unsigned int nthreads);
 #endif

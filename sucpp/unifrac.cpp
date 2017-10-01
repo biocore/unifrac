@@ -1,12 +1,13 @@
 #include "tree.hpp"
 #include "biom.hpp"
 #include "unifrac.hpp"
+#include "affinity.hpp"
 #include <unordered_map>
 #include <cstdlib>
-#include <algorithm>
 #include <thread>
 #include <signal.h>
 #include <stdarg.h>
+#include <algorithm>
 
 static pthread_mutex_t printf_mutex;
 
@@ -234,11 +235,18 @@ void su::unifrac(biom &table,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
                  const su::task_parameters* task_p) {
+    // processor affinity
+    int err = bind_to_core(task_p->tid);
+    if(err != 0) {
+        fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
+        exit(EXIT_FAILURE);
+    }
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
         exit(EXIT_FAILURE);
     }
+
 
     void (*func)(std::vector<double*>&,  // dm_stripes
                  std::vector<double*>&,  // dm_stripes_total
@@ -289,13 +297,16 @@ void su::unifrac(biom &table,
     initialize_embedded(embedded_proportions, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
-    // - 1 to avoid root   
-    for(unsigned int k = 0; k < (tree.nparens / 2); k++) {
+    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
 
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
+
+        if(task_p->bypass_tips && tree.isleaf(node))
+            continue;
+
         embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
         /*
          * The values in the example vectors correspond to index positions of an 
@@ -366,6 +377,12 @@ void su::unifrac_vaw(biom &table,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const su::task_parameters* task_p) {
+    // processor affinity
+    int err = bind_to_core(task_p->tid);
+    if(err != 0) {
+        fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
+        exit(EXIT_FAILURE);
+    }
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
@@ -429,7 +446,6 @@ void su::unifrac_vaw(biom &table,
     initialize_sample_counts(sample_total_counts, task_p, table);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
-    // - 1 to avoid root   
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
         length = tree.lengths[node];
@@ -439,6 +455,9 @@ void su::unifrac_vaw(biom &table,
 
         set_proportions(node_proportions, tree, node, table, propstack);
         set_proportions(node_counts, tree, node, table, countstack, false);
+
+        if(task_p->bypass_tips && tree.isleaf(node))
+            continue;
 
         embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
         embed_proportions(embedded_counts, node_counts, task_p->n_samples);
@@ -527,6 +546,7 @@ void su::process_stripes(biom &table,
                          std::vector<double*> &dm_stripes_total,
                          std::vector<std::thread> &threads,
                          std::vector<su::task_parameters> &tasks) {
+
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             threads[tid] = std::thread(su::unifrac_vaw, 
