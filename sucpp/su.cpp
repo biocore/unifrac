@@ -81,12 +81,14 @@ int mode_partial_report(const std::string table_filename, int npartials) {
     }
 
     su::biom table = su::biom(table_filename.c_str());
+    int total_stripes = (table.n_samples + 1) / 2;
     std::cout << "Total samples: " << table.n_samples << std::endl;
+    std::cout << "Total stripes: " << total_stripes << std::endl;
 
-    unsigned int fullchunk = (table.n_samples + npartials - 1) / npartials;  // this computes the ceiling
-    unsigned int smallchunk = table.n_samples / npartials;
+    unsigned int fullchunk = (total_stripes + npartials - 1) / npartials;  // this computes the ceiling
+    unsigned int smallchunk = total_stripes / npartials;
     
-    unsigned int n_fullbins = table.n_samples % npartials;
+    unsigned int n_fullbins = total_stripes % npartials;
     if(n_fullbins == 0)
         n_fullbins = npartials;
 
