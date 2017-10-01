@@ -24,10 +24,12 @@ void usage() {
     std::cout << "    --mode\t[OPTIONAL] Mode of operation:" << std::endl;
     std::cout << "    \t\t    one-off : [DEFAULT] compute UniFrac." << std::endl;
     std::cout << "    \t\t    partial : Compute UniFrac over a subset of stripes." << std::endl;
+    std::cout << "    \t\t    partial-report : Start and stop suggestions for partial compute." << std::endl;
     std::cout << "    \t\t    merge-partial : Merge partial UniFrac results." << std::endl;
     std::cout << "    --start\t[OPTIONAL] If mode==partial, the starting stripe." << std::endl;
     std::cout << "    --stop\t[OPTIONAL] If mode==partial, the stopping stripe." << std::endl;
-    std::cout << "    --partial-pattern\t[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to mergee." << std::endl;
+    std::cout << "    --partial-pattern\t[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge." << std::endl;
+    std::cout << "    --n-partials\t[OPTIONAL] If mode==partial-report, the number of partitions to compute." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
     std::cout << "    For UniFrac, please see:" << std::endl;
@@ -39,6 +41,14 @@ void usage() {
     std::cout << "        Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342" << std::endl;
     std::cout << "    For Variance Adjusted UniFrac, please see: " << std::endl;
     std::cout << "        Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Runtime progress can be obtained by issuing a SIGUSR1 signal. If running with " << std::endl;
+    std::cout << "multiple threads, this signal will only be honored if issued to the master PID. " << std::endl;
+    std::cout << "The report will yield the following information: " << std::endl;
+    std::cout << std::endl;
+    std::cout << "tid:<thread ID> k:<postorder node index> total:<number of nodes>" << std::endl;
+    std::cout << std::endl;
+    std::cout << "The proportion of the tree that has been evaluated can be determined from (k / total)." << std::endl;
     std::cout << std::endl;
 }
 
@@ -62,6 +72,37 @@ void err(std::string msg) {
     std::cerr << "ERROR: " << msg << std::endl << std::endl;
     usage();
 }
+
+int mode_partial_report(std::string table_filename, unsigned int npartials) {
+    if(table_filename.empty()) {
+        err("table filename missing");
+        return EXIT_FAILURE;
+    }
+
+    su::biom table = su::biom(table_filename.c_str());
+    std::cout << "Total samples: " << table.n_samples << std::endl;
+
+    unsigned int fullchunk = (table.n_samples + nthreads - 1) / nthreads;  // this computes the ceiling
+    unsigned int smallchunk = table.n_samples / nthreads;
+    
+    unsigned int n_fullbins = table.n_samples % npartials;
+    if(n_fullbins == 0)
+        n_fullbins = nthreads;
+
+    unsigned int start = 0;
+    unsigned int stop = 0;
+    for(unsigned int p = 0; p < npartials; p++) {
+        if(p < n_fullbins) {
+            stop = start + fullchunk;
+            std::cout << "Partition " << p << ", suggested start and stop: " << start << ", " << stop << std::endl;
+            start = start + fullchunk;
+        } else {
+            stop = start + smallchunk;  // stripe end 
+            std::cout << "Partition " << p << ", suggested start and stop: " << start << ", " << stop << std::endl;
+            start = start + smallchunk;
+        }
+    }
+} 
 
 int mode_merge_partial(std::string output_filename,
 					   std::string partial_pattern,
@@ -115,13 +156,28 @@ int mode_partial(std::string table_filename, std::string tree_filename,
                  std::string output_filename, std::string method_string,
                  bool vaw, double g_unifrac_alpha, unsigned int nthreads,
                  int start_stripe, int stop_stripe) {
+    if(table_filename.empty()) {
+        err("table filename missing");
+        return EXIT_FAILURE;
+    }
+
+    if(tree_filename.empty()) {
+        err("tree filename missing");
+        return EXIT_FAILURE;
+    }
+    
+    if(method_string.empty()) {
+        err("method missing");
+        return EXIT_FAILURE;
+    }
+
     if(start_stripe < 0) {
         err("Starting stripe must be >= 0");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     if(stop_stripe <= start_stripe) {
         err("In '--mode partial', the stop and start stripes must be specified, and the stop stripe must be > start stripe");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     partial_mat_t *result = NULL;
@@ -148,6 +204,21 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
                  std::string output_filename, std::string method_string,
                  bool vaw, double g_unifrac_alpha, unsigned int nthreads) {
 
+    if(table_filename.empty()) {
+        err("table filename missing");
+        return EXIT_FAILURE;
+    }
+
+    if(tree_filename.empty()) {
+        err("tree filename missing");
+        return EXIT_FAILURE;
+    }
+    
+    if(method_string.empty()) {
+        err("method missing");
+        return EXIT_FAILURE;
+    }
+
     mat_t *result = NULL;
     compute_status status;
     status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
@@ -165,27 +236,10 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
 
 int main(int argc, char **argv){
     InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h")){
+    if(input.cmdOptionExists("-h") || input.cmdOptionExists("--help")) {
         usage();
         return EXIT_SUCCESS;
     }
-
-    if(!input.cmdOptionExists("-i")) {
-        usage();
-        return EXIT_SUCCESS;
-    } 
-    if(!input.cmdOptionExists("-t")) {
-        usage();
-        return EXIT_SUCCESS;
-    } 
-    if(!input.cmdOptionExists("-o")) {
-        usage();
-        return EXIT_SUCCESS;
-    } 
-    if(!input.cmdOptionExists("-m")) {
-        usage();
-        return EXIT_SUCCESS;
-    } 
 
     unsigned int nthreads;
     const std::string &table_filename = input.getCmdOption("-i");
@@ -198,24 +252,10 @@ int main(int argc, char **argv){
     const std::string &start_arg = input.getCmdOption("--start");
     const std::string &stop_arg = input.getCmdOption("--stop");
     const std::string &partial_pattern = input.getCmdOption("--partial-pattern");
-
-    if(table_filename.empty()) {
-        err("table filename missing");
-        return EXIT_FAILURE;
-    }
-
-    if(tree_filename.empty()) {
-        err("tree filename missing");
-        return EXIT_FAILURE;
-    }
+    const std::string &npartials = input.getCmdOption("--n-partials");
 
     if(output_filename.empty()) {
         err("output filename missing");
-        return EXIT_FAILURE;
-    }
-
-    if(method_string.empty()) {
-        err("method missing");
         return EXIT_FAILURE;
     }
 
@@ -245,12 +285,20 @@ int main(int argc, char **argv){
     else
         stop_stripe = atoi(stop_arg.c_str());
 
+    int n_partials;
+    if(npartials.empty()) 
+        n_partials = 0;
+    else
+        n_partials = atoi(npartials.c_str());
+
     if(mode_arg.empty() || mode_arg == "one-off")
         return mode_one_off(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, nthreads);
     else if(mode_arg == "partial")
         return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
         return mode_merge_partial(output_filename, partial_pattern, nthreads);
+    else if(mode_arg == "partial-report")
+        return mode_partial_report(table_filename, npartials);
     else 
         err("Unknown mode. Valid options are: one-off, partial, merge-partial");
 

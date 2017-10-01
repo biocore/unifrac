@@ -201,15 +201,20 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     SET_METHOD(unifrac_method, unknown_method)
     PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
 
-    std::vector<su::task_parameters> tasks(nthreads);
-    std::vector<std::thread> threads(nthreads);
-
     // we resize to the largest number of possible stripes even if only computing
     // partial, however we do not allocate arrays for non-computed stripes so
     // there is a little memory waste here but should be on the order of
     // 8 bytes * N samples per vector. 
     std::vector<double*> dm_stripes((table.n_samples + 1) / 2); 
     std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
+
+    if(nthreads > dm_stripes.size()) {
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
+        nthreads = dm_stripes.size();
+    }
+
+    std::vector<su::task_parameters> tasks(nthreads);
+    std::vector<std::thread> threads(nthreads);
 
     if(((table.n_samples + 1) / 2) < stripe_stop) {
         fprintf(stderr, "Stopping stripe is out-of-bounds, max %d\n", (table.n_samples + 1) / 2);
@@ -235,15 +240,20 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     SET_METHOD(unifrac_method, unknown_method)
     PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
 
-    std::vector<su::task_parameters> tasks(nthreads);
-    std::vector<std::thread> threads(nthreads);
-
     // we resize to the largest number of possible stripes even if only computing
     // partial, however we do not allocate arrays for non-computed stripes so
     // there is a little memory waste here but should be on the order of
     // 8 bytes * N samples per vector. 
     std::vector<double*> dm_stripes((table.n_samples + 1) / 2); 
     std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
+
+    if(nthreads > dm_stripes.size()) {
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
+        nthreads = dm_stripes.size();
+    }
+
+    std::vector<su::task_parameters> tasks(nthreads);
+    std::vector<std::thread> threads(nthreads);
 
     set_tasks(tasks, alpha, table.n_samples, 0, 0, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
@@ -354,7 +364,7 @@ IOStatus _is_partial_file(const char* input_filename) {
     }
 
     input.read(magic, magic_len);
-    if(strcmp(magic, PARTIAL_MAGIC) != 0) {
+    if(strncmp(magic, PARTIAL_MAGIC, magic_len) != 0) {
         return magic_incompatible;
     }
     
@@ -494,6 +504,11 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
             stripes[j + partial_mats[i]->stripe_start] = partial_mats[i]->stripes[j];
             partial_mats[i]->stripes[j] = NULL;
         }
+    }
+
+    if(nthreads > stripes.size()) {
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
+        nthreads = stripes.size();
     }
 
     std::vector<su::task_parameters> tasks(nthreads);
