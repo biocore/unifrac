@@ -464,7 +464,7 @@ void su::unifrac_vaw(biom &table,
 
         func(dm_stripes, dm_stripes_total, embedded_proportions, embedded_counts, sample_total_counts, length, task_p);
         
-		if(__builtin_expect(report_status[task_p->tid], false)) {
+        if(__builtin_expect(report_status[task_p->tid], false)) {
             sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
             report_status[task_p->tid] = false;
         }

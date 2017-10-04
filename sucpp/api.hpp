@@ -151,7 +151,8 @@ EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filenam
  * just used to improve readability here, and are denoted by ### marks.
  *
  * ### HEADER ###
- * <MAGIC>              : 14 bytes, char, e.g., SSU-PARTIAL-01
+ * <MAGIC_LEN>          : uint16_t, the length of the magic
+ * <MAGIC>              : char, e.g., SSU-PARTIAL-01
  * <N_SAMPLES>          : uint32_t, the number of samples
  * <N_STRIPES>          : uint32_t, the number of stripes represented in this file
  * <STRIPE_START>       : uint32_t, the starting stripe number
@@ -174,7 +175,7 @@ EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filenam
  * <STRIPE[SS + NS][N]> : double, the last value in the Kth stripe
  *
  * ### FOOTER ###
- * <MAGIC>              : 14 bytes, char, e.g., SSU-PARTIAL-01, same as starting magic
+ * <MAGIC>              : char, e.g., SSU-PARTIAL-01, same as starting magic
  */
 EXTERN IOStatus write_partial(const char* filename, partial_mat_t* result);
 

@@ -123,8 +123,8 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
 } 
 
 int mode_merge_partial(std::string output_filename,
-					   std::string partial_pattern,
-					   unsigned int nthreads) {
+                       std::string partial_pattern,
+                       unsigned int nthreads) {
     if(output_filename.empty()) {
         err("output filename missing");
         return EXIT_FAILURE;

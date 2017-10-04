@@ -31,7 +31,7 @@
                                                              su::biom table = su::biom(biom_filename);                              \
                                                              std::unordered_set<std::string> to_keep(table.obs_ids.begin(),         \
                                                                                                      table.obs_ids.end());          \
-                                                             su::BPTree tree_sheared = tree.shear(to_keep);//.collapse();
+                                                             su::BPTree tree_sheared = tree.shear(to_keep).collapse();
 
 using namespace su;
 using namespace std;
