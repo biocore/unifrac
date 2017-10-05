@@ -5,7 +5,38 @@
 #include <unordered_map>
 #include <cstdlib>
 #include <thread>
+#include <signal.h>
+#include <stdarg.h>
 #include <algorithm>
+
+static pthread_mutex_t printf_mutex;
+
+int sync_printf(const char *format, ...) {
+    // https://stackoverflow.com/a/23587285/19741
+    va_list args;
+    va_start(args, format);
+
+    pthread_mutex_lock(&printf_mutex);
+    vprintf(format, args);
+    pthread_mutex_unlock(&printf_mutex);
+
+    va_end(args);
+}
+
+static bool* report_status;
+
+void sig_handler(int signo) {
+    // http://www.thegeekstuff.com/2012/03/catch-signals-sample-c-code
+    if (signo == SIGUSR1) {
+        if(report_status == NULL)
+            fprintf(stderr, "Cannot report status.\n"); 
+        else {
+            for(int i = 0; i < CPU_SETSIZE; i++) {
+                report_status[i] = true;
+            }
+        }
+    }
+}
 
 using namespace su;
 
@@ -241,6 +272,16 @@ void su::unifrac(biom &table,
             break;
     }
 
+    // register a signal handler so we can ask the master thread for its
+    // progress
+    if(task_p->tid == 0) {
+        if (signal(SIGUSR1, sig_handler) == SIG_ERR)
+            fprintf(stderr, "Can't catch SIGUSR1\n");
+        
+        report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+        pthread_mutex_init(&printf_mutex, NULL);
+    }
+
     if(func == NULL) {
         fprintf(stderr, "Unknown unifrac task\n");
         exit(1);
@@ -267,7 +308,6 @@ void su::unifrac(biom &table,
             continue;
 
         embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
-
         /*
          * The values in the example vectors correspond to index positions of an 
          * element in the resulting distance matrix. So, in the example below, 
@@ -313,6 +353,11 @@ void su::unifrac(biom &table,
          * (see C) but that is small over large N.  
          */
         func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
+
+        if(__builtin_expect(report_status[task_p->tid], false)) {
+            sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
+            report_status[task_p->tid] = false;
+        }        
     }
     
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
@@ -369,10 +414,22 @@ void su::unifrac_vaw(biom &table,
             func = NULL;
             break;
     }
+
+    // register a signal handler so we can ask the master thread for its
+    // progress
+    if(task_p->tid == 0) {
+        if (signal(SIGUSR1, sig_handler) == SIG_ERR)
+            fprintf(stderr, "Can't catch SIGUSR1\n");
+        
+        report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+        pthread_mutex_init(&printf_mutex, NULL);
+    }
+
     if(func == NULL) {
         fprintf(stderr, "Unknown unifrac task\n");
         exit(1);
     }
+
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
 
@@ -406,6 +463,11 @@ void su::unifrac_vaw(biom &table,
         embed_proportions(embedded_counts, node_counts, task_p->n_samples);
 
         func(dm_stripes, dm_stripes_total, embedded_proportions, embedded_counts, sample_total_counts, length, task_p);
+        
+        if(__builtin_expect(report_status[task_p->tid], false)) {
+            sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
+            report_status[task_p->tid] = false;
+        }
     }
     
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
@@ -506,5 +568,9 @@ void su::process_stripes(biom &table,
 
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid].join();
+    }
+
+	if(report_status != NULL) {
+		free(report_status);
     }
 }
