@@ -48,3 +48,6 @@ script:
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
+  # santiy test io
+  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o test.dm -m unweighted -n 2
+  - python -c "import skbio; dm = skbio.read('test.dm')"
