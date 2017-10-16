@@ -50,3 +50,4 @@ script:
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
+  - ./sucpp/R_interface rapi_test.R
