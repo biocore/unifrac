@@ -1,14 +1,16 @@
 # R interface for Strided State Unifrac
 
 This provides an R interface for Unweighted Unifrac. This interface works using
-R's Rcpp library. To load this, in R use `library(Rcpp)` and 
-`sourceCpp("su_R.cpp")`. The unifrac method takes in three arguments, a biom
-table, and tree and the number of threads to be used. The method returns a list
-containing an `int` `n_samples`, denoting the number of samples in the table, 
-a `boolean` `is_sqaure`, denoting whether Unifrac generated a square matrix, 
-an `int` `cf_size`, denoting the size of the condensed form of the matrix, 
-and `c_form`, an array representation of the condensed form of the matrix,
-obtained by taking the upper triangle. 
+R's Rcpp library. To load this, in R use `library(Rcpp)` and
+`sourceCpp("su_R.cpp")`. The Unifrac method takes in three arguments: a file
+path to an HDF5 formatted BIOM table, a filepath to a newick formatted tree
+file, and the number of threads to be used It is expected that the observations
+described in the BIOM table correspond to a subset of the tips of the input
+tree.. The method returns a list containing an `int` `n_samples`, denoting the
+number of samples in the table, a `boolean` `is_sqaure`, denoting whether
+Unifrac generated a square matrix, an `int` `cf_size`, denoting the size of the
+condensed form of the matrix, and `c_form`, an array representation of the
+condensed form of the matrix, obtained by taking the upper triangle.
 
 ```R
 > library(Rcpp)
