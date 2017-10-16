@@ -7,7 +7,9 @@ addons:
       - apport
       - libhdf5-serial-dev
 
-language: python
+language: 
+  - python
+  - r
 
 compiler:
   - gcc
