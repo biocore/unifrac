@@ -43,7 +43,7 @@ install:
      else
         pip install . || travis_terminate 1;
      fi'
-  - pushd sucpp; make test; make main; make api; make capi_test; popd 
+  - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
 script:
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; popd
