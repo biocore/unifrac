@@ -13,7 +13,7 @@ exp = c(0.2000000, 0.5714286, 0.6000000, 0.5000000, 0.2000000,
 
 checkEquals(unif["n_samples"][[1]], 6)
 checkEquals(unif["cf_size"][[1]], 15)
-checkTrue(unif["is_sqaure"][[1]])
+checkTrue(unif["is_upper_triangle"][[1]])
 
 print("testing values of c_form")
 for ( i in 1:15){

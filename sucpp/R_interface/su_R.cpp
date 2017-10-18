@@ -12,7 +12,7 @@ Rcpp::List unifrac(const char* table, const char* tree, int nthreads){
     mat_t* result = NULL;
     const char* method = "unweighted";
     ComputeStatus status;
-    status = one_off(table, tree, method, false, 1.0, nthreads, &result);
+    status = one_off(table, tree, method, false, 1.0, false, nthreads, &result);
     vector<double> cf;
     //push result->condensed_form into a vector becuase R doesn't like double*
     for(int i=0; i<result->cf_size; i++){
@@ -20,7 +20,7 @@ Rcpp::List unifrac(const char* table, const char* tree, int nthreads){
     }
 
     return Rcpp::List::create(Rcpp::Named("n_samples") = result->n_samples,
-                              Rcpp::Named("is_sqaure") = result->is_square,
+                              Rcpp::Named("is_upper_triangle") = result->is_upper_triangle,
                               Rcpp::Named("cf_size") = result->cf_size,
                               Rcpp::Named("c_form") = cf);
 
