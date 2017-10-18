@@ -11,6 +11,7 @@
          * start <uint> the first stride to process
          * stop <uint> the last stride to process
          * tid <uint> the thread identifier
+         * bypass_tips <bool> ignore tips on compute, reduces compute by ~50%
          * g_unifrac_alpha <double> an alpha value for generalized unifrac
          */
         struct task_parameters {
@@ -18,6 +19,7 @@
            unsigned int start;          // starting stripe
            unsigned int stop;           // stopping stripe
            unsigned int tid;            // thread ID
+           bool bypass_tips = false;    // avoid compute at tips
            
            // task specific arguments below
            double g_unifrac_alpha;      // generalized unifrac alpha

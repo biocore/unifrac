@@ -14,7 +14,9 @@ else
 	endif
 endif
 
-CPPFLAGS = -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -mfma -march=native -fPIC 
+ifeq ($(PREFIX),)
+	PREFIX := $(CONDA_PREFIX)
+endif
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
@@ -24,18 +26,21 @@ else
 	LDDFLAGS = -shared
 endif
 
-ifeq ($(AVX2),1)
-	CPPFLAGS += -mavx2
+ifeq ($(PERFORMING_CONDA_BUILD),True)
+	CPPFLAGS += -mtune=generic
 else
-	CPPFLAGS += -mavx
+	CPPFLAGS += -mfma -march=native
 endif
 
+CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC 
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
+	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o unifrac_task.o api.o
 
 main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp 
+	cp ssu ${PREFIX}/bin/
 
 rapi_test: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	mkdir -p ~/.R
@@ -51,12 +56,12 @@ rapi_test: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc 
-	cp libssu.so ${CONDA_PREFIX}/lib/
+	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
+	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
-	gcc -std=c99 capi_test.c -lssu -L${CONDA_PREFIX}/lib -o capi_test
-	LD_LIBRARY_PATH=${CONDA_PREFIX}/lib ./capi_test
+	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -o capi_test
+	LD_LIBRARY_PATH=${PREFIX}/lib ./capi_test
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@

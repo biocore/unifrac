@@ -4,7 +4,7 @@ cimport numpy as np
 
 def ssu(str biom_filename, str tree_filename, 
         str unifrac_method, bool variance_adjust, double alpha,
-        unsigned int threads):
+        bool bypass_tips, unsigned int threads):
     """Execute a call to Strided State UniFrac via the direct API
 
     Parameters
@@ -20,7 +20,10 @@ def ssu(str biom_filename, str tree_filename,
         Whether to perform Variance Adjusted UniFrac
     alpha : float
         The value of alpha for Generalized UniFrac; only applies to
-        Generalized UniFrac
+        Generalized UniFraca
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
     threads : int
         The number of threads to use.
 
@@ -62,7 +65,8 @@ def ssu(str biom_filename, str tree_filename,
                      tree_c_string, 
                      met_c_string, 
                      variance_adjust, 
-                     alpha, 
+                     alpha,
+                     bypass_tips,
                      threads, 
                      &result)
 

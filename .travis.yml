@@ -46,8 +46,12 @@ install:
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
 script:
   - ulimit -c unlimited -S
-  - pushd sucpp; ./test_su; popd
+  - pushd sucpp; ./test_su; ./test_api; popd
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
   - ./sucpp/R_interface rapi_test.R
+  # santiy test io
+  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o test.dm -m unweighted -n 2
+  - python -c "import skbio; dm = skbio.DistanceMatrix.read('test.dm')"
+

@@ -50,7 +50,8 @@ def _validate(table, phylogeny):
 def unweighted(table: str,
                phylogeny: str,
                threads: int=1,
-               variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+               variance_adjusted: bool=False,
+               bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute Unweighted UniFrac
 
     Parameters
@@ -63,6 +64,9 @@ def unweighted(table: str,
         The number of threads to use. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -96,13 +100,14 @@ def unweighted(table: str,
     """
     _validate(table, phylogeny)
     return qsu.ssu(table, phylogeny, 'unweighted',
-                   variance_adjusted, 1.0, threads)
+                   variance_adjusted, 1.0, bypass_tips, threads)
 
 
 def weighted_normalized(table: str,
                         phylogeny: str,
                         threads: int=1,
-                        variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+                        variance_adjusted: bool=False,
+                        bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute weighted normalized UniFrac
 
     Parameters
@@ -115,6 +120,9 @@ def weighted_normalized(table: str,
         The number of threads to use. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -146,13 +154,14 @@ def weighted_normalized(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
-                   variance_adjusted, 1.0, threads)
+                   variance_adjusted, 1.0, bypass_tips, threads)
 
 
 def weighted_unnormalized(table: str,
                           phylogeny: str,
                           threads: int=1,
-                          variance_adjusted: bool=False) -> skbio.DistanceMatrix:  # noqa
+                          variance_adjusted: bool=False,
+                          bypass_tips: bool=False) -> skbio.DistanceMatrix:  # noqa
     """Compute weighted unnormalized UniFrac
 
     Parameters
@@ -165,6 +174,9 @@ def weighted_unnormalized(table: str,
         The number of threads to use. Default is 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -196,14 +208,15 @@ def weighted_unnormalized(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
-                   variance_adjusted, 1.0, threads)
+                   variance_adjusted, 1.0, bypass_tips, threads)
 
 
 def generalized(table: str,
                 phylogeny: str,
                 threads: int=1,
                 alpha: float=1.0,
-                variance_adjusted: bool=False)-> skbio.DistanceMatrix:
+                variance_adjusted: bool=False,
+                bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute Generalized UniFrac
 
     Parameters
@@ -221,6 +234,9 @@ def generalized(table: str,
         range [0, 1]. Default is 1.0.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
 
     Returns
     -------
@@ -266,7 +282,7 @@ def generalized(table: str,
                                    variance_adjusted)
     else:
         return qsu.ssu(str(table), str(phylogeny), 'generalized',
-                       variance_adjusted, alpha, threads)
+                       variance_adjusted, alpha, bypass_tips, threads)
 
 
 METHODS = {'unweighted': unweighted,
@@ -278,7 +294,7 @@ METHODS = {'unweighted': unweighted,
 def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
          consolidation: str=None, method: str=None,
          threads: int=1, variance_adjusted: bool=False,
-         alpha: float=None) -> skbio.DistanceMatrix:
+         alpha: float=None, bypass_tips: bool=False) -> skbio.DistanceMatrix:
     """Compute meta UniFrac
 
     Parameters
@@ -303,6 +319,9 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
         'generalized'.
     threads : int, optional
         The number of threads to use. Default is 1
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -385,7 +404,9 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
 
-    kwargs = {'threads': threads, 'variance_adjusted': variance_adjusted}
+    kwargs = {'threads': threads,
+              'bypass_tips': bypass_tips,
+              'variance_adjusted': variance_adjusted}
     if alpha is not None:
         kwargs['alpha'] = alpha
 
