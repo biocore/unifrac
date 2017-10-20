@@ -19,3 +19,4 @@ print("testing values of c_form")
 for ( i in 1:15){
 	print(checkEquals(unif["c_form"][[1]][i], exp[i], tolerance=0.005))
 }
+return 0

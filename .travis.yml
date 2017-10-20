@@ -11,6 +11,8 @@ language:
   - python
   - r
 
+cache: packages
+
 compiler:
   - gcc
 
