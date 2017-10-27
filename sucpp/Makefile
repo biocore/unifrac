@@ -32,7 +32,7 @@ else
 	CPPFLAGS += -mfma -march=native
 endif
 
-CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC 
+CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
