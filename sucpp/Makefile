@@ -34,7 +34,7 @@ endif
 
 CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
 
-test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
+test: tree.o test_su.cpp biom.o unifrac.o unifractask.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o unifrac_task.o api.o
 
@@ -42,7 +42,7 @@ main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp 
 	cp ssu ${PREFIX}/bin/
 
-rapi_test: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
+rapi_test: main
 	mkdir -p ~/.R
 	if [ -a ~/.R/Makevars ] ; \
 	then \
@@ -52,7 +52,7 @@ rapi_test: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	echo CXX1X=h5c++ > ~/.R/Makevars
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
-	Rscript R_interface/rapi_test.R
+	pushd R_interface && Rscript rapi_test.R; popd
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
@@ -61,10 +61,10 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 
 capi_test: api
 	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -o capi_test
-	LD_LIBRARY_PATH=${PREFIX}/lib ./capi_test
+	LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	-rm *.o ssu
+	-rm -f *.o ssu

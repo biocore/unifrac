@@ -1,20 +1,13 @@
 library(Rcpp)
 
 equals <- function(x, y){
-	if (x == y){
-		return(TRUE)
-	}else {
-		return(FALSE) 
-	}
+	stopifnot(x==y)
 }
 aboutEquals <- function(x, y){
-	if ((x-y)<0.05){
-		return(TRUE)
-	}else{
-		return(FALSE)
-	}
+	stopifnot((x-y)<0.005)
 }
-sourceCpp("su_R.cpp")
+source = "su_R.cpp"
+sourceCpp(source)
 table = "test.biom"
 tree = "test.tre"
 nthreads = 2
@@ -29,8 +22,8 @@ equals(unif["n_samples"][[1]], 6)
 equals(unif["cf_size"][[1]], 15)
 equals(unif["is_upper_triangle"][[1]], TRUE)
 
-print("testing values of c_form")
-for ( i in 1:15){
-	print(aboutEquals(unif["c_form"][[1]][i], exp[i]))
-}
 
+for ( i in 1:15){
+	aboutEquals(unif["c_form"][[1]][i], exp[i])
+}
+print('All tests pass')
