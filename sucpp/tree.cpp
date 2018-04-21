@@ -82,6 +82,18 @@ BPTree BPTree::mask(std::vector<bool> topology_mask, std::vector<double> in_leng
     return BPTree(new_structure, new_lengths, new_names);
 }
 
+std::unordered_set<std::string> BPTree::get_tip_names() {
+    std::unordered_set<std::string> observed;
+	
+    for(unsigned int i = 0; i < this->nparens; i++) {
+        if(this->isleaf(i)) {
+            observed.insert(this->names[i]);
+        }
+    }
+
+    return observed;
+}
+
 BPTree BPTree::shear(std::unordered_set<std::string> to_keep) {
     std::vector<bool> shearmask = std::vector<bool>(this->nparens);
     int32_t p;

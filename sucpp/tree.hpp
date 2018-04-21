@@ -77,6 +77,9 @@ namespace su {
              */
             int32_t parent(uint32_t i);
 
+            /* get the names at the tips of the tree */
+            std::unordered_set<std::string> get_tip_names();
+
             /* public getters */
             std::vector<bool> get_structure();
             std::vector<uint32_t> get_openclose();

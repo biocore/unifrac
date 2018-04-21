@@ -991,6 +991,15 @@ void test_bptree_shear_deep() {
     SUITE_END();
 }
 
+void test_bptree_get_tip_names() {
+    SUITE_START("test bptree get_tip_names");
+    su::BPTree tree = su::BPTree("((a:2,b:3,(c:5)d:4)e:1,f:6,((g:9,h:10)i:8)j:7)r");
+    
+    std::unordered_set<std::string> expected = {"a", "b", "c", "f", "g", "h"};
+    std::unordered_set<std::string> observed = tree.get_tip_names();
+    ASSERT(observed == expected);
+    SUITE_END();
+}    
 
 void test_bptree_collapse_simple() {
     SUITE_START("test bptree collapse simple");
@@ -1162,6 +1171,7 @@ int main(int argc, char** argv) {
     test_bptree_leftchild();
     test_bptree_rightchild();
     test_bptree_rightsibling();
+    test_bptree_get_tip_names();
     test_bptree_mask();
     test_bptree_shear_simple();
     test_bptree_shear_deep();
