@@ -991,6 +991,24 @@ void test_bptree_shear_deep() {
     SUITE_END();
 }
 
+void test_test_table_ids_are_subset_of_tree() {
+    SUITE_START("test test_table_ids_are_subset_of_tree");
+
+    su::BPTree tree = su::BPTree("(a:1,b:2)r;");
+    su::biom table = su::biom("test.biom");
+    std::string expected = "GG_OTU_1";
+    std::string observed = su::test_table_ids_are_subset_of_tree(table, tree);
+    ASSERT(observed == expected);
+   
+    su::BPTree tree2 = su::BPTree("(GG_OTU_1,GG_OTU_5,GG_OTU_6,GG_OTU_2,GG_OTU_3,GG_OTU_4);");
+    su::biom table2 = su::biom("test.biom");
+    expected = "";
+    observed = su::test_table_ids_are_subset_of_tree(table2, tree2);
+    ASSERT(observed == expected);
+    SUITE_END();
+}
+
+
 void test_bptree_get_tip_names() {
     SUITE_START("test bptree get_tip_names");
     su::BPTree tree = su::BPTree("((a:2,b:3,(c:5)d:4)e:1,f:6,((g:9,h:10)i:8)j:7)r");
@@ -1197,6 +1215,7 @@ int main(int argc, char** argv) {
     test_vaw_unifrac_weighted_normalized();
     test_unifrac_sample_counts();
     test_set_tasks();
+    test_test_table_ids_are_subset_of_tree();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);

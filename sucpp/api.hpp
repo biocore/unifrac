@@ -12,9 +12,9 @@
 
 #define PARTIAL_MAGIC "SSU-PARTIAL-01"
 
-typedef enum compute_status {okay, tree_missing, table_missing, unknown_method} ComputeStatus;
-typedef enum io_status {read_okay, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
-typedef enum merge_status {merge_okay, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus; 
+typedef enum compute_status {okay=0, tree_missing, table_missing, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
+typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
+typedef enum merge_status {merge_okay=0, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus; 
 
 /* a result matrix
  *
