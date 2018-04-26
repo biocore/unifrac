@@ -355,6 +355,29 @@ void test_bptree_constructor_edgecases() {
     SUITE_END();
 }
 
+void test_bptree_constructor_quoted_comma() {
+    SUITE_START("quoted comma bug");
+    su::BPTree tree = su::BPTree("((3,'foo,bar')x,c)r;");
+    std::vector<std::string> exp_names = {"r", "x", "3", "", "foo,bar", "", "", "c", "", ""};
+    ASSERT(exp_names.size() == tree.names.size());
+    
+    for(unsigned int i = 0; i < tree.names.size(); i++) {
+        ASSERT(exp_names[i] == tree.names[i]);
+    }
+    SUITE_END();
+}
+
+void test_bptree_constructor_quoted_parens() {
+    SUITE_START("quoted parens");
+    su::BPTree tree = su::BPTree("((3,'foo(b)ar')x,c)r;");
+    std::vector<std::string> exp_names = {"r", "x", "3", "", "foo(b)ar", "", "", "c", "", ""};
+    ASSERT(exp_names.size() == tree.names.size());
+    
+    for(unsigned int i = 0; i < tree.names.size(); i++) {
+        ASSERT(exp_names[i] == tree.names[i]);
+    }
+    SUITE_END();
+}
 void test_bptree_postorder() {
     SUITE_START("postorderselect");
     
@@ -991,6 +1014,33 @@ void test_bptree_shear_deep() {
     SUITE_END();
 }
 
+void test_test_table_ids_are_subset_of_tree() {
+    SUITE_START("test test_table_ids_are_subset_of_tree");
+
+    su::BPTree tree = su::BPTree("(a:1,b:2)r;");
+    su::biom table = su::biom("test.biom");
+    std::string expected = "GG_OTU_1";
+    std::string observed = su::test_table_ids_are_subset_of_tree(table, tree);
+    ASSERT(observed == expected);
+   
+    su::BPTree tree2 = su::BPTree("(GG_OTU_1,GG_OTU_5,GG_OTU_6,GG_OTU_2,GG_OTU_3,GG_OTU_4);");
+    su::biom table2 = su::biom("test.biom");
+    expected = "";
+    observed = su::test_table_ids_are_subset_of_tree(table2, tree2);
+    ASSERT(observed == expected);
+    SUITE_END();
+}
+
+
+void test_bptree_get_tip_names() {
+    SUITE_START("test bptree get_tip_names");
+    su::BPTree tree = su::BPTree("((a:2,b:3,(c:5)d:4)e:1,f:6,((g:9,h:10)i:8)j:7)r");
+    
+    std::unordered_set<std::string> expected = {"a", "b", "c", "f", "g", "h"};
+    std::unordered_set<std::string> observed = tree.get_tip_names();
+    ASSERT(observed == expected);
+    SUITE_END();
+}    
 
 void test_bptree_collapse_simple() {
     SUITE_START("test bptree collapse simple");
@@ -1156,12 +1206,15 @@ int main(int argc, char** argv) {
     test_bptree_constructor_complex();
     test_bptree_constructor_semicolon();
     test_bptree_constructor_edgecases();
+    test_bptree_constructor_quoted_comma();
+    test_bptree_constructor_quoted_parens();
     test_bptree_postorder();
     test_bptree_preorder();
     test_bptree_parent();
     test_bptree_leftchild();
     test_bptree_rightchild();
     test_bptree_rightsibling();
+    test_bptree_get_tip_names();
     test_bptree_mask();
     test_bptree_shear_simple();
     test_bptree_shear_deep();
@@ -1187,6 +1240,7 @@ int main(int argc, char** argv) {
     test_vaw_unifrac_weighted_normalized();
     test_unifrac_sample_counts();
     test_set_tasks();
+    test_test_table_ids_are_subset_of_tree();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);

@@ -12,7 +12,8 @@ cdef extern from "../sucpp/api.hpp":
         okay, 
         tree_missing,
         table_missing,
-        unknown_method
+        unknown_method,
+        table_and_tree_do_not_overlap
 
     compute_status one_off(const char* biom_filename, const char* tree_filename, 
                                const char* unifrac_method, bool variance_adjust, double alpha,
