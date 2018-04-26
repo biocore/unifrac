@@ -268,7 +268,14 @@ void BPTree::newick_to_bp(std::string newick) {
     char last_structure;
     bool potential_single_descendent = false;
     int count = 0;
+    bool in_quote = false;
     for(auto c = newick.begin(); c != newick.end(); c++) {
+        if(*c == '\'') 
+            in_quote = !in_quote;
+
+        if(in_quote)
+            continue;
+
         switch(*c) {
             case '(':
                 // opening of a node
@@ -421,7 +428,7 @@ std::string BPTree::tokenize(std::string::iterator &start, const std::string::it
             continue;
         }
 
-        isquote = (c == '"' || c == '\'');
+        isquote = c == '\'';
         
         if(inquote && isquote) {
             inquote = false;

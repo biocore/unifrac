@@ -355,6 +355,29 @@ void test_bptree_constructor_edgecases() {
     SUITE_END();
 }
 
+void test_bptree_constructor_quoted_comma() {
+    SUITE_START("quoted comma bug");
+    su::BPTree tree = su::BPTree("((3,'foo,bar')x,c)r;");
+    std::vector<std::string> exp_names = {"r", "x", "3", "", "foo,bar", "", "", "c", "", ""};
+    ASSERT(exp_names.size() == tree.names.size());
+    
+    for(unsigned int i = 0; i < tree.names.size(); i++) {
+        ASSERT(exp_names[i] == tree.names[i]);
+    }
+    SUITE_END();
+}
+
+void test_bptree_constructor_quoted_parens() {
+    SUITE_START("quoted parens");
+    su::BPTree tree = su::BPTree("((3,'foo(b)ar')x,c)r;");
+    std::vector<std::string> exp_names = {"r", "x", "3", "", "foo(b)ar", "", "", "c", "", ""};
+    ASSERT(exp_names.size() == tree.names.size());
+    
+    for(unsigned int i = 0; i < tree.names.size(); i++) {
+        ASSERT(exp_names[i] == tree.names[i]);
+    }
+    SUITE_END();
+}
 void test_bptree_postorder() {
     SUITE_START("postorderselect");
     
@@ -1183,6 +1206,8 @@ int main(int argc, char** argv) {
     test_bptree_constructor_complex();
     test_bptree_constructor_semicolon();
     test_bptree_constructor_edgecases();
+    test_bptree_constructor_quoted_comma();
+    test_bptree_constructor_quoted_parens();
     test_bptree_postorder();
     test_bptree_preorder();
     test_bptree_parent();
