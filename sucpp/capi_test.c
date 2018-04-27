@@ -1,7 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include "api.hpp"
+
+#ifndef bool
+#define bool char
+#define true 1
+#define false 0
+#endif
 
 void err(bool condition, const char* msg) {
     if(condition) {
@@ -33,3 +40,4 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+

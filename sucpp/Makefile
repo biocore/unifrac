@@ -70,3 +70,7 @@ capi_test: api
 clean:
 	-rm -f *.o ssu
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> issue-53
