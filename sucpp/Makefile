@@ -47,6 +47,7 @@ rapi_test: main
 	if [ -a ~/.R/Makevars ] ; \
 	then \
 		echo "WARNING: OVERWRITING ~/.R/Makevars" ; \
+		echo "The original Makevars file has been copied to ~/.R/Makevars" ;\
 		cp ~/.R/Makevars Makevars-original ; \
 	fi;
 	echo CXX1X=h5c++ > ~/.R/Makevars
@@ -68,3 +69,5 @@ capi_test: api
 
 clean:
 	-rm -f *.o ssu
+
+
