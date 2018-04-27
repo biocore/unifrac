@@ -3,18 +3,14 @@ library(Rcpp)
 equals <- function(x, y, msg){
     if (x!=y)
         stop(msg)
-<<<<<<< HEAD
-	#stopifnot(x==y)
-=======
->>>>>>> issue-53
+
+
 }
 aboutEquals <- function(x, y, msg){
 	if((x-y)>0.005)
         stop(msg)
-<<<<<<< HEAD
-    #stopifnot((x-y)<0.005)
-=======
->>>>>>> issue-53
+
+
 }
 source = "su_R.cpp"
 sourceCpp(source)
@@ -37,7 +33,4 @@ for ( i in 1:15){
 	aboutEquals(unif["c_form"][[1]][i], exp[i], "Output not as expected")
 }
 print('All tests pass')
-<<<<<<< HEAD
 
-=======
->>>>>>> issue-53
