@@ -32,7 +32,7 @@ else
 	CPPFLAGS += -mfma -march=native
 endif
 
-CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC 
+CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o
@@ -42,6 +42,19 @@ main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp 
 	cp ssu ${PREFIX}/bin/
 
+rapi_test: main
+	mkdir -p ~/.R
+	if [ -a ~/.R/Makevars ] ; \
+	then \
+		echo "WARNING: OVERWRITING ~/.R/Makevars" ; \
+		echo "The original Makevars file has been copied to ~/.R/Makevars" ;\
+		cp ~/.R/Makevars Makevars-original ; \
+	fi;
+	echo CXX1X=h5c++ > ~/.R/Makevars
+	echo CXX=h5c++ >> ~/.R/Makevars 
+	echo CC=h5c++ >> ~/.R/Makevars
+	pushd R_interface && Rscript rapi_test.R; popd
+	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
 	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
@@ -49,10 +62,12 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 
 capi_test: api
 	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -o capi_test
-	LD_LIBRARY_PATH=${PREFIX}/lib ./capi_test
+	LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	-rm *.o ssu
+	-rm -f *.o ssu
+
+
