@@ -1,6 +1,6 @@
 library(Rcpp)
 
-equals <- function(x, y){
+equals <- function(x, y, ){
 	stopifnot(x==y)
 }
 aboutEquals <- function(x, y){
