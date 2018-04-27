@@ -3,12 +3,10 @@ library(Rcpp)
 equals <- function(x, y, msg){
     if (x!=y)
         stop(msg)
-	#stopifnot(x==y)
 }
 aboutEquals <- function(x, y, msg){
 	if((x-y)>0.005)
         stop(msg)
-    #stopifnot((x-y)<0.005)
 }
 source = "su_R.cpp"
 sourceCpp(source)
