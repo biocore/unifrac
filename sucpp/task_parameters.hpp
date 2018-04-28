@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef __su_task_parameters
     #ifdef __cplusplus
@@ -19,7 +20,7 @@
            unsigned int start;          // starting stripe
            unsigned int stop;           // stopping stripe
            unsigned int tid;            // thread ID
-           bool bypass_tips = false;    // avoid compute at tips
+           bool bypass_tips = false;    // avoid compute at tips 
            
            // task specific arguments below
            double g_unifrac_alpha;      // generalized unifrac alpha

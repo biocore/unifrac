@@ -1,7 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include "api.hpp"
+
+#ifndef bool
+#define bool char
+#define true 1
+#define false 0
+#endif
 
 void err(bool condition, const char* msg) {
     if(condition) {
@@ -20,16 +27,17 @@ int main(int argc, char** argv) {
     
     ComputeStatus status;
     status = one_off(table, tree, method,
-                     false, 1.0, 2, &result);
+                     false, 1.0, false, 2, &result);
 
     err(status != okay, "Compute failed");
     err(result == NULL, "Empty result");
     err(result->n_samples != 6, "Wrong number of samples");
     err(result->cf_size != 15, "Wrong condensed form size");
-    err(!result->is_square, "Result is not squaure");
+    err(!result->is_upper_triangle, "Result is not squaure");
 
     for(unsigned int i = 0; i < result->cf_size; i++) 
         err(fabs(exp[i] - result->condensed_form[i]) > 0.00001, "Result is wrong");
 
     return 0;
 }
+
