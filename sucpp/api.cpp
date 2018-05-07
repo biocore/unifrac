@@ -92,9 +92,7 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
     result->condensed_form = (double*)malloc(sizeof(double) * su::comb_2(n_samples));
     
     for(unsigned int i = 0; i < n_samples; i++) {
-        // adopt the IDs
-        result->sample_ids[i] = sample_ids[i]; 
-        sample_ids[i] = NULL;
+        result->sample_ids[i] = strdup(sample_ids[i]); 
     }
 }
 
@@ -282,12 +280,10 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     std::ofstream output;
     output.open(output_filename);
   
-    uint32_t comb_N = su::comb_2(result->n_samples);
-    uint32_t comb_N_minus;
+    uint64_t comb_N = su::comb_2(result->n_samples);
+    uint64_t comb_N_minus = 0;
     double v;
-    for(unsigned int i = 0; i < result->n_samples; i++)
-        output << "\t" << result->sample_ids[i];
-    output << std::endl;
+    
     for(unsigned int i = 0; i < result->n_samples; i++) {
         output << result->sample_ids[i];
         for(unsigned int j = 0; j < result->n_samples; j++) {
@@ -433,9 +429,15 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
     /* load stripes */
     int current_to_load;
+    void *ptr;
     for(int i = 0; i < n_stripes; i++) {
-        result->stripes[i] = (double*)malloc(sizeof(double) * n_samples);
-        input.read(reinterpret_cast<char*>(result->stripes[i]), sizeof(double) * n_samples); 
+        ptr = malloc(sizeof(double) * n_samples);
+        if(ptr == NULL) {
+            fprintf(stderr, "failed\n");
+            exit(1);
+        }
+        result->stripes[i] = (double*)ptr;
+        input.read(reinterpret_cast<char*>(result->stripes[i]), sizeof(double) * n_samples);
     }
     
     /* sanity check the footer */
@@ -503,8 +505,7 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
         int n_stripes = partial_mats[i]->stripe_stop - partial_mats[i]->stripe_start;
         for(int j = 0; j < n_stripes; j++) {
             // as this is potentially a large amount of memory, don't copy, just adopt
-            stripes[j + partial_mats[i]->stripe_start] = partial_mats[i]->stripes[j];
-            partial_mats[i]->stripes[j] = NULL;
+            *&(stripes[j + partial_mats[i]->stripe_start]) = partial_mats[i]->stripes[j]; 
         }
     }
 
@@ -515,24 +516,11 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
 
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
-    set_tasks(tasks, 0.0, n_samples, 0, 0, false, nthreads);
 
     initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
-    for(unsigned int tid = 0; tid < threads.size(); tid++) {
-        threads[tid] = std::thread(su::stripes_to_condensed_form, 
-                                   std::ref(stripes), 
-                                   n_samples,
-                                   std::ref((*result)->condensed_form),
-                                   tasks[tid].start,
-                                   tasks[tid].stop);
-    } 
-    for(unsigned int tid = 0; tid < threads.size(); tid++) {
-        threads[tid].join();
-    }
+    su::stripes_to_condensed_form(stripes, n_samples, (*result)->condensed_form, 0, partial_mats[0]->stripe_total);
 
-    destroy_stripes(stripes, stripes_totals, n_samples, 0, 0);
-    for(int i = 0; i < n_partials; i++)
-        destroy_partial_mat(&partial_mats[i]);
+    destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
 
     return merge_okay;
 }
