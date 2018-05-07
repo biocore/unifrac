@@ -82,6 +82,18 @@ BPTree BPTree::mask(std::vector<bool> topology_mask, std::vector<double> in_leng
     return BPTree(new_structure, new_lengths, new_names);
 }
 
+std::unordered_set<std::string> BPTree::get_tip_names() {
+    std::unordered_set<std::string> observed;
+	
+    for(unsigned int i = 0; i < this->nparens; i++) {
+        if(this->isleaf(i)) {
+            observed.insert(this->names[i]);
+        }
+    }
+
+    return observed;
+}
+
 BPTree BPTree::shear(std::unordered_set<std::string> to_keep) {
     std::vector<bool> shearmask = std::vector<bool>(this->nparens);
     int32_t p;
@@ -256,7 +268,14 @@ void BPTree::newick_to_bp(std::string newick) {
     char last_structure;
     bool potential_single_descendent = false;
     int count = 0;
+    bool in_quote = false;
     for(auto c = newick.begin(); c != newick.end(); c++) {
+        if(*c == '\'') 
+            in_quote = !in_quote;
+
+        if(in_quote)
+            continue;
+
         switch(*c) {
             case '(':
                 // opening of a node
@@ -409,7 +428,7 @@ std::string BPTree::tokenize(std::string::iterator &start, const std::string::it
             continue;
         }
 
-        isquote = (c == '"' || c == '\'');
+        isquote = c == '\'';
         
         if(inquote && isquote) {
             inquote = false;

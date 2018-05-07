@@ -11,6 +11,22 @@
 
 static pthread_mutex_t printf_mutex;
 
+std::string su::test_table_ids_are_subset_of_tree(su::biom &table, su::BPTree &tree) {
+    std::unordered_set<std::string> tip_names = tree.get_tip_names();
+    std::unordered_set<std::string>::const_iterator hit;
+    std::string a_missing_name = "";
+
+    for(auto i : table.obs_ids) {
+        hit = tip_names.find(i);
+        if(hit == tip_names.end()) {
+            a_missing_name = i;
+            break;
+        }
+    }
+
+    return a_missing_name;
+}
+
 int sync_printf(const char *format, ...) {
     // https://stackoverflow.com/a/23587285/19741
     va_list args;

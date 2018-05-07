@@ -55,6 +55,12 @@ void usage() {
     std::cout << std::endl;
 }
 
+const char* compute_status_messages[5] = {"No error.", 
+                                          "The tree file cannot be found.", 
+                                          "The table file cannot be found.", 
+                                          "An unknown method was requested.", 
+                                          "Table observation IDs are not a subset of the tree tips. This error can also be triggered if a node name contains a single quote (this is unlikely)."};
+
 
 // https://stackoverflow.com/questions/8401777/simple-glob-in-c-on-unix-system
 inline std::vector<std::string> glob(const std::string& pat){
@@ -213,7 +219,7 @@ int mode_partial(std::string table_filename, std::string tree_filename,
     status = partial(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
                      vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe, &result);
     if(status != okay || result == NULL) {
-        fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
+        fprintf(stderr, "Compute failed in partial: %s\n", compute_status_messages[status]);
         exit(EXIT_FAILURE);
     }
    
@@ -257,7 +263,7 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
     status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
                      vaw, g_unifrac_alpha, bypass_tips, nthreads, &result);
     if(status != okay || result == NULL) {
-        fprintf(stderr, "Compute failed in one_off with error code: %d\n", status);
+        fprintf(stderr, "Compute failed in one_off: %s\n", compute_status_messages[status]);
         exit(EXIT_FAILURE);
     }
    

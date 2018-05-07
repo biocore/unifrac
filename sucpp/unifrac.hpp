@@ -21,6 +21,7 @@
                 double* get(uint32_t i);
         };
 
+        std::string test_table_ids_are_subset_of_tree(biom &table, BPTree &tree);
         void unifrac(biom &table, 
                      BPTree &tree, 
                      Method unifrac_method,

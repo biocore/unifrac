@@ -24,14 +24,19 @@
                                               return err;                                                      \
                                           }
 
-#define PARSE_SYNC_TREE_TABLE(tree_filename, table_filename) std::ifstream ifs(tree_filename);                                      \
-                                                             std::string content = std::string(std::istreambuf_iterator<char>(ifs), \
-                                                                                               std::istreambuf_iterator<char>());   \
-                                                             su::BPTree tree = su::BPTree(content);                                 \
-                                                             su::biom table = su::biom(biom_filename);                              \
-                                                             std::unordered_set<std::string> to_keep(table.obs_ids.begin(),         \
-                                                                                                     table.obs_ids.end());          \
+#define PARSE_SYNC_TREE_TABLE(tree_filename, table_filename) std::ifstream ifs(tree_filename);                                        \
+                                                             std::string content = std::string(std::istreambuf_iterator<char>(ifs),   \
+                                                                                               std::istreambuf_iterator<char>());     \
+                                                             su::BPTree tree = su::BPTree(content);                                   \
+                                                             su::biom table = su::biom(biom_filename);                                \
+                                                             std::string bad_id = su::test_table_ids_are_subset_of_tree(table, tree); \
+                                                             if(bad_id != "") {                                                       \
+                                                                 return table_and_tree_do_not_overlap;                                \
+                                                             }                                                                        \
+                                                             std::unordered_set<std::string> to_keep(table.obs_ids.begin(),           \
+                                                                                                     table.obs_ids.end());            \
                                                              su::BPTree tree_sheared = tree.shear(to_keep).collapse();
+
 
 using namespace su;
 using namespace std;
