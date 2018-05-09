@@ -53,7 +53,7 @@
             }
         }
 
-        inline uint32_t comb_2(uint32_t N) {
+        inline uint64_t comb_2(uint64_t N) {
             // based off of _comb_int_long
             // https://github.com/scipy/scipy/blob/v0.19.1/scipy/special/_comb.pyx
             
@@ -62,8 +62,8 @@
             // we're disregarding overflow as that practically should not
             // happen unless the number of samples processed is in excess
             // of 4 billion 
-            uint32_t val, j, M, nterms;
-            uint32_t k = 2;
+            uint64_t val, j, M, nterms;
+            uint64_t k = 2;
 
             M = N + 1;
             nterms = k < (N - k) ? k : N - k;
