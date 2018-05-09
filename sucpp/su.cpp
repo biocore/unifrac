@@ -146,7 +146,6 @@ int mode_merge_partial(std::string output_filename,
     
     mat_t *result = NULL;
     
-    // glob is not working with lldb. not sure why yet.
     std::vector<std::string> partials = glob(partial_pattern);
     partial_mat_t** partial_mats = (partial_mat_t**)malloc(sizeof(partial_mat_t*) * partials.size());
     for(size_t i = 0; i < partials.size(); i++) {
