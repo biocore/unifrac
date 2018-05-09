@@ -288,7 +288,11 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     uint64_t comb_N = su::comb_2(result->n_samples);
     uint64_t comb_N_minus = 0;
     double v;
-    
+   
+    for(unsigned int i = 0; i < result->n_samples; i++)
+        output << "\t" << result->sample_ids[i];
+    output << std::endl;
+
     for(unsigned int i = 0; i < result->n_samples; i++) {
         output << result->sample_ids[i];
         for(unsigned int j = 0; j < result->n_samples; j++) {
