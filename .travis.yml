@@ -61,4 +61,4 @@ script:
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
   - exp=$(md5sum ci/test.dm)
   - obs=$(md5sum ci/test.dm.partial)
-  - if [ "${obs}" != "${exp} ]; then exit 1; fi
+  - if [ "${obs}" != "${exp}" ]; then exit 1; fi
