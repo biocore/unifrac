@@ -59,6 +59,6 @@ script:
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
-  - exp=$(md5sum ci/test.dm)
-  - obs=$(md5sum ci/test.dm.partial)
+  - exp=$(md5sum ci/test.dm | awk '{ print $1 }')
+  - obs=$(md5sum ci/test.dm.partial | awk '{ print $1 }')
   - python -c "assert '${obs}' == '${exp}'"
