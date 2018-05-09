@@ -55,3 +55,10 @@ script:
   # santiy test io
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2
   - python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
+  # merge test
+  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
+  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
+  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
+  - exp=$(md5sum ci/test.dm)
+  - obs=$(md5sum ci/test.dm.partial)
+  - if [ $(obs) != $(exp) ]; then exit 1 fi
