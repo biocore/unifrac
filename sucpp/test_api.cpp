@@ -144,33 +144,62 @@ void test_merge_partial_mat() {
     SUITE_START("test merge partial_mat_t");
 
     // the easy test
-    partial_mat_t* pm1 = make_test_pm();
+    partial_mat_t* pm1 = (partial_mat_t*)malloc(sizeof(partial_mat_t));
+    pm1->n_samples = 6;
+    pm1->sample_ids = (char**)malloc(sizeof(char*) * 6);
+    pm1->sample_ids[0] = (char*)malloc(sizeof(char) * 2);
+    pm1->sample_ids[0][0] = 'A'; pm1->sample_ids[0][1] = '\0';
+    pm1->sample_ids[1] = (char*)malloc(sizeof(char) * 2);
+    pm1->sample_ids[1][0] = 'B'; pm1->sample_ids[1][1] = '\0';
+    pm1->sample_ids[2] = (char*)malloc(sizeof(char) * 3);
+    pm1->sample_ids[2][0] = 'C'; pm1->sample_ids[2][1] = 'x'; pm1->sample_ids[2][2] = '\0';
+    pm1->sample_ids[3] = (char*)malloc(sizeof(char) * 2);
+    pm1->sample_ids[3][0] = 'D'; pm1->sample_ids[3][1] = '\0';
+    pm1->sample_ids[4] = (char*)malloc(sizeof(char) * 2);
+    pm1->sample_ids[4][0] = 'E'; pm1->sample_ids[4][1] = '\0';
+    pm1->sample_ids[5] = (char*)malloc(sizeof(char) * 2);
+    pm1->sample_ids[5][0] = 'F'; pm1->sample_ids[5][1] = '\0';
+    pm1->stripes = (double**)malloc(sizeof(double*) * 2);
+    pm1->stripes[0] = (double*)malloc(sizeof(double) * 6);
+    pm1->stripes[0][0] = 1; pm1->stripes[0][1] = 2; pm1->stripes[0][2] = 3; pm1->stripes[0][3] = 4; pm1->stripes[0][4] = 5; pm1->stripes[0][5] = 6;
+    pm1->stripes[1] = (double*)malloc(sizeof(double) * 6);
+    pm1->stripes[1][0] = 7; pm1->stripes[1][1] = 8; pm1->stripes[1][2] = 9; pm1->stripes[1][3] = 10; pm1->stripes[1][4] = 11; pm1->stripes[1][5] = 12;
     pm1->stripe_start = 0;
-    pm1->stripe_stop = 3;
-    pm1->stripe_total = 9;
+    pm1->stripe_stop = 2;
+    pm1->stripe_total = 3;
     pm1->is_upper_triangle = true;
-
-    partial_mat_t* pm2 = make_test_pm();
-    pm2->stripe_start = 3;
-    pm2->stripe_stop = 6;
-    pm2->stripe_total = 9;
-    pm2->is_upper_triangle = true;
     
-    partial_mat_t* pm3 = make_test_pm();
-    pm3->stripe_start = 6;
-    pm3->stripe_stop = 9;
-    pm3->stripe_total = 9;
-    pm3->is_upper_triangle = true;
+    partial_mat_t* pm2 = (partial_mat_t*)malloc(sizeof(partial_mat_t));
+    pm2->n_samples = 6;
+    pm2->sample_ids = (char**)malloc(sizeof(char*) * 6);
+    pm2->sample_ids[0] = (char*)malloc(sizeof(char) * 2);
+    pm2->sample_ids[0][0] = 'A'; pm2->sample_ids[0][1] = '\0';
+    pm2->sample_ids[1] = (char*)malloc(sizeof(char) * 2);
+    pm2->sample_ids[1][0] = 'B'; pm2->sample_ids[1][1] = '\0';
+    pm2->sample_ids[2] = (char*)malloc(sizeof(char) * 3);
+    pm2->sample_ids[2][0] = 'C'; pm2->sample_ids[2][1] = 'x'; pm2->sample_ids[2][2] = '\0';
+    pm2->sample_ids[3] = (char*)malloc(sizeof(char) * 2);
+    pm2->sample_ids[3][0] = 'D'; pm2->sample_ids[3][1] = '\0';
+    pm2->sample_ids[4] = (char*)malloc(sizeof(char) * 2);
+    pm2->sample_ids[4][0] = 'E'; pm2->sample_ids[4][1] = '\0';
+    pm2->sample_ids[5] = (char*)malloc(sizeof(char) * 2);
+    pm2->sample_ids[5][0] = 'F'; pm2->sample_ids[5][1] = '\0';
+    pm2->stripes = (double**)malloc(sizeof(double*) * 1);
+    pm2->stripes[0] = (double*)malloc(sizeof(double) * 6);
+    pm2->stripes[0][0] = 13; pm2->stripes[0][1] = 14; pm2->stripes[0][2] = 15; pm2->stripes[0][3] = 16; pm2->stripes[0][4] = 17; pm2->stripes[0][5] = 18;
+    pm2->stripe_start = 2;
+    pm2->stripe_stop = 3;
+    pm2->stripe_total = 3;
+    pm2->is_upper_triangle = true;
 
     mat_t* exp = mat_three_rep();
 
-    partial_mat_t* pms[3];
+    partial_mat_t* pms[2];
     pms[0] = pm1;
     pms[1] = pm2;
-    pms[2] = pm3;
 
     mat_t* obs = NULL;
-    merge_status err = merge_partial(pms, 3, 1, &obs);
+    merge_status err = merge_partial(pms, 2, 1, &obs);
     ASSERT(err == merge_okay);
     ASSERT(obs->cf_size == exp->cf_size);
     ASSERT(obs->n_samples == exp->n_samples);
@@ -180,34 +209,14 @@ void test_merge_partial_mat() {
     }
     for(int i = 0; i < obs->n_samples; i++)
         ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
-   
+  
     // out of order test
-    pm1 = make_test_pm();
-    pm1->stripe_start = 0;
-    pm1->stripe_stop = 3;
-    pm1->stripe_total = 9;
-    pm1->is_upper_triangle = true;
 
-    pm2 = make_test_pm();
-    pm2->stripe_start = 3;
-    pm2->stripe_stop = 6;
-    pm2->stripe_total = 9;
-    pm2->is_upper_triangle = true;
-    
-    pm3 = make_test_pm();
-    pm3->stripe_start = 6;
-    pm3->stripe_stop = 9;
-    pm3->stripe_total = 9;
-    pm3->is_upper_triangle = true;
-
-    exp = mat_three_rep();
-
-    pms[2] = pm1;
     pms[0] = pm2;
-    pms[1] = pm3;
+    pms[1] = pm1;
 
     obs = NULL;
-    err = merge_partial(pms, 3, 1, &obs);
+    err = merge_partial(pms, 2, 1, &obs);
     ASSERT(err == merge_okay);
     ASSERT(obs->cf_size == exp->cf_size);
     ASSERT(obs->n_samples == exp->n_samples);
@@ -219,18 +228,17 @@ void test_merge_partial_mat() {
         ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
  
     // error checking
-    pm1 = make_test_pm();
     pm1->stripe_start = 0;
     pm1->stripe_stop = 3;
     pm1->stripe_total = 9;
     pm1->is_upper_triangle = true;
 
-    pm2 = make_test_pm();
     pm2->stripe_start = 3;
     pm2->stripe_stop = 5;
     pm2->stripe_total = 9;
     pm2->is_upper_triangle = true;
     
+    partial_mat_t* pm3 = (partial_mat_t*)malloc(sizeof(partial_mat_t));
     pm3 = make_test_pm();
     pm3->stripe_start = 6;
     pm3->stripe_stop = 9;
@@ -270,7 +278,7 @@ void test_merge_partial_mat() {
     pm3->stripe_total = 9;
     err = merge_partial(pms, 3, 1, &obs);
     ASSERT(err == square_mismatch);
-
+    
     SUITE_END();
 }
 
