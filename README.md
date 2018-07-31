@@ -8,7 +8,11 @@ This repository produces a C API exposed via a shared library which can be linke
 
 # Install
 
-At this time, there are two primary ways to install the library. The first is through QIIME2, and the second is via `pip`. It is also possible to clone the repository and install using either the `sucpp/Makefile` or `setup.py` but those are not covered at this time. 
+At this time, there are two primary ways to install the library. The first is through QIIME 2, and the second is via `pip`. It is also possible to clone the repository and install using either the `sucpp/Makefile` or `setup.py`. 
+
+Compilation has been performed on both LLVM 9.0.0 (OS X >= 10.12) or GCC 4.9.2 (Centos >= 6) and HDF5 >= 1.8.17. Python installation requires Python >= 3.5, NumPy >= 1.12.1, scikit-bio >= 0.5.1, and Cython >= 0.28.3. 
+
+Installation time should be a few minutes at most.
 
 ## Install (QIIME2)
 
@@ -132,3 +136,17 @@ The methods can also be used directly through the command line after install:
 ## Shared library access
 
 In addition to the above methods to access UniFrac, it is also possible to link against the shared library. The C API is described in `sucpp/api.hpp`, and examples of linking against this API can be found in `examples/`. 
+
+## Minor test dataset
+
+A small test `.biom` and `.tre` can be found in `sucpp/`. An example with expected output is below, and should execute in 10s of milliseconds:
+
+    $ ssu -i sucpp/test.biom -t sucpp/test.tre -m unweighted -o test.out
+    $ cat test.out
+    	Sample1	Sample2	Sample3	Sample4	Sample5	Sample6
+    Sample1	0	0.2	0.5714285714285714	0.6	0.5	0.2
+    Sample2	0.2	0	0.4285714285714285	0.6666666666666666	0.6	0.3333333333333333
+    Sample3	0.5714285714285714	0.4285714285714285	0	0.7142857142857143	0.8571428571428571	0.4285714285714285
+    Sample4	0.6	0.6666666666666666	0.7142857142857143	0	0.3333333333333333	0.4
+    Sample5	0.5	0.6	0.8571428571428571	0.3333333333333333	0	0.6
+    Sample6	0.2	0.3333333333333333	0.4285714285714285	0.4	0.6	0
