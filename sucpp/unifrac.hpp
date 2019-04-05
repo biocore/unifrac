@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <thread>
 #include "unifrac_task.hpp"
+#include <pthread.h>
 
 #ifndef __UNIFRAC
     namespace su {
