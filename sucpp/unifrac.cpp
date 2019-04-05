@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <algorithm>
+#include <pthread.h>
 
 static pthread_mutex_t printf_mutex;
 
