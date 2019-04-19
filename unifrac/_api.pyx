@@ -88,3 +88,44 @@ def ssu(str biom_filename, str tree_filename,
     destroy_mat(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
+
+def sfaith(str biom_filename, str tree_filename):
+    """
+    TODO: document
+    """
+    cdef:
+        results_vec *result;
+        compute_status status;
+        np.ndarray[np.double_t, ndim=1] numpy_arr
+        double *cf
+        int i
+        bytes biom_py_bytes
+        bytes tree_py_bytes
+        char* biom_c_string
+        char* tree_c_string
+        list ids
+
+
+    biom_py_bytes = biom_filename.encode()
+    tree_py_bytes = tree_filename.encode()
+    biom_c_string = biom_py_bytes
+    tree_c_string = tree_py_bytes
+
+    status = faith_pd_one_off(biom_c_string, tree_c_string, &result)
+
+    if status != okay:
+        if status == tree_missing:
+            raise IOError("Tree file not found.")
+        if status == table_missing:
+            raise IOError("Table file not found.")
+        if status == unknown_method:
+            raise ValueError("Unknown method.")
+
+    numpy_arr = np.zeros(result.n_samples, dtype=np.double)
+    numpy_arr[:] = <np.double_t[:result.num_samples]> result.values
+
+    destroy_results_vec(&result)
+
+    return numpy_arr
+
+

@@ -244,6 +244,49 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
     }
 }
 
+void su::faith_pd(biom &table,
+                  BPTree &tree,
+                  double* result) {
+
+    PropStack propstack(table.n_samples);
+
+    uint32_t node;
+    double *node_proportions;
+    double length;
+
+    // for node in postorderselect
+    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
+        node = tree.postorderselect(k);
+        // get branch length
+        length = tree.lengths[node];
+
+        // get node proportions
+        node_proportions = propstack.pop(node);
+        set_proportions(node_proportions, tree, node, table, propstack);
+
+        // TODO: make kernel for calculating faith
+        // allocate score
+        // for sample in node_proportions:
+        for (unsigned int sample = 0; sample < table.n_samples; sample++){
+            // result[sample] += (node_proportions[sample] > 0) * length
+            result[sample] += (node_proportions[sample] > 0) * length;
+        }
+    }
+       // calculate contribution of node to score
+            // I(count > 0) * branch length
+
+       // set node_scores to contribution + sum(children_scores)
+
+    // return total_score (in result)
+
+    // this is just to see if I set up the test correctly
+    // double obs[6] = {6, 7, 8, 5, 4, 7};
+
+    // for(unsigned int i = 0; i < 6; i++){
+    //     *(result + i) = *(obs + i);
+    // }
+}
+
 
 void su::unifrac(biom &table,
                  BPTree &tree, 

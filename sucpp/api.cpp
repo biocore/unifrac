@@ -87,6 +87,21 @@ void initialize_mat(mat_t* &result, biom &table, bool is_upper_triangle) {
     }
 }
 
+void initialize_results_vec(r_vec* &result, biom& table){
+    result = (r_vec*)malloc(sizeof(results_vec));
+    result->n_samples = table.n_samples;
+    result->values = (double*)malloc(sizeof(double) * result->n_samples);
+    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
+
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        size_t len = table.sample_ids[i].length();
+        result->sample_ids[i] = (char*)malloc(sizeof(char) * len + 1);
+        table.sample_ids[i].copy(result->sample_ids[i], len);
+        result->sample_ids[i][len] = '\0';
+    }
+
+}
+
 void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_samples, bool is_upper_triangle) {
     result = (mat_t*)malloc(sizeof(mat));
     result->n_samples = n_samples;
@@ -124,7 +139,15 @@ void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<dou
     }
 }
 
+void destroy_results_vec(r_vec** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);
+    };
+    free((*result)->sample_ids);
+    free((*result)->values);
+    free(*result);
 
+}
 void destroy_mat(mat_t** result) {
     for(unsigned int i = 0; i < (*result)->n_samples; i++) {
         free((*result)->sample_ids[i]);
@@ -233,6 +256,22 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, stripe_start, stripe_stop);
     
     return okay;
+}
+
+compute_status faith_pd_one_off(const char* biom_filename, const char* tree_filename,
+                                r_vec** result){
+    CHECK_FILE(biom_filename, table_missing)
+    CHECK_FILE(tree_filename, tree_missing)
+    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+
+    initialize_results_vec(*result, table);
+
+    // compute faithpd
+    return okay;
+
+
+
+
 }
 
 

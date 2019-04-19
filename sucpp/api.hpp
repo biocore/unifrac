@@ -34,6 +34,12 @@ typedef struct mat {
     char** sample_ids;
 } mat_t;
 
+typedef struct results_vec{
+    unsigned int n_samples;
+    double* values;
+    char** sample_ids;
+} r_vec;
+
 /* a partial result containing stripe data
  *
  * n_samples <uint> the number of samples.
@@ -57,6 +63,7 @@ typedef struct partial_mat {
 
 void destroy_mat(mat_t** result);
 void destroy_partial_mat(partial_mat_t** result);
+void destroy_results_vec(r_vec** result);
 
 /* Compute UniFrac
  *
@@ -79,6 +86,13 @@ void destroy_partial_mat(partial_mat_t** result);
 EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename, 
                              const char* unifrac_method, bool variance_adjust, double alpha,
                              bool bypass_tips, unsigned int threads, mat_t** result);
+
+
+/* compute Faith PD
+ * TODO: DOCUMENT
+ */
+EXTERN ComputeStatus faith_pd_one_off(const char* biom_filename, const char* tree_filename,
+                                      r_vec** result);
 
 /* Write a matrix object
  *

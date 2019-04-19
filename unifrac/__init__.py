@@ -12,7 +12,7 @@ from unifrac._methods import (unweighted,
                               weighted_normalized,
                               weighted_unnormalized,
                               generalized, meta)
-from unifrac._api import ssu
+from unifrac._api import ssu, sfaith
 
 
 __version__ = pkg_resources.get_distribution('unifrac').version

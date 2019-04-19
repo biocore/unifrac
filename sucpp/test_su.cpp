@@ -880,6 +880,33 @@ void test_make_strides() {
     }
 }
 
+void test_faith_pd() {
+    SUITE_START("test faith PD");
+
+    // std::vector<std::thread> threads(1);
+    // Note this tree is binary (opposed to example below)
+    su::BPTree tree = su::BPTree("((GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1):2,(GG_OTU_5:1,GG_OTU_4:1):1);");
+    su::biom table = su::biom("test.biom");
+
+
+    // make vector of expectations from faith PD
+    double exp[6] = {6., 7., 8., 5., 4., 7.};
+
+    // run faith PD to get obs
+    double obs[6]; // = {0, 0, 0, 0, 0, 0};
+
+    su::faith_pd(table, tree, obs);
+
+
+    // ASSERT that results = expectation
+    for (unsigned int i = 0; i < 6; i++){
+        ASSERT(fabs(exp[i]-obs[i]) < 0.000001)
+    }
+
+    SUITE_END();
+
+}
+
 void test_unweighted_unifrac() {
     SUITE_START("test unweighted unifrac");
     double **obs;
@@ -1241,6 +1268,8 @@ int main(int argc, char** argv) {
     test_unifrac_sample_counts();
     test_set_tasks();
     test_test_table_ids_are_subset_of_tree();
+
+    test_faith_pd();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);
