@@ -122,7 +122,7 @@ def sfaith(str biom_filename, str tree_filename):
             raise ValueError("Unknown method.")
 
     numpy_arr = np.zeros(result.n_samples, dtype=np.double)
-    numpy_arr[:] = <np.double_t[:result.num_samples]> result.values
+    numpy_arr[:] = <np.double_t[:result.n_samples]> result.values
 
     destroy_results_vec(&result)
 
