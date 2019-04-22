@@ -267,10 +267,9 @@ compute_status faith_pd_one_off(const char* biom_filename, const char* tree_file
     initialize_results_vec(*result, table);
 
     // compute faithpd
+    su::faith_pd(table, tree, std::ref((*result)->values));
+
     return okay;
-
-
-
 
 }
 
