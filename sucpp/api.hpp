@@ -7,30 +7,30 @@
 
 #else
 #include <stdbool.h>
-#define EXTERN 
+#define EXTERN
 #endif
 
 #define PARTIAL_MAGIC "SSU-PARTIAL-01"
 
 typedef enum compute_status {okay=0, tree_missing, table_missing, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
 typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
-typedef enum merge_status {merge_okay=0, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus; 
+typedef enum merge_status {merge_okay=0, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus;
 
 /* a result matrix
  *
  * n_samples <uint> the number of samples.
  * cf_size <uint> the size of the condensed form.
  * is_upper_triangle <bool> if true, indicates condensed_form represents a square
- *      matrix, and only the upper triangle is contained. if false, 
+ *      matrix, and only the upper triangle is contained. if false,
  *      condensed_form represents the lower triangle of a matrix.
  * condensed_form <double*> the matrix values of length cf_size.
  * sample_ids <char**> the sample IDs of length n_samples.
  */
 typedef struct mat {
-    unsigned int n_samples;  
-    unsigned int cf_size;   
-    bool is_upper_triangle;          
-    double* condensed_form;    
+    unsigned int n_samples;
+    unsigned int cf_size;
+    bool is_upper_triangle;
+    double* condensed_form;
     char** sample_ids;
 } mat_t;
 
@@ -45,14 +45,14 @@ typedef struct results_vec{
  * n_samples <uint> the number of samples.
  * sample_ids <char**> the sample IDs of length n_samples.
  * stripes <double**> the stripe data of dimension (stripe_stop - stripe_start, n_samples)
- * stripe_start <uint> the logical starting stripe in the final matrix. 
+ * stripe_start <uint> the logical starting stripe in the final matrix.
  * stripe_stop <uint> the logical stopping stripe in the final matrix.
  * stripe_total <uint> the total number of stripes present in the final matrix.
- * is_upper_triangle <bool> whether the stripes correspond to the upper triangle of the resulting matrix. 
- *      This is useful for asymmetric unifrac metrics. 
+ * is_upper_triangle <bool> whether the stripes correspond to the upper triangle of the resulting matrix.
+ *      This is useful for asymmetric unifrac metrics.
  */
 typedef struct partial_mat {
-    uint32_t n_samples;  
+    uint32_t n_samples;
     char** sample_ids;
     double** stripes;
     uint32_t stripe_start;
@@ -83,7 +83,7 @@ void destroy_results_vec(r_vec** result);
  * tree_missing   : the filename for the tree does not exist
  * unknown_method : the requested method is unknown.
  */
-EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename, 
+EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename,
                              const char* unifrac_method, bool variance_adjust, double alpha,
                              bool bypass_tips, unsigned int threads, mat_t** result);
 
@@ -145,9 +145,9 @@ EXTERN IOStatus write_mat(const char* filename, mat_t* result);
  * unknown_method : the requested method is unknown.
  */
 
-EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filename, 
+EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filename,
                              const char* unifrac_method, bool variance_adjust, double alpha,
-                             bool bypass_tips, unsigned int threads, unsigned int stripe_start, 
+                             bool bypass_tips, unsigned int threads, unsigned int stripe_start,
                              unsigned int stripe_stop, partial_mat_t** result);
 
 /* Write a partial matrix object
@@ -161,7 +161,7 @@ EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filenam
  * open_error : could not open the file
  *
  * The structure of the binary output file is as follows. Newlines added for clarity, but are not stored.
- * The file has logical blocks, but are not explicitly denoted in the format. These logical blocks are 
+ * The file has logical blocks, but are not explicitly denoted in the format. These logical blocks are
  * just used to improve readability here, and are denoted by ### marks.
  *
  * ### HEADER ###
@@ -215,7 +215,7 @@ EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
  * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
  * The following error codes are returned:
- * 
+ *
  * merge_okay            : no problems
  * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
  * sample_id_consistency : samples described by stripes are inconsistent
@@ -228,7 +228,7 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
 void set_tasks(std::vector<su::task_parameters> &tasks,
                double alpha,
                unsigned int n_samples,
-               unsigned int stripe_start, 
+               unsigned int stripe_start,
                unsigned int stripe_stop,
                bool bypass_tips,
                unsigned int nthreads);
