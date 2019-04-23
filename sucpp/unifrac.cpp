@@ -254,13 +254,6 @@ void su::faith_pd(biom &table,
     double *node_proportions;
     double length;
 
-    std::cout << "Before iterations\n";
-    //for (unsigned int sample = 0; sample < table.n_samples; sample++){
-    //    // result[sample] += (node_proportions[sample] > 0) * length
-    //    //result[sample] = 0;
-    //    std::cout << sample << ": " << result[sample] << "\n";
-    //}
-
     // for node in postorderselect
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
@@ -272,28 +265,11 @@ void su::faith_pd(biom &table,
         set_proportions(node_proportions, tree, node, table, propstack);
 
         // TODO: make kernel for calculating faith
-        // allocate score
-        // for sample in node_proportions:
-        //std::cout << "iteration: " << k << "\n";
         for (unsigned int sample = 0; sample < table.n_samples; sample++){
-            // result[sample] += (node_proportions[sample] > 0) * length
+           // calculate contribution of node to score
             result[sample] += (node_proportions[sample] > 0) * length;
-            //std::cout << sample << ": " << result[sample] << "\n";
         }
     }
-       // calculate contribution of node to score
-            // I(count > 0) * branch length
-
-       // set node_scores to contribution + sum(children_scores)
-
-    // return total_score (in result)
-
-    // this is just to see if I set up the test correctly
-    // double obs[6] = {6, 7, 8, 5, 4, 7};
-
-    // for(unsigned int i = 0; i < 6; i++){
-    //     *(result + i) = *(obs + i);
-    // }
 }
 
 

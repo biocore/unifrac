@@ -2,7 +2,7 @@ import skbio
 import numpy as np
 cimport numpy as np
 
-def ssu(str biom_filename, str tree_filename, 
+def ssu(str biom_filename, str tree_filename,
         str unifrac_method, bool variance_adjust, double alpha,
         bool bypass_tips, unsigned int threads):
     """Execute a call to Strided State UniFrac via the direct API
@@ -49,9 +49,9 @@ def ssu(str biom_filename, str tree_filename,
         bytes biom_py_bytes
         bytes tree_py_bytes
         bytes met_py_bytes
-        char* biom_c_string 
-        char* tree_c_string 
-        char* met_c_string 
+        char* biom_c_string
+        char* tree_c_string
+        char* met_c_string
         list ids
 
     biom_py_bytes = biom_filename.encode()
@@ -61,13 +61,13 @@ def ssu(str biom_filename, str tree_filename,
     tree_c_string = tree_py_bytes
     met_c_string = met_py_bytes
 
-    status = one_off(biom_c_string, 
-                     tree_c_string, 
-                     met_c_string, 
-                     variance_adjust, 
+    status = one_off(biom_c_string,
+                     tree_c_string,
+                     met_c_string,
+                     variance_adjust,
                      alpha,
                      bypass_tips,
-                     threads, 
+                     threads,
                      &result)
 
     if status != okay:
@@ -81,7 +81,7 @@ def ssu(str biom_filename, str tree_filename,
     ids = []
     numpy_arr = np.zeros(result.cf_size, dtype=np.double)
     numpy_arr[:] = <np.double_t[:result.cf_size]> result.condensed_form
-    
+
     for i in range(result.n_samples):
         ids.append(result.sample_ids[i].decode('utf-8'))
 
@@ -97,7 +97,6 @@ def sfaith(str biom_filename, str tree_filename):
         results_vec *result;
         compute_status status;
         np.ndarray[np.double_t, ndim=1] numpy_arr
-        double *cf
         int i
         bytes biom_py_bytes
         bytes tree_py_bytes
@@ -127,5 +126,3 @@ def sfaith(str biom_filename, str tree_filename):
     destroy_results_vec(&result)
 
     return numpy_arr
-
-
