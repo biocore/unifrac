@@ -89,9 +89,11 @@ def ssu(str biom_filename, str tree_filename,
 
     return skbio.DistanceMatrix(numpy_arr, ids)
 
-def sfaith(str biom_filename, str tree_filename):
+def stacked_faith(str biom_filename, str tree_filename):
     """
     TODO: document
+
+
     """
     cdef:
         results_vec *result;
