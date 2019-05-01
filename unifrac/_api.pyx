@@ -89,11 +89,28 @@ def ssu(str biom_filename, str tree_filename,
 
     return skbio.DistanceMatrix(numpy_arr, ids)
 
-def stacked_faith(str biom_filename, str tree_filename):
-    """
-    TODO: document
+def stacked_faith(str biom_filename, str tree_filename) -> np.array:
+    """Execute a call to the Stacked Faith API in UniFrac package
 
+    Parameters
+    ----------
+    biom_filename : str
+        A filepath to a BIOM 2.1 formatted table (HDF5)
+    tree_filename : str
+        A filepath to a Newick formatted tree
 
+    Returns
+    -------
+    np.array
+        Array of Faith's PD for each otu in `biom_filename`
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If an unknown method is requested.
     """
     cdef:
         results_vec *result;

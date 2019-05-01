@@ -18,7 +18,7 @@ from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
 
-from unifrac import ssu
+from unifrac import ssu, stacked_faith
 
 
 class UnifracAPITests(unittest.TestCase):
@@ -51,9 +51,9 @@ class UnifracAPITests(unittest.TestCase):
 
         result = ssu(e1, t1, 'unweighted', False, 1.0, False, 1)
 
-        u1_distances = np.array([[0, 10/16., 8/13.],
-                                 [10/16., 0, 8/17.],
-                                 [8/13., 8/17., 0]])
+        u1_distances = np.array([[0, 10 / 16., 8 / 13.],
+                                 [10 / 16., 0, 8 / 17.],
+                                 [8 / 13., 8 / 17., 0]])
 
         npt.assert_almost_equal(u1_distances, result.data)
         self.assertEqual(tuple('ABC'), result.ids)
@@ -559,6 +559,227 @@ class EdgeCasesTests(unittest.TestCase):
             self.b1[4], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 1.0
         self.assertAlmostEqual(actual, expected)
+
+
+class FaithPDEdgeCasesTests(unittest.TestCase):
+    # These tests were mostly ported from skbio's
+    # skbio/diversity/alpha/tests/test_fatih_pd.py at SHA-256 a8c086b
+    # note that not all tests were kept since the APIs are different.
+
+    package = 'unifrac.tests'
+
+    def faith_pd_work(self, u_counts, otu_ids, tree):
+        data = np.array([u_counts]).T
+
+        bt = Table(data, otu_ids, ['u'])
+
+        ta = os.path.join(gettempdir(), 'table.biom')
+        tr = os.path.join(gettempdir(), 'tree.biom')
+
+        self.files_to_delete.append(ta)
+        self.files_to_delete.append(tr)
+
+        with biom_open(ta, 'w') as fhdf5:
+            bt.to_hdf5(fhdf5, 'Table for unit testing')
+        tree.write(tr)
+
+        return stacked_faith(ta, tr)
+
+    def setUp(self):
+        self.counts = np.array([0, 1, 1, 4, 2, 5, 2, 4, 1, 2])
+        self.b1 = np.array([[1, 3, 0, 1, 0],
+                            [0, 2, 0, 4, 4],
+                            [0, 0, 6, 2, 1],
+                            [0, 0, 1, 1, 1]])
+        self.sids1 = list('ABCD')
+        self.oids1 = ['OTU%d' % i for i in range(1, 6)]
+        self.t1 = TreeNode.read(StringIO(
+            '(((((OTU1:0.5,OTU2:0.5):0.5,OTU3:1.0):1.0):'
+            '0.0,(OTU4:0.75,OTU5:0.75):1.25):0.0)root;'))
+        self.t1_w_extra_tips = TreeNode.read(
+            StringIO('(((((OTU1:0.5,OTU2:0.5):0.5,OTU3:1.0):1.0):0.0,(OTU4:'
+                     '0.75,(OTU5:0.25,(OTU6:0.5,OTU7:0.5):0.5):0.5):1.25):0.0'
+                     ')root;'))
+
+        self.files_to_delete = []
+
+    def tearDown(self):
+
+        for f in self.files_to_delete:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+    def test_faith_pd_none_observed(self):
+        # # TODO test below should theoretically be covered but currently
+        # #  causes a segmentation fault
+        # actual = self.faith_pd_work(np.array([], dtype=int),
+        #                             np.array([], dtype=int),
+        #                             self.t1)
+        # expected = 0.0
+        # self.assertAlmostEqual(actual, expected)
+
+        actual = self.faith_pd_work([0, 0, 0, 0, 0], self.oids1, self.t1)
+        expected = 0.0
+        self.assertAlmostEqual(actual, expected)
+
+    def test_faith_pd_all_observed(self):
+        actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, self.t1)
+        expected = sum(n.length for n in self.t1.traverse()
+                       if n.length is not None)
+        self.assertAlmostEqual(actual, expected)
+
+        actual = self.faith_pd_work([1, 2, 3, 4, 5], self.oids1, self.t1)
+        expected = sum(n.length for n in self.t1.traverse()
+                       if n.length is not None)
+        self.assertAlmostEqual(actual, expected)
+
+    def test_faith_pd(self):
+        # expected results derived from QIIME 1.9.1, which
+        # is a completely different implementation unifrac's initial
+        # phylogenetic diversity implementation
+        actual = self.faith_pd_work(self.b1[0], self.oids1, self.t1)
+        expected = 4.5
+        self.assertAlmostEqual(actual, expected)
+        actual = self.faith_pd_work(self.b1[1], self.oids1, self.t1)
+        expected = 4.75
+        self.assertAlmostEqual(actual, expected)
+        actual = self.faith_pd_work(self.b1[2], self.oids1, self.t1)
+        expected = 4.75
+        self.assertAlmostEqual(actual, expected)
+        actual = self.faith_pd_work(self.b1[3], self.oids1, self.t1)
+        expected = 4.75
+        self.assertAlmostEqual(actual, expected)
+
+    def test_faith_pd_extra_tips(self):
+        # results are the same despite presences of unobserved tips in tree
+        actual = self.faith_pd_work(self.b1[0], self.oids1, self.t1_w_extra_tips)
+        expected = self.faith_pd_work(self.b1[0], self.oids1, self.t1)
+        self.assertAlmostEqual(actual, expected)
+        actual = self.faith_pd_work(self.b1[1], self.oids1, self.t1_w_extra_tips)
+        expected = self.faith_pd_work(self.b1[1], self.oids1, self.t1)
+        self.assertAlmostEqual(actual, expected)
+        actual = self.faith_pd_work(self.b1[2], self.oids1, self.t1_w_extra_tips)
+        expected = self.faith_pd_work(self.b1[2], self.oids1, self.t1)
+        self.assertAlmostEqual(actual, expected)
+        actual = self.faith_pd_work(self.b1[3], self.oids1, self.t1_w_extra_tips)
+        expected = self.faith_pd_work(self.b1[3], self.oids1, self.t1)
+        self.assertAlmostEqual(actual, expected)
+
+    def test_faith_pd_minimal(self):
+        # two tips
+        tree = TreeNode.read(StringIO('(OTU1:0.25, OTU2:0.25)root;'))
+        actual = self.faith_pd_work([1, 0], ['OTU1', 'OTU2'], tree)
+        expected = 0.25
+        self.assertEqual(actual, expected)
+
+    def test_faith_pd_root_not_observed(self):
+        # expected values computed by hand
+        tree = TreeNode.read(
+            StringIO('((OTU1:0.1, OTU2:0.2):0.3, (OTU3:0.5, OTU4:0.7):1.1)'
+                     'root;'))
+        otu_ids = ['OTU%d' % i for i in range(1, 5)]
+        # root node not observed, but branch between (OTU1, OTU2) and root
+        # is considered observed
+        actual = self.faith_pd_work([1, 1, 0, 0], otu_ids, tree)
+        expected = 0.6
+        self.assertAlmostEqual(actual[0], expected)
+
+        # root node not observed, but branch between (OTU3, OTU4) and root
+        # is considered observed
+        actual = self.faith_pd_work([0, 0, 1, 1], otu_ids, tree)
+        expected = 2.3
+        self.assertAlmostEqual(actual[0], expected)
+
+    def test_faith_pd_invalid_input(self):
+        # tree has duplicated tip ids
+        tree = TreeNode.read(
+            StringIO('((OTU1:0.1, OTU2:0.2):0.3, (OTU3:0.5, OTU4:0.7):1.1)'
+                     'root;'))
+        otu_ids = ['OTU%d' % i for i in range(1, 5)]
+        u_counts = [1, 1, 0, 0]
+
+        data = np.array([u_counts]).T
+
+        bt = Table(data, otu_ids, ['u'])
+
+        ta = os.path.join(gettempdir(), 'table.biom')
+        tr = os.path.join(gettempdir(), 'tree.biom')
+
+        self.files_to_delete.append(ta)
+        self.files_to_delete.append(tr)
+
+        with biom_open(ta, 'w') as fhdf5:
+            bt.to_hdf5(fhdf5, 'Table for unit testing')
+        tree.write(tr)
+
+        self.assertRaises(IOError, stacked_faith, 'dne.biom', tr)
+        self.assertRaises(IOError, stacked_faith, ta, 'dne.tre')
+
+        # TODO tests for the value errors
+
+        # TODO currently does not have support for the cases below
+
+        # # unrooted tree as input
+        # t = TreeNode.read(StringIO('((OTU1:0.1, OTU2:0.2):0.3, OTU3:0.5,'
+        #                            'OTU4:0.7);'))
+        # counts = [1, 2, 3]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU3']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+
+        # # otu_ids has duplicated ids
+        # t = TreeNode.read(
+        #     StringIO('(((((OTU1:0.5,OTU2:0.5):0.5,OTU3:1.0):1.0):0.0,(OTU4:'
+        #              '0.75,OTU5:0.75):1.25):0.0)root;'))
+        # counts = [1, 2, 3]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU2']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+
+        # # len of vectors not equal
+        # t = TreeNode.read(
+        #     StringIO('(((((OTU1:0.5,OTU2:0.5):0.5,OTU3:1.0):1.0):0.0,(OTU4:'
+        #              '0.75,OTU5:0.75):1.25):0.0)root;'))
+        # counts = [1, 2]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU3']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+        # counts = [1, 2, 3]
+        # otu_ids = ['OTU1', 'OTU2']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+
+        # # negative counts
+        # t = TreeNode.read(
+        #     StringIO('(((((OTU1:0.5,OTU2:0.5):0.5,OTU3:1.0):1.0):0.0,(OTU4:'
+        #              '0.75,OTU5:0.75):1.25):0.0)root;'))
+        # counts = [1, 2, -3]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU3']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+
+        # # tree with no branch lengths
+        # t = TreeNode.read(
+        #     StringIO('((((OTU1,OTU2),OTU3)),(OTU4,OTU5));'))
+        # counts = [1, 2, 3]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU3']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+
+        # # tree missing some branch lengths
+        # t = TreeNode.read(
+        #     StringIO('(((((OTU1,OTU2:0.5):0.5,OTU3:1.0):1.0):0.0,(OTU4:'
+        #              '0.75,OTU5:0.75):1.25):0.0)root;'))
+        # counts = [1, 2, 3]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU3']
+        # self.assertRaises(ValueError, self.faith_pd_work, counts, otu_ids, t)
+
+        # # otu_ids not present in tree
+        # t = TreeNode.read(
+        #     StringIO('(((((OTU1:0.5,OTU2:0.5):0.5,OTU3:1.0):1.0):0.0,(OTU4:'
+        #              '0.75,OTU5:0.75):1.25):0.0)root;'))
+        # counts = [1, 2, 3]
+        # otu_ids = ['OTU1', 'OTU2', 'OTU42']
+        # #self.assertRaises(MissingNodeError, self.faith_pd_work, counts,
+        # # otu_ids, t)
+
+
 
 
 if __name__ == "__main__":
