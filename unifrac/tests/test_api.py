@@ -611,6 +611,18 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
             except OSError:
                 pass
 
+    def test_faith_pd_zero_branches_omitted(self):
+        # also deleted branch length fo
+
+        t2 = TreeNode.read(StringIO(
+            '((OTU1:0.5,OTU2:0.5),(OTU3:1.0,(OTU4:0.5,'
+            'OTU5:0.75):1.0):1.0)root;'
+        ))
+
+        actual = self.faith_pd_work([1, 1, 0, 0, 0], self.oids1, t2)
+        expected = 1.0
+        self.assertAlmostEqual(actual[0], expected)
+
     def test_faith_pd_none_observed(self):
         # # TODO test below should theoretically be covered but currently
         # #  causes a segmentation fault
@@ -717,7 +729,7 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         self.assertRaises(IOError, stacked_faith, 'dne.biom', tr)
         self.assertRaises(IOError, stacked_faith, ta, 'dne.tre')
 
-        # TODO tests for the value errors
+        # TODO tests for the ValueError's
 
         # TODO currently does not have support for the cases below
 
@@ -778,8 +790,6 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         # otu_ids = ['OTU1', 'OTU2', 'OTU42']
         # #self.assertRaises(MissingNodeError, self.faith_pd_work, counts,
         # # otu_ids, t)
-
-
 
 
 if __name__ == "__main__":
