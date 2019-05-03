@@ -26,4 +26,19 @@ Rcpp::List unifrac(const char* table, const char* tree, int nthreads){
 
 }
 
+// [[Rcpp::export]]
+Rcpp::List faithpd(const char* table, const char tree){
+    r_vec* result = NULL;
+    ComputeStatus status;
+    status = faith_pd_one_off(table, tree, r_vec);
+    vector<double> values;
+    for(int i = 0; i < result->n_samples; i++){
+        values.push_back(result->values[i]);
+    }
+
+    return Rcpp::List::create(Rcpp::Named("n_samples") = result->n_samples,
+                              Rcpp::Named("pd") = values);
+
+}
+
 
