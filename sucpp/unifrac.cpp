@@ -244,9 +244,13 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
     }
 }
 
+// Computes Faith's PD for the samples in  `table` over the phylogenetic
+// tree given by `tree`.
 void su::faith_pd(biom &table,
                   BPTree &tree,
                   double* result) {
+
+    // Assure that tree does not contain ids that are not in table
 
     PropStack propstack(table.n_samples);
 
@@ -262,11 +266,12 @@ void su::faith_pd(biom &table,
 
         // get node proportions
         node_proportions = propstack.pop(node);
+
         set_proportions(node_proportions, tree, node, table, propstack);
 
-        // TODO: make kernel for calculating faith
+        // TODO: make kernel for calculating faith <- probably faster if not
         for (unsigned int sample = 0; sample < table.n_samples; sample++){
-           // calculate contribution of node to score
+            // calculate contribution of node to score
             result[sample] += (node_proportions[sample] > 0) * length;
         }
     }

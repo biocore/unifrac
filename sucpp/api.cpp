@@ -48,7 +48,8 @@ bool is_file_exists(const char *fileName) {
 }
 
 
-void destroy_stripes(vector<double*> &dm_stripes, vector<double*> &dm_stripes_total, unsigned int n_samples, unsigned int stripe_start, unsigned int stripe_stop) {
+void destroy_stripes(vector<double*> &dm_stripes, vector<double*> &dm_stripes_total, unsigned int n_samples,
+                     unsigned int stripe_start, unsigned int stripe_stop) {
     unsigned int n_rotations = (n_samples + 1) / 2;
 
     if(stripe_stop == 0) {
@@ -117,7 +118,8 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
     }
 }
 
-void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<double*> &dm_stripes, unsigned int stripe_start, unsigned int stripe_stop, bool is_upper_triangle) {
+void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<double*> &dm_stripes,
+                            unsigned int stripe_start, unsigned int stripe_stop, bool is_upper_triangle) {
     result = (partial_mat_t*)malloc(sizeof(partial_mat));
     result->n_samples = table.n_samples;
 
