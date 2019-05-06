@@ -1,6 +1,7 @@
 import skbio
 import numpy as np
 cimport numpy as np
+import pandas as pd
 
 def ssu(str biom_filename, str tree_filename,
         str unifrac_method, bool variance_adjust, double alpha,
@@ -37,6 +38,7 @@ def ssu(str biom_filename, str tree_filename,
     IOError
         If the tree file is not found
         If the table is not found
+        If the table is empty
     ValueError
         If an unknown method is requested.
     """
@@ -75,6 +77,8 @@ def ssu(str biom_filename, str tree_filename,
             raise IOError("Tree file not found.")
         if status == table_missing:
             raise IOError("Table file not found.")
+        if status == table_empty:
+            raise IOError("Table file is empty.")
         if status == unknown_method:
             raise ValueError("Unknown method.")
 
@@ -89,8 +93,8 @@ def ssu(str biom_filename, str tree_filename,
 
     return skbio.DistanceMatrix(numpy_arr, ids)
 
-def stacked_faith(str biom_filename, str tree_filename) -> np.array:
-    """Execute a call to the Stacked Faith API in UniFrac package
+def stacked_faith(str biom_filename, str tree_filename):
+    """Execute a call to the Stacked Faith API in the UniFrac package
 
     Parameters
     ----------
@@ -101,22 +105,20 @@ def stacked_faith(str biom_filename, str tree_filename) -> np.array:
 
     Returns
     -------
-    np.array
-        Array of Faith's PD for each otu in `biom_filename`
+    pd.Series
+        Series of Faith's PD for each sample in `biom_filename`
 
     Raises
     ------
     IOError
         If the tree file is not found
         If the table is not found
-    ValueError
-        If an unknown method is requested.
+        If the table is empty
     """
     cdef:
         results_vec *result;
         compute_status status;
         np.ndarray[np.double_t, ndim=1] numpy_arr
-        int i
         bytes biom_py_bytes
         bytes tree_py_bytes
         char* biom_c_string
@@ -134,14 +136,22 @@ def stacked_faith(str biom_filename, str tree_filename) -> np.array:
     if status != okay:
         if status == tree_missing:
             raise IOError("Tree file not found.")
-        if status == table_missing:
+        elif status == table_missing:
             raise IOError("Table file not found.")
-        if status == unknown_method:
-            raise ValueError("Unknown method.")
+        elif status == table_empty:
+            raise IOError("Table file is empty.")
+        else:
+            raise ValueError("Unknown Error: {}".format(status))
 
     numpy_arr = np.zeros(result.n_samples, dtype=np.double)
     numpy_arr[:] = <np.double_t[:result.n_samples]> result.values
 
+    ids = []
+    for i in range(result.n_samples):
+        ids.append(result.sample_ids[i].decode('utf-8'))
+
+    pd_series = pd.Series(numpy_arr, index=ids)
+
     destroy_results_vec(&result)
 
-    return numpy_arr
+    return pd_series

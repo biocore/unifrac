@@ -17,6 +17,7 @@ cdef extern from "../sucpp/api.hpp":
         okay, 
         tree_missing,
         table_missing,
+        table_empty,
         unknown_method,
         table_and_tree_do_not_overlap
 

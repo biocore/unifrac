@@ -29,6 +29,9 @@
                                                                                                std::istreambuf_iterator<char>());     \
                                                              su::BPTree tree = su::BPTree(content);                                   \
                                                              su::biom table = su::biom(biom_filename);                                \
+                                                             if(table.n_samples <= 0 | table.n_obs <= 0) {                            \
+                                                                 return table_empty;                                                  \
+                                                             }                                                                        \
                                                              std::string bad_id = su::test_table_ids_are_subset_of_tree(table, tree); \
                                                              if(bad_id != "") {                                                       \
                                                                  return table_and_tree_do_not_overlap;                                \
@@ -89,6 +92,7 @@ void initialize_mat(mat_t* &result, biom &table, bool is_upper_triangle) {
 }
 
 void initialize_results_vec(r_vec* &result, biom& table){
+    // Stores results for Faith PD
     result = (r_vec*)malloc(sizeof(results_vec));
     result->n_samples = table.n_samples;
     result->values = (double*)malloc(sizeof(double) * result->n_samples);
@@ -143,14 +147,15 @@ void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<dou
 }
 
 void destroy_results_vec(r_vec** result) {
+    // for Faith PD
     for(unsigned int i = 0; i < (*result)->n_samples; i++) {
         free((*result)->sample_ids[i]);
     };
     free((*result)->sample_ids);
     free((*result)->values);
     free(*result);
-
 }
+
 void destroy_mat(mat_t** result) {
     for(unsigned int i = 0; i < (*result)->n_samples; i++) {
         free((*result)->sample_ids[i]);
@@ -273,9 +278,7 @@ compute_status faith_pd_one_off(const char* biom_filename, const char* tree_file
     su::faith_pd(table, tree_sheared, std::ref((*result)->values));
 
     return okay;
-
 }
-
 
 compute_status one_off(const char* biom_filename, const char* tree_filename,
                        const char* unifrac_method, bool variance_adjust, double alpha,

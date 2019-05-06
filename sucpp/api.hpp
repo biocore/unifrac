@@ -12,7 +12,7 @@
 
 #define PARTIAL_MAGIC "SSU-PARTIAL-01"
 
-typedef enum compute_status {okay=0, tree_missing, table_missing, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
+typedef enum compute_status {okay=0, tree_missing, table_missing, table_empty, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
 typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
 typedef enum merge_status {merge_okay=0, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus;
 
@@ -34,6 +34,12 @@ typedef struct mat {
     char** sample_ids;
 } mat_t;
 
+/* a result vector
+ *
+ * n_samples <uint> the number of samples.
+ * values <double*> the score values of length n_samples.
+ * sample_ids <char**> the sample IDs of length n_samples.
+ */
 typedef struct results_vec{
     unsigned int n_samples;
     double* values;
@@ -82,6 +88,7 @@ void destroy_results_vec(r_vec** result);
  * table_missing  : the filename for the table does not exist
  * tree_missing   : the filename for the tree does not exist
  * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
  */
 EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename,
                              const char* unifrac_method, bool variance_adjust, double alpha,
@@ -89,7 +96,16 @@ EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filenam
 
 
 /* compute Faith PD
- * TODO: DOCUMENT
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * result <r_vec**> the resulting vector of computed Faith PD values
+ *
+ * faith_pd_one_off returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * table_empty    : the table does not have any entries
  */
 EXTERN ComputeStatus faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                       r_vec** result);

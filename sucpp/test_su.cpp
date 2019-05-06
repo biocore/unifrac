@@ -883,11 +883,9 @@ void test_make_strides() {
 void test_faith_pd() {
     SUITE_START("test faith PD");
 
-    // std::vector<std::thread> threads(1);
     // Note this tree is binary (opposed to example below)
     su::BPTree tree = su::BPTree("((GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1):2,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-
 
     // make vector of expectations from faith PD
     double exp[6] = {6., 7., 8., 5., 4., 7.};
@@ -897,23 +895,18 @@ void test_faith_pd() {
 
     su::faith_pd(table, tree, obs);
 
-
     // ASSERT that results = expectation
     for (unsigned int i = 0; i < 6; i++){
         ASSERT(fabs(exp[i]-obs[i]) < 0.000001)
     }
-
     SUITE_END();
-
 }
 
 void test_faith_pd_shear(){
     SUITE_START("test faith PD extra OTUs in tree");
 
-    // std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("((GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1,GG_OTU_ex:9):1):2,(GG_OTU_5:1,GG_OTU_4:1,GG_OTU_ex2:12):1);");
     su::biom table = su::biom("test.biom");
-
 
     // make vector of expectations from faith PD
     double exp[6] = {6., 7., 8., 5., 4., 7.};
@@ -926,14 +919,11 @@ void test_faith_pd_shear(){
     su::BPTree tree_sheared = tree.shear(to_keep).collapse();
     su::faith_pd(table, tree_sheared, obs);
 
-
     // ASSERT that results = expectation
     for (unsigned int i = 0; i < 6; i++){
         ASSERT(fabs(exp[i]-obs[i]) < 0.000001)
     }
-
     SUITE_END();
-
 }
 
 void test_unweighted_unifrac() {
