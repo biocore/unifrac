@@ -670,16 +670,20 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
 
     def test_faith_pd_extra_tips(self):
         # results are the same despite presences of unobserved tips in tree
-        actual = self.faith_pd_work(self.b1[0], self.oids1, self.t1_w_extra_tips)
+        actual = self.faith_pd_work(self.b1[0], self.oids1,
+                                    self.t1_w_extra_tips)
         expected = self.faith_pd_work(self.b1[0], self.oids1, self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
-        actual = self.faith_pd_work(self.b1[1], self.oids1, self.t1_w_extra_tips)
+        actual = self.faith_pd_work(self.b1[1], self.oids1,
+                                    self.t1_w_extra_tips)
         expected = self.faith_pd_work(self.b1[1], self.oids1, self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
-        actual = self.faith_pd_work(self.b1[2], self.oids1, self.t1_w_extra_tips)
+        actual = self.faith_pd_work(self.b1[2], self.oids1,
+                                    self.t1_w_extra_tips)
         expected = self.faith_pd_work(self.b1[2], self.oids1, self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
-        actual = self.faith_pd_work(self.b1[3], self.oids1, self.t1_w_extra_tips)
+        actual = self.faith_pd_work(self.b1[3], self.oids1,
+                                    self.t1_w_extra_tips)
         expected = self.faith_pd_work(self.b1[3], self.oids1, self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
 
