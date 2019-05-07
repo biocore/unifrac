@@ -629,23 +629,26 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         self.assertAlmostEqual(actual[0], expected)
 
     def test_faith_pd_none_observed(self):
-        actual = self.faith_pd_work([0, 0, 0, 0, 0], self.oids1, ['foo'], self.t1)
+        actual = self.faith_pd_work([0, 0, 0, 0, 0], self.oids1, ['foo'],
+                                    self.t1)
         expected = 0.0
         self.assertAlmostEqual(actual.values, expected)
 
     def test_faith_pd_biom_table_empty(self):
-        table, tree = self.write_table_tree([],[],[],
+        table, tree = self.write_table_tree([], [], [],
                                             self.t1)
 
         self.assertRaises(IOError, stacked_faith, table, tree)
 
     def test_faith_pd_all_observed(self):
-        actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'], self.t1)
+        actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'],
+                                    self.t1)
         expected = sum(n.length for n in self.t1.traverse()
                        if n.length is not None)
         self.assertAlmostEqual(actual.values, expected)
 
-        actual = self.faith_pd_work([1, 2, 3, 4, 5], self.oids1, ['foo'], self.t1)
+        actual = self.faith_pd_work([1, 2, 3, 4, 5], self.oids1, ['foo'],
+                                    self.t1)
         expected = sum(n.length for n in self.t1.traverse()
                        if n.length is not None)
         self.assertAlmostEqual(actual.values, expected)
@@ -654,16 +657,20 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         # expected results derived from QIIME 1.9.1, which
         # is a completely different implementation unifrac's initial
         # phylogenetic diversity implementation
-        actual = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]], self.t1)
+        actual = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]],
+                                    self.t1)
         expected = 4.5
         self.assertAlmostEqual(actual.values, expected)
-        actual = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]], self.t1)
+        actual = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]],
+                                    self.t1)
         expected = 4.75
         self.assertAlmostEqual(actual.values, expected)
-        actual = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]], self.t1)
+        actual = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]],
+                                    self.t1)
         expected = 4.75
         self.assertAlmostEqual(actual.values, expected)
-        actual = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]], self.t1)
+        actual = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]],
+                                    self.t1)
         expected = 4.75
         self.assertAlmostEqual(actual.values, expected)
 
@@ -671,20 +678,23 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         # results are the same despite presences of unobserved tips in tree
         actual = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]], self.t1)
+        expected = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]],
+                                      self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
         actual = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]], self.t1)
+        expected = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]],
+                                      self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
         actual = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]], self.t1)
+        expected = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]],
+                                      self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
         actual = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]],
                                     self.t1_w_extra_tips)
         expected = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]],
-                                    self.t1)
+                                      self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
 
     def test_faith_pd_minimal(self):
