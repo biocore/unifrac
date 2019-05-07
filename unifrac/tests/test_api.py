@@ -568,10 +568,10 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
 
     package = 'unifrac.tests'
 
-    def write_table_tree(self, u_counts, otu_ids, tree):
+    def write_table_tree(self, u_counts, otu_ids, sample_ids, tree):
         data = np.array([u_counts]).T
 
-        bt = Table(data, otu_ids, ['u'])
+        bt = Table(data, otu_ids, sample_ids)
 
         ta = os.path.join(gettempdir(), 'table.biom')
         tr = os.path.join(gettempdir(), 'tree.biom')
@@ -585,8 +585,8 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
 
         return ta, tr
 
-    def faith_pd_work(self, u_counts, otu_ids, tree):
-        ta, tr = self.write_table_tree(u_counts, otu_ids, tree)
+    def faith_pd_work(self, u_counts, otu_ids, sample_ids, tree):
+        ta, tr = self.write_table_tree(u_counts, otu_ids, sample_ids, tree)
 
         return stacked_faith(ta, tr)
 
@@ -624,29 +624,28 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
             'OTU5:0.75):1.0):1.0)root;'
         ))
 
-        actual = self.faith_pd_work([1, 1, 0, 0, 0], self.oids1, t2)
+        actual = self.faith_pd_work([1, 1, 0, 0, 0], self.oids1, ['foo'], t2)
         expected = 1.0
         self.assertAlmostEqual(actual[0], expected)
 
     def test_faith_pd_none_observed(self):
-        actual = self.faith_pd_work([0, 0, 0, 0, 0], self.oids1, self.t1)
+        actual = self.faith_pd_work([0, 0, 0, 0, 0], self.oids1, ['foo'], self.t1)
         expected = 0.0
         self.assertAlmostEqual(actual.values, expected)
 
     def test_faith_pd_biom_table_empty(self):
-        table, tree = self.write_table_tree(np.array([], dtype=int),
-                                            np.array([], dtype=int),
+        table, tree = self.write_table_tree([],[],[],
                                             self.t1)
 
         self.assertRaises(IOError, stacked_faith, table, tree)
 
     def test_faith_pd_all_observed(self):
-        actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, self.t1)
+        actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'], self.t1)
         expected = sum(n.length for n in self.t1.traverse()
                        if n.length is not None)
         self.assertAlmostEqual(actual.values, expected)
 
-        actual = self.faith_pd_work([1, 2, 3, 4, 5], self.oids1, self.t1)
+        actual = self.faith_pd_work([1, 2, 3, 4, 5], self.oids1, ['foo'], self.t1)
         expected = sum(n.length for n in self.t1.traverse()
                        if n.length is not None)
         self.assertAlmostEqual(actual.values, expected)
@@ -655,42 +654,43 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         # expected results derived from QIIME 1.9.1, which
         # is a completely different implementation unifrac's initial
         # phylogenetic diversity implementation
-        actual = self.faith_pd_work(self.b1[0], self.oids1, self.t1)
+        actual = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]], self.t1)
         expected = 4.5
         self.assertAlmostEqual(actual.values, expected)
-        actual = self.faith_pd_work(self.b1[1], self.oids1, self.t1)
+        actual = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]], self.t1)
         expected = 4.75
         self.assertAlmostEqual(actual.values, expected)
-        actual = self.faith_pd_work(self.b1[2], self.oids1, self.t1)
+        actual = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]], self.t1)
         expected = 4.75
         self.assertAlmostEqual(actual.values, expected)
-        actual = self.faith_pd_work(self.b1[3], self.oids1, self.t1)
+        actual = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]], self.t1)
         expected = 4.75
         self.assertAlmostEqual(actual.values, expected)
 
     def test_faith_pd_extra_tips(self):
         # results are the same despite presences of unobserved tips in tree
-        actual = self.faith_pd_work(self.b1[0], self.oids1,
+        actual = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[0], self.oids1, self.t1)
+        expected = self.faith_pd_work(self.b1[0], self.oids1, [self.sids1[0]], self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
-        actual = self.faith_pd_work(self.b1[1], self.oids1,
+        actual = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[1], self.oids1, self.t1)
+        expected = self.faith_pd_work(self.b1[1], self.oids1, [self.sids1[1]], self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
-        actual = self.faith_pd_work(self.b1[2], self.oids1,
+        actual = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[2], self.oids1, self.t1)
+        expected = self.faith_pd_work(self.b1[2], self.oids1, [self.sids1[2]], self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
-        actual = self.faith_pd_work(self.b1[3], self.oids1,
+        actual = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]],
                                     self.t1_w_extra_tips)
-        expected = self.faith_pd_work(self.b1[3], self.oids1, self.t1)
+        expected = self.faith_pd_work(self.b1[3], self.oids1, [self.sids1[3]],
+                                    self.t1)
         self.assertAlmostEqual(actual.values, expected.values)
 
     def test_faith_pd_minimal(self):
         # two tips
         tree = TreeNode.read(StringIO('(OTU1:0.25, OTU2:0.25)root;'))
-        actual = self.faith_pd_work([1, 0], ['OTU1', 'OTU2'], tree)
+        actual = self.faith_pd_work([1, 0], ['OTU1', 'OTU2'], ['foo'], tree)
         expected = 0.25
         self.assertEqual(actual.values, expected)
 
@@ -702,13 +702,13 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         otu_ids = ['OTU%d' % i for i in range(1, 5)]
         # root node not observed, but branch between (OTU1, OTU2) and root
         # is considered observed
-        actual = self.faith_pd_work([1, 1, 0, 0], otu_ids, tree)
+        actual = self.faith_pd_work([1, 1, 0, 0], otu_ids, ['foo'], tree)
         expected = 0.6
         self.assertAlmostEqual(actual[0], expected)
 
         # root node not observed, but branch between (OTU3, OTU4) and root
         # is considered observed
-        actual = self.faith_pd_work([0, 0, 1, 1], otu_ids, tree)
+        actual = self.faith_pd_work([0, 0, 1, 1], otu_ids, ['foo'], tree)
         expected = 2.3
         self.assertAlmostEqual(actual[0], expected)
 
