@@ -22,6 +22,8 @@
                 double* get(uint32_t i);
         };
 
+        void faith_pd(biom &table, BPTree &tree, double* result);
+
         std::string test_table_ids_are_subset_of_tree(biom &table, BPTree &tree);
         void unifrac(biom &table, 
                      BPTree &tree, 

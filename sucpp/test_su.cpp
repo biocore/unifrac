@@ -8,7 +8,7 @@
 #include <string.h>
 
 /*
- * test harness adapted from 
+ * test harness adapted from
  * https://github.com/noporpoise/BitArray/blob/master/dev/bit_array_test.c
  */
 const char *suite_name;
@@ -259,10 +259,10 @@ void test_bptree_constructor_single_descendent() {
     SUITE_START("bptree constructor single descendent");
 
     su::BPTree tree = su::BPTree("(((a)b)c,((d)e)f,g)r;");
-    
+
     unsigned int exp_nparens = 16;
 
-    bool structure_arr[] = {1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0}; 
+    bool structure_arr[] = {1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0};
     std::vector<bool> exp_structure = _bool_array_to_vector(structure_arr, exp_nparens);
 
     double length_arr[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -275,14 +275,14 @@ void test_bptree_constructor_single_descendent() {
     ASSERT(tree.get_structure() == exp_structure);
     ASSERT(vec_almost_equal(tree.lengths, exp_lengths));
     ASSERT(tree.names == exp_names);
-    
+
     SUITE_END();
 }
 
 void test_bptree_constructor_complex() {
     SUITE_START("bp tree constructor complex");
     su::BPTree tree = su::BPTree("(((a:1,b:2.5)c:6,d:8,(e),(f,g,(h:1,i:2)j:1)k:1.2)l,m:2)r;");
-    
+
     unsigned int exp_nparens = 30;
 
     bool structure_arr[] = {1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0};
@@ -304,7 +304,7 @@ void test_bptree_constructor_complex() {
 void test_bptree_constructor_semicolon() {
     SUITE_START("bp tree constructor semicolon");
     su::BPTree tree = su::BPTree("((a,(b,c):5)'d','e; foo':10,((f))g)r;");
-    
+
     unsigned int exp_nparens = 20;
 
     bool structure_arr[] = {1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0};
@@ -360,7 +360,7 @@ void test_bptree_constructor_quoted_comma() {
     su::BPTree tree = su::BPTree("((3,'foo,bar')x,c)r;");
     std::vector<std::string> exp_names = {"r", "x", "3", "", "foo,bar", "", "", "c", "", ""};
     ASSERT(exp_names.size() == tree.names.size());
-    
+
     for(unsigned int i = 0; i < tree.names.size(); i++) {
         ASSERT(exp_names[i] == tree.names[i]);
     }
@@ -372,7 +372,7 @@ void test_bptree_constructor_quoted_parens() {
     su::BPTree tree = su::BPTree("((3,'foo(b)ar')x,c)r;");
     std::vector<std::string> exp_names = {"r", "x", "3", "", "foo(b)ar", "", "", "c", "", ""};
     ASSERT(exp_names.size() == tree.names.size());
-    
+
     for(unsigned int i = 0; i < tree.names.size(); i++) {
         ASSERT(exp_names[i] == tree.names[i]);
     }
@@ -380,56 +380,56 @@ void test_bptree_constructor_quoted_parens() {
 }
 void test_bptree_postorder() {
     SUITE_START("postorderselect");
-    
+
     // fig1 from https://www.dcc.uchile.cl/~gnavarro/ps/tcs16.2.pdf
     su::BPTree tree = su::BPTree("((3,4,(6)5)2,7,((10,100)9)8)1;");
     uint32_t exp[] = {2, 4, 7, 6, 1, 11, 15, 17, 14, 13, 0};
     uint32_t obs[tree.nparens / 2];
-    
+
     for(int i = 0; i < (tree.nparens / 2); i++)
         obs[i] = tree.postorderselect(i);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
     std::vector<uint32_t> obs_v = _uint32_array_to_vector(obs, tree.nparens / 2);
-    
+
     ASSERT(obs_v == exp_v);
     SUITE_END();
 }
 
 void test_bptree_preorder() {
     SUITE_START("preorderselect");
-    
+
     // fig1 from https://www.dcc.uchile.cl/~gnavarro/ps/tcs16.2.pdf
     su::BPTree tree = su::BPTree("((3,4,(6)5)2,7,((10,100)9)8)1;");
     uint32_t exp[] = {0, 1, 2, 4, 6, 7, 11, 13, 14, 15, 17};
     uint32_t obs[tree.nparens / 2];
-    
+
     for(int i = 0; i < (tree.nparens / 2); i++)
         obs[i] = tree.preorderselect(i);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
     std::vector<uint32_t> obs_v = _uint32_array_to_vector(obs, tree.nparens / 2);
-    
+
     ASSERT(obs_v == exp_v);
     SUITE_END();
 }
 
 void test_bptree_parent() {
     SUITE_START("parent");
-    
+
     // fig1 from https://www.dcc.uchile.cl/~gnavarro/ps/tcs16.2.pdf
     su::BPTree tree = su::BPTree("((3,4,(6)5)2,7,((10,100)9)8)1;");
     uint32_t exp[] = {0, 1, 1, 1, 1, 1, 6, 6, 1, 0, 0, 0, 0, 13, 14, 14, 14, 14, 13, 0};
-    
+
     // all the -2 and +1 garbage is to avoid testing the root.
     uint32_t obs[tree.nparens - 2];
-    
+
     for(int i = 0; i < (tree.nparens) - 2; i++)
         obs[i] = tree.parent(i+1);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens - 2);
     std::vector<uint32_t> obs_v = _uint32_array_to_vector(obs, tree.nparens - 2);
-   
+
     ASSERT(obs_v == exp_v);
     SUITE_END();
 }
@@ -443,16 +443,16 @@ void test_biom_constructor() {
 
     std::string sids[] = {"Sample1", "Sample2", "Sample3", "Sample4", "Sample5", "Sample6"};
     std::vector<std::string> exp_sids = _string_array_to_vector(sids, exp_n_samples);
-    
+
     std::string oids[] = {"GG_OTU_1", "GG_OTU_2","GG_OTU_3", "GG_OTU_4", "GG_OTU_5"};
     std::vector<std::string> exp_oids = _string_array_to_vector(oids, exp_n_obs);
 
     uint32_t s_indptr[] = {0, 2, 5, 9, 11, 12, 15};
     std::vector<uint32_t> exp_s_indptr = _uint32_array_to_vector(s_indptr, exp_n_samples + 1);
-    
+
     uint32_t o_indptr[] = {0, 1, 6, 9, 13, 15};
     std::vector<uint32_t> exp_o_indptr = _uint32_array_to_vector(o_indptr, exp_n_obs + 1);
-  
+
     uint32_t exp_nnz = 15;
 
     ASSERT(table.n_samples == exp_n_samples);
@@ -480,7 +480,7 @@ void test_biom_get_obs_data() {
     std::vector<double> exp3_vec = _double_array_to_vector(exp3, 6);
     double exp4[] = {0.0, 1.0, 1.0, 0.0, 0.0, 0.0};
     std::vector<double> exp4_vec = _double_array_to_vector(exp4, 6);
-    
+
     double *out = (double*)malloc(sizeof(double) * 6);
     std::vector<double> obs_vec;
 
@@ -544,7 +544,7 @@ void test_bptree_rightsibling() {
 
     uint32_t exp[] = {0, 11, 4, 6, 0, 0, 13, 0, 0, 17, 0};
     std::vector<bool> structure = tree.get_structure();
-    
+
     uint32_t exp_pos = 0;
     for(int i = 0; i < tree.nparens; i++) {
         if(structure[i])
@@ -571,10 +571,10 @@ void test_propstack_push_and_pop() {
     double *vec2_obs;
     double *vec3_obs;
 
-    ps.push(1); 
-    ps.push(2); 
+    ps.push(1);
+    ps.push(2);
     ps.push(3);
-    
+
     vec3_obs = ps.pop(4);
     vec2_obs = ps.pop(5);
     vec1_obs = ps.pop(6);
@@ -592,7 +592,7 @@ void test_propstack_get() {
     double *vec1 = ps.pop(1);
     double *vec2 = ps.pop(2);
     double *vec3 = ps.pop(3);
-    
+
     double *vec1_obs = ps.get(1);
     double *vec2_obs = ps.get(2);
     double *vec3_obs = ps.get(3);
@@ -610,8 +610,8 @@ void test_unifrac_set_proportions() {
     su::BPTree tree = su::BPTree("(GG_OTU_1,(GG_OTU_2,GG_OTU_3),(GG_OTU_5,GG_OTU_4));");
     su::biom table = su::biom("test.biom");
     su::PropStack ps = su::PropStack(table.n_samples);
-   
-    double sample_counts[] = {7, 3, 4, 6, 3, 4}; 
+
+    double sample_counts[] = {7, 3, 4, 6, 3, 4};
     double *obs = ps.pop(4); // GG_OTU_2
     double exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
     set_proportions(obs, tree, 4, table, ps);
@@ -627,7 +627,7 @@ void test_unifrac_set_proportions() {
     obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
     double exp3[] = {0.71428571, 0.33333333, 0.25, 1.0, 1.0, 0.75};
     set_proportions(obs, tree, 3, table, ps);
-    for(unsigned int i = 0; i < table.n_samples; i++) 
+    for(unsigned int i = 0; i < table.n_samples; i++)
         ASSERT(fabs(obs[i] - exp3[i]) < 0.000001);
     SUITE_END();
 }
@@ -669,7 +669,7 @@ void test_unifrac_stripes_to_condensed_form_even() {
     // {x, x, 0, 9, 10, 11},
     // {x, x, x, 0, 12, 13},
     // {x, x, x, x, 0, 14},
-    // {x, x, x, x, x, 0} 
+    // {x, x, x, x, x, 0}
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
@@ -690,7 +690,7 @@ void test_unifrac_stripes_to_condensed_form_odd() {
     double s1[] = {1, 2, 3, 4, 5, 6, 0};
     double s2[] = {12, 11, 10, 9, 8, 7, 1};
     double s3[] = {13, 14, 15, 16, 17, 18, 2};
-                         
+
     // {0, 1, 12, 13, 17,  7,  0},
     // {x, 0,  2, 11, 14, 18,  1},
     // {x, x,  0,  3, 10, 15,  2},
@@ -701,7 +701,7 @@ void test_unifrac_stripes_to_condensed_form_odd() {
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
-    
+
     double exp[21] = {1, 12, 13, 17, 7, 0, 2, 11, 14, 18, 1, 3, 10, 15, 2, 4, 9, 16, 5, 8, 6};
     double *obs = (double*)malloc(sizeof(double) * 21);
     su::stripes_to_condensed_form(stripes, 7, obs, 0, 3);
@@ -714,11 +714,11 @@ void test_unifrac_stripes_to_condensed_form_odd() {
 
 void test_unnormalized_weighted_unifrac() {
     SUITE_START("test unnormalized weighted unifrac");
-    
+
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    
+
     std::vector<double*> exp;
     double stride1[] = {1.52380952, 1.25, 2.75, 1.33333333, 2., 1.07142857};
     double stride2[] = {2.17857143, 2.66666667, 3.25, 1.0, 1.14285714, 1.83333333};
@@ -728,9 +728,9 @@ void test_unnormalized_weighted_unifrac() {
     exp.push_back(stride3);
     std::vector<double*> strides = su::make_strides(6);
     std::vector<double*> strides_total = su::make_strides(6);
-    
+
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; 
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
     su::unifrac(table, tree, su::weighted_unnormalized, strides, strides_total, &task_p);
     for(unsigned int i = 0; i < 3; i++) {
@@ -744,11 +744,11 @@ void test_unnormalized_weighted_unifrac() {
 
 void test_generalized_unifrac() {
     SUITE_START("test generalized unifrac");
-    
+
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    
+
     // weighted normalized unifrac as computed above
     std::vector<double*> w_exp;
     double w_stride1[] = {0.38095238, 0.33333333, 0.73333333, 0.33333333, 0.5, 0.26785714};
@@ -760,10 +760,10 @@ void test_generalized_unifrac() {
     std::vector<double*> w_strides = su::make_strides(6);
     std::vector<double*> w_strides_total = su::make_strides(6);
     su::task_parameters w_task_p;
-    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6; 
+    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
     w_task_p.g_unifrac_alpha = 1.0;
     su::unifrac(table, tree, su::generalized, w_strides, w_strides_total, &w_task_p);
-    
+
     // as computed by GUniFrac v1.0
     //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
     //Sample1 0.0000000 0.4408392 0.6886965 0.7060606 0.5833333 0.3278410
@@ -782,7 +782,7 @@ void test_generalized_unifrac() {
     std::vector<double*> d0_strides = su::make_strides(6);
     std::vector<double*> d0_strides_total = su::make_strides(6);
     su::task_parameters d0_task_p;
-    d0_task_p.start = 0; d0_task_p.stop = 3; d0_task_p.tid = 0; d0_task_p.n_samples = 6; 
+    d0_task_p.start = 0; d0_task_p.stop = 3; d0_task_p.tid = 0; d0_task_p.n_samples = 6;
     d0_task_p.g_unifrac_alpha = 0.0;
     su::unifrac(table, tree, su::generalized, d0_strides, d0_strides_total, &d0_task_p);
 
@@ -804,10 +804,10 @@ void test_generalized_unifrac() {
     std::vector<double*> d05_strides = su::make_strides(6);
     std::vector<double*> d05_strides_total = su::make_strides(6);
     su::task_parameters d05_task_p;
-    d05_task_p.start = 0; d05_task_p.stop = 3; d05_task_p.tid = 0; d05_task_p.n_samples = 6; 
+    d05_task_p.start = 0; d05_task_p.stop = 3; d05_task_p.tid = 0; d05_task_p.n_samples = 6;
     d05_task_p.g_unifrac_alpha = 0.5;
     su::unifrac(table, tree, su::generalized, d05_strides, d05_strides_total, &d05_task_p);
-    
+
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(w_strides[i][j] - w_exp[i][j]) < 0.000001);
@@ -823,11 +823,11 @@ void test_generalized_unifrac() {
 
 void test_vaw_unifrac_weighted_normalized() {
     SUITE_START("test vaw weighted normalized unifrac");
-    
+
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    
+
     // as computed by GUniFrac, the original implementation of VAW-UniFrac
     // could not be found.
     //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
@@ -838,7 +838,7 @@ void test_vaw_unifrac_weighted_normalized() {
     //Sample5 0.2857143 0.6807616 0.8812897 0.6666667 0.0000000 0.4735991
     //Sample6 0.2766318 0.4735781 0.5047114 0.2709298 0.4735991 0.0000000
     // weighted normalized unifrac as computed above
-    
+
     std::vector<double*> w_exp;
     double w_stride1[] = {0.4086040, 0.3798594, 0.7713254, 0.6666667, 0.4735991, 0.2766318};
     double w_stride2[] = {0.6240185, 0.6884992, 0.8812897, 0.2709298, 0.2857143, 0.4735781};
@@ -849,10 +849,10 @@ void test_vaw_unifrac_weighted_normalized() {
     std::vector<double*> w_strides = su::make_strides(6);
     std::vector<double*> w_strides_total = su::make_strides(6);
     su::task_parameters w_task_p;
-    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6; 
+    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
     w_task_p.g_unifrac_alpha = 1.0;
     su::unifrac_vaw(table, tree, su::weighted_normalized, w_strides, w_strides_total, &w_task_p);
-    
+
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(w_strides[i][j] - w_exp[i][j]) < 0.000001);
@@ -880,13 +880,59 @@ void test_make_strides() {
     }
 }
 
+void test_faith_pd() {
+    SUITE_START("test faith PD");
+
+    // Note this tree is binary (opposed to example below)
+    su::BPTree tree = su::BPTree("((GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1):2,(GG_OTU_5:1,GG_OTU_4:1):1);");
+    su::biom table = su::biom("test.biom");
+
+    // make vector of expectations from faith PD
+    double exp[6] = {6., 7., 8., 5., 4., 7.};
+
+    // run faith PD to get obs
+    double obs[6] = {0, 0, 0, 0, 0, 0};
+
+    su::faith_pd(table, tree, obs);
+
+    // ASSERT that results = expectation
+    for (unsigned int i = 0; i < 6; i++){
+        ASSERT(fabs(exp[i]-obs[i]) < 0.000001)
+    }
+    SUITE_END();
+}
+
+void test_faith_pd_shear(){
+    SUITE_START("test faith PD extra OTUs in tree");
+
+    su::BPTree tree = su::BPTree("((GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1,GG_OTU_ex:9):1):2,(GG_OTU_5:1,GG_OTU_4:1,GG_OTU_ex2:12):1);");
+    su::biom table = su::biom("test.biom");
+
+    // make vector of expectations from faith PD
+    double exp[6] = {6., 7., 8., 5., 4., 7.};
+
+    // run faith PD to get obs
+    double obs[6] = {0, 0, 0, 0, 0, 0};
+
+    std::unordered_set<std::string> to_keep(table.obs_ids.begin(),           \
+                                            table.obs_ids.end());            \
+    su::BPTree tree_sheared = tree.shear(to_keep).collapse();
+    su::faith_pd(table, tree_sheared, obs);
+
+    // ASSERT that results = expectation
+    for (unsigned int i = 0; i < 6; i++){
+        ASSERT(fabs(exp[i]-obs[i]) < 0.000001)
+    }
+    SUITE_END();
+}
+
 void test_unweighted_unifrac() {
     SUITE_START("test unweighted unifrac");
     double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-   
+
     std::vector<double*> exp;
     double stride1[] = {0.2, 0.42857143, 0.71428571, 0.33333333, 0.6, 0.2};
     double stride2[] = {0.57142857, 0.66666667, 0.85714286, 0.4, 0.5, 0.33333333};
@@ -898,10 +944,10 @@ void test_unweighted_unifrac() {
     std::vector<double*> strides_total = su::make_strides(6);
 
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; 
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
     su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
- 
+
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
@@ -917,7 +963,7 @@ void test_unweighted_unifrac_fast() {
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-   
+
     std::vector<double*> exp;
     double stride1[] = {0., 0., 0.5, 0., 0.5, 0.};
     double stride2[] = {0., 0.5, 0.5, 0.5, 0.5, 0.};
@@ -929,10 +975,10 @@ void test_unweighted_unifrac_fast() {
     std::vector<double*> strides_total = su::make_strides(6);
 
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = true; 
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = true;
 
     su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
- 
+
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
@@ -948,7 +994,7 @@ void test_normalized_weighted_unifrac() {
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
-    
+
     std::vector<double*> exp;
     double stride1[] = {0.38095238, 0.33333333, 0.73333333, 0.33333333, 0.5, 0.26785714};
     double stride2[] = {0.58095238, 0.66666667, 0.86666667, 0.25, 0.28571429, 0.45833333};
@@ -958,9 +1004,9 @@ void test_normalized_weighted_unifrac() {
     exp.push_back(stride3);
     std::vector<double*> strides = su::make_strides(6);
     std::vector<double*> strides_total = su::make_strides(6);
-   
+
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; 
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
     su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, &task_p);
     for(unsigned int i = 0; i < 3; i++) {
@@ -975,14 +1021,14 @@ void test_normalized_weighted_unifrac() {
 void test_bptree_shear_simple() {
     SUITE_START("test bptree shear simple");
     su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
- 
+
     // simple
-    std::unordered_set<std::string> to_keep = {"4", "6", "7", "10", "11"};    
-    
+    std::unordered_set<std::string> to_keep = {"4", "6", "7", "10", "11"};
+
     uint32_t exp_nparens = 20;
-    std::vector<bool> exp_structure = {true, true, true, false, true, true, false, false, false, true, 
+    std::vector<bool> exp_structure = {true, true, true, false, true, true, false, false, false, true,
                                        false, true, true, true, false, true, false, false, false, false};
-    std::vector<std::string> exp_names = {"r", "2", "4", "", "5", "6", "", "", "", "7", "", "8", "9", "10", "", 
+    std::vector<std::string> exp_names = {"r", "2", "4", "", "5", "6", "", "", "", "7", "", "8", "9", "10", "",
                                           "11", "", "", "", ""};
     std::vector<double> exp_lengths = {0, 1, 3, 0, 4, 5, 0, 0, 0, 6, 0, 7, 8, 9, 0, 10, 0, 0, 0, 0};
 
@@ -997,10 +1043,10 @@ void test_bptree_shear_simple() {
 void test_bptree_shear_deep() {
     SUITE_START("test bptree shear deep");
     su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
- 
+
     // deep
-    std::unordered_set<std::string> to_keep = {"10", "11"};    
-    
+    std::unordered_set<std::string> to_keep = {"10", "11"};
+
     uint32_t exp_nparens = 10;
     std::vector<bool> exp_structure = {true, true, true, true, false, true, false, false, false, false};
     std::vector<std::string> exp_names = {"r", "8", "9", "10", "", "11", "", "", "", ""};
@@ -1022,7 +1068,7 @@ void test_test_table_ids_are_subset_of_tree() {
     std::string expected = "GG_OTU_1";
     std::string observed = su::test_table_ids_are_subset_of_tree(table, tree);
     ASSERT(observed == expected);
-   
+
     su::BPTree tree2 = su::BPTree("(GG_OTU_1,GG_OTU_5,GG_OTU_6,GG_OTU_2,GG_OTU_3,GG_OTU_4);");
     su::biom table2 = su::biom("test.biom");
     expected = "";
@@ -1035,19 +1081,19 @@ void test_test_table_ids_are_subset_of_tree() {
 void test_bptree_get_tip_names() {
     SUITE_START("test bptree get_tip_names");
     su::BPTree tree = su::BPTree("((a:2,b:3,(c:5)d:4)e:1,f:6,((g:9,h:10)i:8)j:7)r");
-    
+
     std::unordered_set<std::string> expected = {"a", "b", "c", "f", "g", "h"};
     std::unordered_set<std::string> observed = tree.get_tip_names();
     ASSERT(observed == expected);
     SUITE_END();
-}    
+}
 
 void test_bptree_collapse_simple() {
     SUITE_START("test bptree collapse simple");
     su::BPTree tree = su::BPTree("((3:2,4:3,(6:5)5:4)2:1,7:6,((10:9,11:10)9:8)8:7)r");
-    
+
     uint32_t exp_nparens = 18;
-    std::vector<bool> exp_structure = {true, true, true, false, true, false, true, false, false, 
+    std::vector<bool> exp_structure = {true, true, true, false, true, false, true, false, false,
                                        true, false, true, true, false, true, false, false, false};
     std::vector<std::string> exp_names = {"r", "2", "3", "", "4", "", "6", "", "", "7", "", "9", "10", "", "11", "", "", ""};
     std::vector<double> exp_lengths = {0, 1, 2, 0, 3, 0, 9, 0, 0, 6, 0, 15, 9, 0, 10, 0, 0, 0};
@@ -1115,7 +1161,7 @@ void test_set_tasks() {
     exp2[1].start = 50;
     exp2[1].stop = 100;
     exp2[1].tid = 1;
-    
+
     set_tasks(obs2, 1.0, 100, 0, 100, false, 2);
     for(unsigned int i=0; i < 2; i++) {
         ASSERT(obs2[i].g_unifrac_alpha == exp2[i].g_unifrac_alpha);
@@ -1124,7 +1170,7 @@ void test_set_tasks() {
         ASSERT(obs2[i].stop == exp2[i].stop);
         ASSERT(obs2[i].tid == exp2[i].tid);
     }
-    
+
     std::vector<su::task_parameters> obs3(3);
     std::vector<su::task_parameters> exp3(3);
 
@@ -1143,7 +1189,7 @@ void test_set_tasks() {
     exp3[2].start = 75;
     exp3[2].stop = 100;
     exp3[2].tid = 2;
-    
+
     set_tasks(obs3, 1.0, 100, 25, 100, false, 3);
     for(unsigned int i=0; i < 3; i++) {
         ASSERT(obs3[i].g_unifrac_alpha == exp3[i].g_unifrac_alpha);
@@ -1152,7 +1198,7 @@ void test_set_tasks() {
         ASSERT(obs3[i].stop == exp3[i].stop);
         ASSERT(obs3[i].tid == exp3[i].tid);
     }
-    
+
     std::vector<su::task_parameters> obs4(3);
     std::vector<su::task_parameters> exp4(3);
 
@@ -1171,7 +1217,7 @@ void test_set_tasks() {
     exp4[2].start = 76;
     exp4[2].stop = 100;
     exp4[2].tid = 2;
-    
+
     set_tasks(obs4, 1.0, 100, 26, 100, false, 3);
     for(unsigned int i=0; i < 3; i++) {
         ASSERT(obs4[i].g_unifrac_alpha == exp4[i].g_unifrac_alpha);
@@ -1180,7 +1226,7 @@ void test_set_tasks() {
         ASSERT(obs4[i].stop == exp4[i].stop);
         ASSERT(obs4[i].tid == exp4[i].tid);
     }
-    
+
     // set_tasks boundary bug
     std::vector<su::task_parameters> obs16(16);
     std::vector<su::task_parameters> exp16(16);
@@ -1242,12 +1288,15 @@ int main(int argc, char** argv) {
     test_set_tasks();
     test_test_table_ids_are_subset_of_tree();
 
+    test_faith_pd();
+    test_faith_pd_shear();
+
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);
     printf(" %i / %i suites empty\n", suites_empty, suites_run);
     printf(" %i / %i tests failed\n", tests_failed, tests_run);
-  
+
     printf("\n THE END.\n");
-    
+
     return tests_failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }
