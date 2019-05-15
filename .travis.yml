@@ -21,8 +21,8 @@ compiler:
   - gcc
 
 env:
-  - PYTHON_VERSION=3.6 EDITABLE_PIP=1
-  - PYTHON_VERSION=3.6 EDITABLE_PIP=0
+  - CONDA_PY=3.6 EDITABLE_PIP=1
+  - CONDA_PY=3.6 EDITABLE_PIP=0
 before_install:
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
