@@ -55,7 +55,7 @@ void usage() {
     std::cout << std::endl;
 }
 
-const char* compute_status_messages[5] = {"No error.", 
+const char* compute_status_messages[6] = {"No error.",
                                           "The tree file cannot be found.", 
                                           "The table file cannot be found.",
                                           "The table file contains an empty table."
