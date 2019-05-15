@@ -40,7 +40,9 @@ test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
 
 main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
 	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp -pthread
+	$(CXX) $(CPPFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp -pthread
 	cp ssu ${PREFIX}/bin/
+	cp faithpd ${PREFIX}/bin/
 
 rapi_test: main
 	mkdir -p ~/.R

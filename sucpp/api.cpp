@@ -357,6 +357,20 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
+IOStatus write_vec(const char* output_filename, r_vec* result) {
+    std::ofstream output;
+    output.open(output_filename);
+
+    // write ids in first column of file and sample id in second column
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        output << result->sample_ids[i];
+        output << std::setprecision(16) << "\t" << result->values[i];
+        output << std::endl;
+    }
+
+    return write_okay;
+}
+
 IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     std::ofstream output;
     output.open(output_filename, std::ios::binary);
