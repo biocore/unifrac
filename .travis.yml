@@ -71,6 +71,6 @@ script:
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then exp=$(md5sum ci/test.dm | awk '{ print $1 }'); fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then obs=$(md5sum ci/test.dm.partial | awk '{ print $1 }'); fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then exp=$(md5 ci/test.dm | awk '{ print $1 }'); fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then obs=$(md5 ci/test.dm.partial | awk '{ print $1 }'); fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then exp=$(md5 -r ci/test.dm | awk '{ print $1 }'); fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then obs=$(md5 -r ci/test.dm.partial | awk '{ print $1 }'); fi
   - python -c "assert '${obs}' == '${exp}'"
