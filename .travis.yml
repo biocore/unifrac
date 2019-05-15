@@ -72,3 +72,7 @@ script:
   - exp=$(md5sum ci/test.dm | awk '{ print $1 }')
   - obs=$(md5sum ci/test.dm.partial | awk '{ print $1 }')
   - python -c "assert '${obs}' == '${exp}'"
+  - ./sucpp/faithpd -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford/tre -o ci/test.series.obs
+  - exp1=$(md5sum unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
+  - obs1=$(md5sum ci/test.series.obs | awk '{ print $1 }')
+  - python -c "assert '${obs1}' == '${exp1}'"
