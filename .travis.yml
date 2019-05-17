@@ -68,7 +68,8 @@ script:
   # check number of available cpus
   - python -c "import os; print(os.cpu_count())"
   # santiy test io
-  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted; fi
   - python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
   # merge test
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
