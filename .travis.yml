@@ -49,7 +49,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++` && echo "BASE"; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++` && echo "LINKERBASE"; fi
   - export CC=`which h5c++`
-  - python-config --cflags
+  - python3-config --cflags
   - clang -v
   - h5c++ -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -mfma -march=native -Wall -Wextra -std=c++11 -pedantic -I. -O4 -fPIC -c tree.cpp -o tree.o
   # verify both installation methods
