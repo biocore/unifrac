@@ -46,6 +46,7 @@ install:
   - conda install --yes flake8 nose
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++` && echo "BASE"; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++` && echo $ "LINKERBASE"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sed -i 's/ -fno-plt//g' `which h5c++` && echo "remove -fno-plt"; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++` && echo "BASE"; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++` && echo "LINKERBASE"; fi
   - export CC=`which h5c++`
