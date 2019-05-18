@@ -38,9 +38,8 @@ install:
   # linking against libhdf5_cpp fails right now if we do not use this conda environment.
   # it is unclear why at this time.
   # - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://raw.githubusercontent.com/qiime2/environment-files/master/2019.4/release/qiime2-2019.4-py36-linux-conda.yml -O environment.yml; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt -O environment.txt; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$CONDA_PY; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://raw.githubusercontent.com/qiime2/environment-files/master/2019.4/release/qiime2-2019.4-py36-osx-conda.yml -O environment.yml; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then conda env create -n test-env --file environment.txt python=$CONDA_PY; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then conda env create -n test-env --file environment.yml python=$CONDA_PY; fi
   - source activate test-env
   # needed for the hdf5 dev tools
