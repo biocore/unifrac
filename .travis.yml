@@ -51,6 +51,7 @@ install:
   - export CC=`which h5c++`
   - python3-config --cflags
   - clang -v
+  - cat `which h5c++`
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
