@@ -45,7 +45,7 @@ install:
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython
   - conda install --yes flake8 nose
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then SED=sed -i; else SED=sed -i ''; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then SED='sed -i'; else SED='sed -i '"'"''"'"' '; fi
   - $SED 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - $SED 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - export CC=`which h5c++`
