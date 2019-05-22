@@ -67,8 +67,6 @@ script:
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
-  # check number of available cpus
-  - python -c "import os; print(os.cpu_count())"
   # santiy test io
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted; fi
