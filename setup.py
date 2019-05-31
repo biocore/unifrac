@@ -82,6 +82,7 @@ extensions = [Extension("unifrac._api",
                         language="c++",
                         extra_compile_args=["-std=c++11"],
                         extra_link_args=["-std=c++11"] + LINK_ARGS,
+                        library_dirs=['sucpp/'],
                         include_dirs=[np.get_include()] + ['sucpp/'],
                         libraries=['ssu'])]
 
