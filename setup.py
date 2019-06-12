@@ -9,6 +9,7 @@ from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 from setuptools.extension import Extension
+from setuptools.command.build_ext import build_ext as build_ext_orig
 import numpy as np
 
 import subprocess
@@ -47,6 +48,20 @@ def compile_ssu():
     ret = subprocess.call(cmd, cwd=SUCPP)
     if ret != 0:
         raise Exception('Error compiling ssu!')
+
+
+class build_ext(build_ext_orig):
+
+    def run(self):
+        self.run_compile_ssu()
+        super().run()
+    
+    def run_compile_ssu(self):
+        self.execute(compile_ssu, [], 'Compiling SSU')
+        if PREFIX:
+            self.copy_file(os.path.join(SUCPP, 'libssu.so'),
+                           os.path.join(PREFIX, 'lib/'))
+
 
 
 class PreBuildCommand(install):
@@ -101,7 +116,10 @@ setup(
     url="https://github.com/biocore/unifrac",
     description="High performance UniFrac",
     ext_modules=extensions,
-    cmdclass={'install': PreBuildCommand, 'develop': PreDevelopCommand},
+    cmdclass={'install': PreBuildCommand, 
+              'develop': PreDevelopCommand},
+              #'build_ext': build_ext},
+    #cmdclass={'build_ext': build_ext},
     package_data={
         'unifrac.tests': ['data/*', ]}
 )

@@ -32,7 +32,7 @@ else
 	CPPFLAGS += -mfma -march=native
 endif
 
-CURDIR := $(shell pwd)
+# CURDIR := $(shell pwd)
 
 CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
 
