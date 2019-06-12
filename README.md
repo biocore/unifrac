@@ -6,6 +6,21 @@ The *de facto* repository for UniFrac, based on an implementation of the Strided
 
 This repository produces a C API exposed via a shared library which can be linked against by any programming language. 
 
+# Citation
+
+A detailed description of the algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
+
+    For UniFrac, please see:
+        McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
+        Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
+        Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
+        Hamady et al. ISME 2010; DOI: 10.1038/ismej.2009.97
+        Lozupone et al. ISME 2011; DOI: 10.1038/ismej.2010.133
+    For Generalized UniFrac, please see: 
+        Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342
+    For Variance Adjusted UniFrac, please see: 
+        Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
+
 # Install
 
 At this time, there are two primary ways to install the library. The first is through QIIME 2, and the second is via `pip`. It is also possible to clone the repository and install using either the `sucpp/Makefile` or `setup.py`. 
