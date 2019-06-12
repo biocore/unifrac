@@ -41,12 +41,15 @@ requirements:
     - h5py
 
 test:
+  requires:
+    - nose
   commands:
   #  - ./sucpp/ssu
     - ssu
-    - pushd sucpp; ./test_su; ./test_api; popd
   # add command below when CLI is added
   #  - faithpd
+    - nosetests unifrac
+  #  - pushd sucpp; ./test_su; ./test_api; popd
   #
   #
   # Some packages might need a `test/commands` key to check CLI.
