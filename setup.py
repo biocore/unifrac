@@ -82,8 +82,9 @@ extensions = [Extension("unifrac._api",
                         language="c++",
                         extra_compile_args=["-std=c++11"],
                         extra_link_args=["-std=c++11"] + LINK_ARGS,
-                        library_dirs=[os.path.join(PREFIX, 'sucpp/')],
-                        include_dirs=[np.get_include()] + ['sucpp/'],
+                        library_dirs=[os.path.join(PREFIX, 'lib/')],
+                        include_dirs=[np.get_include()] + ['sucpp/',
+                            os.path.join(PREFIX, 'bin/')],
                         libraries=['ssu'])]
 
 if USE_CYTHON:
