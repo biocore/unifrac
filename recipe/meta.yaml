@@ -44,6 +44,7 @@ test:
   commands:
   #  - ./sucpp/ssu
     - ssu
+    - faithpd
   #  - pushd sucpp; ./test_su; ./test_api; popd
   #    - TODO this
   # Some packages might need a `test/commands` key to check CLI.
