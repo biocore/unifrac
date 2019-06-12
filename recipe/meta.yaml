@@ -44,14 +44,16 @@ test:
   commands:
   #  - ./sucpp/ssu
     - ssu
+    - pushd sucpp; ./test_su; ./test_api; popd
   # add command below when CLI is added
   #  - faithpd
-  #  - pushd sucpp; ./test_su; ./test_api; popd
+  #
+  #
   #    - TODO this
   # Some packages might need a `test/commands` key to check CLI.
   # List all the packages/modules that `run_test.py` imports.
-  # imports:
-  #   - unifrac
+  imports:
+    - unifrac
 
 about:
   home: http://github.com/biocore/unifrac

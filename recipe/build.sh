@@ -19,7 +19,7 @@ export CC=`which h5c++`
 
 
 pushd sucpp; make clean; make test; make main; popd
-#$PYTHON -m pip install .
+$PYTHON -m pip install .
 
 #pushd sucpp; make test; make main; make api; make rapi_test; popd # make capi_test; make rapi_test; popd 
 
