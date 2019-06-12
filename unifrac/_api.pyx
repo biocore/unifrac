@@ -150,8 +150,9 @@ def stacked_faith(str biom_filename, str tree_filename):
     for i in range(result.n_samples):
         ids.append(result.sample_ids[i].decode('utf-8'))
 
-    pd_series = pd.Series(numpy_arr, index=ids)
+    faith_pd_series = pd.Series(numpy_arr, index=ids)
+    faith_pd_series.rename("faith_pd", inplace=True)
 
     destroy_results_vec(&result)
 
-    return pd_series
+    return faith_pd_series
