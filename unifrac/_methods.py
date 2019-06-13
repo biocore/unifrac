@@ -49,9 +49,9 @@ def _validate(table, phylogeny):
 
 def unweighted(table: str,
                phylogeny: str,
-               threads: int = 1,
-               variance_adjusted: bool = False,
-               bypass_tips: bool = False) -> skbio.DistanceMatrix:
+               threads: int=1,
+               variance_adjusted: bool=False,
+               bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute Unweighted UniFrac
 
     Parameters
@@ -105,9 +105,9 @@ def unweighted(table: str,
 
 def weighted_normalized(table: str,
                         phylogeny: str,
-                        threads: int = 1,
-                        variance_adjusted: bool = False,
-                        bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                        threads: int=1,
+                        variance_adjusted: bool=False,
+                        bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute weighted normalized UniFrac
 
     Parameters
@@ -159,10 +159,9 @@ def weighted_normalized(table: str,
 
 def weighted_unnormalized(table: str,
                           phylogeny: str,
-                          threads: int = 1,
-                          variance_adjusted: bool = False,
-                          bypass_tips: bool = False) -> skbio.DistanceMatrix:
-    # noqa
+                          threads: int=1,
+                          variance_adjusted: bool=False,
+                          bypass_tips: bool=False) -> skbio.DistanceMatrix:  # noqa
     """Compute weighted unnormalized UniFrac
 
     Parameters
@@ -214,10 +213,10 @@ def weighted_unnormalized(table: str,
 
 def generalized(table: str,
                 phylogeny: str,
-                threads: int = 1,
-                alpha: float = 1.0,
-                variance_adjusted: bool = False,
-                bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                threads: int=1,
+                alpha: float=1.0,
+                variance_adjusted: bool=False,
+                bypass_tips: bool=False)-> skbio.DistanceMatrix:
     """Compute Generalized UniFrac
 
     Parameters
@@ -292,11 +291,10 @@ METHODS = {'unweighted': unweighted,
            'generalized': generalized}
 
 
-def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
-         consolidation: str = None, method: str = None,
-         threads: int = 1, variance_adjusted: bool = False,
-         alpha: float = None, bypass_tips: bool = False) -> \
-         skbio.DistanceMatrix:
+def meta(tables: tuple, phylogenies: tuple, weights: tuple=None,
+         consolidation: str=None, method: str=None,
+         threads: int=1, variance_adjusted: bool=False,
+         alpha: float=None, bypass_tips: bool=False) -> skbio.DistanceMatrix:
     """Compute meta UniFrac
 
     Parameters

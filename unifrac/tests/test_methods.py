@@ -71,13 +71,13 @@ class StateUnifracTests(unittest.TestCase):
             meta(('a', ), ('b', ))
 
     def test_meta_unifrac_bad_method(self):
-        with self.assertRaisesRegex(ValueError, r"Method \(bar\) "
+        with self.assertRaisesRegex(ValueError, "Method \(bar\) "
                                                 "unrecognized."):
             meta(('a', ), ('b', ), method='bar')
 
     def test_meta_unifrac_bad_consolidation(self):
         with self.assertRaisesRegex(ValueError,
-                                    r"Consolidation \(foo\) unrecognized."):
+                                    "Consolidation \(foo\) unrecognized."):
             meta(('a', ), ('b', ), method='unweighted', consolidation='foo')
 
     def test_meta_unifrac_alpha_not_generalized(self):

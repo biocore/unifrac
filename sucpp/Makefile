@@ -32,12 +32,9 @@ else
 	CPPFLAGS += -mfma -march=native
 endif
 
-# CURDIR := $(shell pwd)
-
 CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
-	echo $(CPPFLAGS)
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o -pthread
 	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o unifrac_task.o api.o -pthread
 
@@ -68,7 +65,7 @@ capi_test: api
 	LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
-	$(CXX) $(CPPFLAGS) -c -echo -c $< -o $@
+	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
 	-rm -f *.o ssu

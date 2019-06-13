@@ -8,11 +8,8 @@ addons:
       - libhdf5-serial-dev
 
 language: 
+  - python
   - r
-
-os:
-  - linux
-  - osx
 
 cache: packages
 
@@ -20,39 +17,28 @@ compiler:
   - gcc
 
 env:
-  - CONDA_PY=3.6 EDITABLE_PIP=1
-  - CONDA_PY=3.6 EDITABLE_PIP=0
+  - PYTHON_VERSION=3.5 EDITABLE_PIP=1
+  - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
   - ulimit -a -S
   - ulimit -a -H
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
-  # osx build has only one core
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh; fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda update --yes conda
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
   # linking against libhdf5_cpp fails right now if we do not use this conda environment.
   # it is unclear why at this time.
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$CONDA_PY; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://raw.githubusercontent.com/qiime2/environment-files/master/2019.4/release/qiime2-2019.4-py36-osx-conda.yml -O environment.yml; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then conda env create -n test-env --file environment.yml python=$CONDA_PY; fi
+  - conda create -n test-env --file https://data.qiime2.org/distro/core/qiime2-2017.5-conda-linux-64.txt python=$PYTHON_VERSION
   - source activate test-env
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython
   - conda install --yes flake8 nose
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then SED='sed -i'; else SED='sed -i '"'"''"'"' '; fi
-  - $SED 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
-  - $SED 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
+  - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
+  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - export CC=`which h5c++`
-  # info for debugging
-  - python3-config --cflags
-  - clang -v
-  - cat `which h5c++`
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
@@ -61,20 +47,18 @@ install:
      fi'
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; ./test_api; popd
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
   # santiy test io
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted; fi
+  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2
   - python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
   # merge test
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
-  - exp=$($MD5 ci/test.dm | awk '{ print $1 }')
-  - obs=$($MD5 ci/test.dm.partial | awk '{ print $1 }')
+  - exp=$(md5sum ci/test.dm | awk '{ print $1 }')
+  - obs=$(md5sum ci/test.dm.partial | awk '{ print $1 }')
   - python -c "assert '${obs}' == '${exp}'"
