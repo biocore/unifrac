@@ -704,6 +704,11 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         expected = 0.25
         self.assertEqual(actual.values, expected)
 
+    def test_faith_pd_series_name(self):
+        tree = TreeNode.read(StringIO('(OTU1:0.25, OTU2:0.25)root;'))
+        actual = self.faith_pd_work([1, 0], ['OTU1', 'OTU2'], ['foo'], tree)
+        self.assertEqual("faith_pd", actual.name)
+
     def test_faith_pd_root_not_observed(self):
         # expected values computed by hand
         tree = TreeNode.read(

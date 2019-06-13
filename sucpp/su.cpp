@@ -36,6 +36,7 @@ void usage() {
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
     std::cout << "    For UniFrac, please see:" << std::endl;
+    std::cout << "        McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8" << std::endl;
     std::cout << "        Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005" << std::endl;
     std::cout << "        Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06" << std::endl;
     std::cout << "        Hamady et al. ISME 2010; DOI: 10.1038/ismej.2009.97" << std::endl;
