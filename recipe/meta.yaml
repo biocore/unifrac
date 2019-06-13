@@ -39,6 +39,7 @@ requirements:
     - scikit-bio >=0.5.1
     - biom-format
     - numpy >=1.12.1
+    - h5py
 
 test:
   requires:
