@@ -6,8 +6,6 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 from setuptools import setup, find_packages
-from setuptools.command.develop import develop
-from setuptools.command.install import install
 from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext as build_ext_orig
 import numpy as np
