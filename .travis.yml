@@ -11,6 +11,8 @@ matrix:
             - apport
             - libhdf5-serial-dev
             - g++-4.9
+        env:
+            - MATRIX_EVAL="USEGCC=gcc-4.9 && USECXX=g++-4.9"
 
 language: 
   - python
@@ -25,6 +27,7 @@ env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=1
   - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
+  - eval "${MATRIX_EVAL}"
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
   - ulimit -a -S
@@ -41,8 +44,8 @@ install:
   - conda install --yes numpy h5py "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython "hdf5==1.10.4" biom-format
-  - sed -i 's/^CXXBASE=.*/CXXBASE=g++-4.9/' `which h5c++`
-  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=g++-4.9/' `which h5c++`
+  - sed -i "s/^CXXBASE=.*/CXXBASE=$USECXX/" `which h5c++`
+  - sed -i "s/^CXXLINKERBASE=.*/CXXLINKERBASE=$USECXX/" `which h5c++`
   - export CC=`which h5c++`
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
