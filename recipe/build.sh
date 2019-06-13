@@ -20,7 +20,7 @@ export CC=`which h5c++`
 
 printenv
 pushd sucpp; make clean; make test; make main; make api; popd
-pushd sucpp; ./test_su; popd #./test_api; popd
+pushd sucpp; ./test_su; ./test_api; popd
 
 printenv
 $PYTHON -m pip install .
