@@ -1,12 +1,16 @@
-sudo: required
 dist: trusty
-addons:
-  apt:
-    packages:
-      - gdb
-      - apport
-      - libhdf5-serial-dev
-      - g++-4.9
+matrix: 
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            packages:
+              - gdb
+              - apport
+              - libhdf5-serial-dev
+              - g++-4.9
 
 language: 
   - python
@@ -14,8 +18,8 @@ language:
 
 cache: packages
 
-compiler:
-  - gcc
+# compiler:
+#   - gcc
 
 env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=1
