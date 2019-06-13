@@ -51,6 +51,7 @@ def compile_ssu():
 
 
 class build_ext(build_ext_orig):
+    """Pre-installation for any time an Extension is built"""
 
     def run(self):
         self.run_compile_ssu()
@@ -61,26 +62,6 @@ class build_ext(build_ext_orig):
         if PREFIX:
             self.copy_file(os.path.join(SUCPP, 'libssu.so'),
                            os.path.join(PREFIX, 'lib/'))
-
-
-# class PreBuildCommand(install):
-#     """Pre-installation for development mode."""
-#     def run(self):
-#         self.execute(compile_ssu, [], 'Compiling SSU')
-#         if PREFIX:
-#             self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-#                            os.path.join(PREFIX, 'lib/'))
-#         install.run(self)
-# 
-# 
-# class PreDevelopCommand(develop):
-#     """Pre-installation for development mode (i.e. `pip install -e ...`)."""
-#     def run(self):
-#         self.execute(compile_ssu, [], 'Compiling SSU')
-#         if PREFIX:
-#             self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-#                            os.path.join(PREFIX, 'lib/'))
-#         develop.run(self)
 
 
 if sys.platform == "darwin":
@@ -115,9 +96,6 @@ setup(
     url="https://github.com/biocore/unifrac",
     description="High performance UniFrac",
     ext_modules=extensions,
-#     cmdclass={'install': PreBuildCommand, 
-#               'develop': PreDevelopCommand,
-#               'build_ext': build_ext},
     cmdclass={'build_ext': build_ext},
     package_data={
         'unifrac.tests': ['data/*', ]}
