@@ -39,13 +39,13 @@ install:
   - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
   - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
   - export CC=`which h5c++`
+  - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
      else
         pip install . || travis_terminate 1;
      fi'
-  - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
 script:
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; ./test_api; popd
