@@ -6,11 +6,11 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            packages:
-              - gdb
-              - apport
-              - libhdf5-serial-dev
-              - g++-4.9
+          packages:
+            - gdb
+            - apport
+            - libhdf5-serial-dev
+            - g++-4.9
 
 language: 
   - python
