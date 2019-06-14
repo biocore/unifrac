@@ -8,7 +8,7 @@ addons:
     packages:
       - gcc-4.9
       - g++-4.9
-      - binutils-2.25
+      - binutils=2.25
 #      - gdb
 #      - apport
 #      - libhdf5-serial-dev
