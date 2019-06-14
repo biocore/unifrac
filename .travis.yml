@@ -58,6 +58,7 @@ install:
   - conda install --yes -c conda-forge cython "hdf5==1.10.4" biom-format
   - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
   - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
+  - sed -i 's/-fno-plt //' `which h5c++`
   - echo $LD_LIBRARY_PATH
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
