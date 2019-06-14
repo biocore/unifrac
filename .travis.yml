@@ -54,11 +54,21 @@ install:
   # it is unclear why at this time.
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
+  - conda install --yes libtool zlib
+  - export LIBRARY_PATH="${PREFIX}/lib"
+  - 'export CC=$(basename ${CC})
+     export CXX=$(basename ${CXX})
+     export F95=$(basename ${F95})
+     export FC=$(basename ${FC})'
   - conda install --yes numpy h5py "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython "hdf5==1.10.4" biom-format
   - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
   - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
+  - sed -i 's/H5BLD_CXXFLAGS.*//' `which h5c++`
+  - sed -i 's/H5BLD_CPPFLAGS.*//' `which h5c++`
+  - sed -i 's/H5BLD_LDFLAGS.*//' `which h5c++`
+  - sed -i 's/H5BLD_LIBS.*//' `which h5c++`
     #- sed -i 's/-fno-plt //' `which h5c++`
   - echo $LD_LIBRARY_PATH
   - export CC=`which h5c++`
