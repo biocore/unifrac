@@ -8,6 +8,7 @@ addons:
     packages:
       - gcc-4.9
       - g++-4.9
+      - libhdf5-serial-dev
 #      - gdb
 #      - apport
 #      - libhdf5-serial-dev
