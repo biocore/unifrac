@@ -1,25 +1,37 @@
 sudo: required
 dist: trusty
+os: linux
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
-      - gdb
-      - apport
-      - libhdf5-serial-dev
+      - gcc-4.9
+      - g++-4.9
+#      - gdb
+#      - apport
+#      - libhdf5-serial-dev
 
-language: 
-  - python
-  - r
+language: cpp
 
-cache: packages
+# cache: packages
 
-compiler:
-  - gcc
+# compiler:
+#   - gcc
 
 env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=1
   - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
+  - sudo ln -s /usr/bin/gcc-4.9 /usr/local/bin/gcc
+  - sudo ln -s /usr/bin/g++-4.9 /usr/local/bin/g++
+
+  - export CC_FOR_BUILD=/usr/local/bin/gcc
+  - export CXX_FOR_BUILD=/usr/local/bin/g++
+
+  - $CC_FOR_BUILD -v
+  - $CXX_FOR_BUILD -v
+
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
   - ulimit -a -S
@@ -36,8 +48,8 @@ install:
   - conda install --yes numpy h5py "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython "hdf5==1.8.17" biom-format
-  - sed -i 's/^CXXBASE=.*/CXXBASE=clang++/' `which h5c++`
-  - sed -i 's/^CXXLINKERBASE=.*/CXXLINKERBASE=clang++/' `which h5c++`
+  - sed -i "s/^CXXBASE=.*/CXXBASE=$CXX_FOR_BUILD/" `which h5c++`
+  - sed -i "s/^CXXLINKERBASE=.*/CXXLINKERBASE=$CXX_FOR_BUILD/" `which h5c++`
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
