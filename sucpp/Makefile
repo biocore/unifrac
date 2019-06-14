@@ -57,7 +57,7 @@ rapi_test: main
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
+	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib -fPIC
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
