@@ -28,7 +28,7 @@ endif
 
 ifeq ($(PERFORMING_CONDA_BUILD),True)
 	CPPFLAGS += -mtune=generic -fPIC
-	CPPFLAGS=$(echo $CPPFLAGS | sed 's/-fno-plt //')
+	#CPPFLAGS=$(echo $CPPFLAGS | sed 's/-fno-plt //')
 	LDDFLAGS += -fPIC
 else
 	CPPFLAGS += -mfma -march=native

@@ -32,6 +32,8 @@ before_install:
     #- export PATH=/usr/lib/binutils-2.26/bin:${PATH}
   - export CC_FOR_BUILD=/usr/local/bin/gcc
   - export CXX_FOR_BUILD=/usr/local/bin/g++
+  - export CC=$CC_FOR_BUILD
+  - export CXX=$CXX_FOR_BUILD
   - export PERFORMING_CONDA_BUILD=True
   - $CC_FOR_BUILD -v # verify gcc version
   - $CXX_FOR_BUILD -v # verify g++ version
@@ -47,7 +49,6 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
-  - echo $LD_LIBRARY_PATH
 install:
   # linking against libhdf5_cpp fails right now if we do not use this conda environment.
   # it is unclear why at this time.
@@ -58,7 +59,7 @@ install:
   - conda install --yes -c conda-forge cython "hdf5==1.10.4" biom-format
   - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
   - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
-  - sed -i 's/-fno-plt //' `which h5c++`
+    #- sed -i 's/-fno-plt //' `which h5c++`
   - echo $LD_LIBRARY_PATH
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
