@@ -27,9 +27,8 @@ else
 endif
 
 ifeq ($(PERFORMING_CONDA_BUILD),True)
-	CPPFLAGS += -mtune=generic -fPIC
-	#CPPFLAGS=$(echo $CPPFLAGS | sed 's/-fno-plt //')
-	LDDFLAGS += -fPIC
+	CPPFLAGS += -mtune=generic
+	LDDFLAGS +=
 else
 	CPPFLAGS += -mfma -march=native
 endif
@@ -58,8 +57,8 @@ rapi_test: main
 	pushd R_interface && Rscript rapi_test.R; popd
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
-	$(CXX) $(CPPFLAGS) -v api.cpp -c -o api.o -fPIC
-	$(CXX) $(LDDFLAGS) -v -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
+	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
+	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
