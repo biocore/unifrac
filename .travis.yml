@@ -8,7 +8,6 @@ addons:
     packages:
       - gcc-4.9
       - g++-4.9
-      - binutils=2.25
 #      - gdb
 #      - apport
 #      - libhdf5-serial-dev
@@ -24,6 +23,7 @@ env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=1
   - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
+  - sudo apt-get install binutils-2.26
   - sudo ln -s /usr/bin/gcc-4.9 /usr/local/bin/gcc
   - sudo ln -s /usr/bin/g++-4.9 /usr/local/bin/g++
 
