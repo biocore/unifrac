@@ -35,6 +35,7 @@ before_install:
 
   - $CC_FOR_BUILD -v # verify gcc version
   - $CXX_FOR_BUILD -v # verify g++ version
+  - which ld
   - ld -v
 
  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
