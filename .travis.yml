@@ -54,9 +54,9 @@ install:
   # it is unclear why at this time.
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
-  - conda install --yes numpy h5py "scikit-bio>=0.5.1" flake8 nose
+  - conda install --yes numpy "h5py==2.7.0" "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
-  - conda install --yes -c conda-forge cython "hdf5==1.10.4" biom-format
+  - conda install --yes -c conda-forge cython "hdf5==1.8.17" biom-format
   - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
   - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
   - sed -i 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
