@@ -25,6 +25,7 @@ env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
     #  - sudo apt-get install binutils-2.25
+  - echo $LD_LIBRARY_PATH
   - sudo ln -s /usr/bin/gcc-4.9 /usr/local/bin/gcc
   - sudo ln -s /usr/bin/g++-4.9 /usr/local/bin/g++
 
@@ -44,6 +45,7 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
+  - echo $LD_LIBRARY_PATH
 install:
   # linking against libhdf5_cpp fails right now if we do not use this conda environment.
   # it is unclear why at this time.
@@ -54,6 +56,7 @@ install:
   - conda install --yes -c conda-forge cython "hdf5==1.8.17" biom-format
   - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
   - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
+  - echo $LD_LIBRARY_PATH
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
