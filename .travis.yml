@@ -8,6 +8,7 @@ addons:
     packages:
       - gcc-4.9
       - g++-4.9
+      - binutils-2.25
 #      - gdb
 #      - apport
 #      - libhdf5-serial-dev
@@ -26,6 +27,7 @@ before_install:
   - sudo ln -s /usr/bin/gcc-4.9 /usr/local/bin/gcc
   - sudo ln -s /usr/bin/g++-4.9 /usr/local/bin/g++
 
+  - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
   - export CC_FOR_BUILD=/usr/local/bin/gcc
   - export CXX_FOR_BUILD=/usr/local/bin/g++
 
