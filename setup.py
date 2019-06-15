@@ -54,7 +54,7 @@ class build_ext(build_ext_orig):
     def run(self):
         self.run_compile_ssu()
         super().run()
-    
+
     def run_compile_ssu(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
         if PREFIX:
