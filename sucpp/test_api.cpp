@@ -247,36 +247,38 @@ void test_merge_partial_mat() {
 
     exp = mat_three_rep();
 
-    pms[2] = pm1;
-    pms[0] = pm2;
-    pms[1] = pm3;
+    partial_mat_t* pms_err[3];
 
-    err = merge_partial(pms, 3, 1, &obs);
+    pms_err[2] = pm1;
+    pms_err[0] = pm2;
+    pms_err[1] = pm3;
+
+    err = merge_partial(pms_err, 3, 1, &obs);
     ASSERT(err == incomplete_stripe_set);
 
     pm2->stripe_start = 2;
     pm2->stripe_stop = 6;
-    err = merge_partial(pms, 3, 1, &obs);
+    err = merge_partial(pms_err, 3, 1, &obs);
     ASSERT(err == stripes_overlap);
 
     pm2->stripe_start = 3;
     pm2->sample_ids[2][0] = 'X';
-    err = merge_partial(pms, 3, 1, &obs);
+    err = merge_partial(pms_err, 3, 1, &obs);
     ASSERT(err == sample_id_consistency);
 
     pm2->sample_ids[2][0] = 'C';
     pm3->n_samples = 2;
-    err = merge_partial(pms, 3, 1, &obs);
+    err = merge_partial(pms_err, 3, 1, &obs);
     ASSERT(err == partials_mismatch);
 
     pm3->n_samples = 6;
     pm3->stripe_total = 12;
-    err = merge_partial(pms, 3, 1, &obs);
+    err = merge_partial(pms_err, 3, 1, &obs);
     ASSERT(err == partials_mismatch);
     
     pm3->is_upper_triangle = false;
     pm3->stripe_total = 9;
-    err = merge_partial(pms, 3, 1, &obs);
+    err = merge_partial(pms_err, 3, 1, &obs);
     ASSERT(err == square_mismatch);
     
     SUITE_END();
