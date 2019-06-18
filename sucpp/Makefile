@@ -28,7 +28,6 @@ endif
 
 ifeq ($(PERFORMING_CONDA_BUILD),True)
 	CPPFLAGS += -mtune=generic
-	LDDFLAGS +=
 else
 	CPPFLAGS += -mfma -march=native
 endif
