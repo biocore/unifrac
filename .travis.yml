@@ -49,9 +49,11 @@ install:
   - $SED "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
   - $SED "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` 
   # remove these flags for compiling with gcc on linux
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+        $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ;
+        $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ;
+        $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ; 
+    fi
   # make sure dynamic linking to shared libraries is enabled
   - $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
   - export CC=`which h5c++`
