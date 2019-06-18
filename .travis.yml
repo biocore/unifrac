@@ -9,39 +9,22 @@ addons:
       - gcc-4.9
       - g++-4.9
       - libhdf5-serial-dev
-#      - gdb
-#      - apport
-#      - libhdf5-serial-dev
 
 language: cpp
-
-# cache: packages
-
-# compiler:
-#   - gcc
 
 env:
   - PYTHON_VERSION=3.5 EDITABLE_PIP=1
   - PYTHON_VERSION=3.5 EDITABLE_PIP=0
 before_install:
-    #  - sudo apt-get install binutils-2.25
   - echo $LD_LIBRARY_PATH
   - sudo ln -s /usr/bin/gcc-4.9 /usr/local/bin/gcc
   - sudo ln -s /usr/bin/g++-4.9 /usr/local/bin/g++
-
-    #- export PATH=/usr/lib/binutils-2.26/bin:${PATH}
   - export CC_FOR_BUILD=/usr/local/bin/gcc
   - export CXX_FOR_BUILD=/usr/local/bin/g++
-  - export CC=$CC_FOR_BUILD
-  - export CXX=$CXX_FOR_BUILD
   - export PERFORMING_CONDA_BUILD=True
   - $CC_FOR_BUILD -v # verify gcc version
   - $CXX_FOR_BUILD -v # verify g++ version
-  - which ld
-  - ld -v
-  - echo 
-
- # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
+  # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
   - ulimit -a -S
   - ulimit -a -H
@@ -52,21 +35,18 @@ before_install:
 install:
   # linking against libhdf5_cpp fails right now if we do not use this conda environment.
   # it is unclear why at this time.
+  # I think I fixed this, let me know if I should remove the above comment
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
   - conda install --yes numpy "h5py==2.7.0" "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython "hdf5==1.8.17" biom-format
-  - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
-  - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using right compiler
-  - sed -i 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
-  - sed -i 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
-  - sed -i 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
-  - sed -i 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++`
-  - cat `which h5c++`
-  - printenv
-    #- sed -i 's/-fno-plt //' `which h5c++`
-  - echo $LD_LIBRARY_PATH
+  - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using compiler we want to use for this build
+  - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using compiler we want to use for this build
+  - sed -i 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` # remove these flags for compiling with gcc
+  - sed -i 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` # remove these flags for compiling with gcc
+  - sed -i 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` # remove these flags for compiling with gcc
+  - sed -i 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` # make sure dynamic linking to shared libraries is enabled
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
