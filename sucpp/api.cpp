@@ -362,6 +362,7 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     output.open(output_filename);
 
     // write ids in first column of file and sample id in second column
+    output << "#SampleID\tfaith_pd" << std::endl;
     for(unsigned int i = 0; i < result->n_samples; i++) {
         output << result->sample_ids[i];
         output << std::setprecision(16) << "\t" << result->values[i];
