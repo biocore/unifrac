@@ -1,6 +1,8 @@
 sudo: required
 dist: trusty
-os: linux
+os:
+  - linux
+  - osx
 addons:
   apt:
     sources:
@@ -13,14 +15,13 @@ addons:
 language: cpp
 
 env:
-  - PYTHON_VERSION=3.5 EDITABLE_PIP=1
-  - PYTHON_VERSION=3.5 EDITABLE_PIP=0
+  - PYTHON_VERSION=3.6 EDITABLE_PIP=1
+  - PYTHON_VERSION=3.6 EDITABLE_PIP=0
 before_install:
-  - echo $LD_LIBRARY_PATH
   - sudo ln -s /usr/bin/gcc-4.9 /usr/local/bin/gcc
   - sudo ln -s /usr/bin/g++-4.9 /usr/local/bin/g++
-  - export CC_FOR_BUILD=/usr/local/bin/gcc
-  - export CXX_FOR_BUILD=/usr/local/bin/g++
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CC_FOR_BUILD=/usr/local/bin/gcc ; else export CC_FOR_BUILD=clang ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CXX_FOR_BUILD=/usr/local/bin/g++ ; else export CXX_FOR_BUILD=clang++ ; fi
   - export PERFORMING_CONDA_BUILD=True
   # verify compilter versions
   - $CC_FOR_BUILD -v 
@@ -29,25 +30,32 @@ before_install:
   - ulimit -c
   - ulimit -a -S
   - ulimit -a -H
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
+  # osx build has only one core
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh; fi
   - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda3/bin:$PATH
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda update --yes conda
 install:
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
   - conda install --yes numpy "h5py==2.7.0" "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then SED='sed -i'; else SED='sed -i '"'"''"'"' '; fi
   - conda install --yes -c conda-forge cython "hdf5==1.8.17" biom-format
   # make sure hdf5 is using the compiler we want to use for this build
-  - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
-  - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` 
-  # remove these flags for compiling with gcc
-  - sed -i 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
-  - sed -i 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
-  - sed -i 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
+  - $SED "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
+  - $SED "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` 
+  # remove these flags for compiling with gcc on linux
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+        $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ;
+        $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ;
+        $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` ; 
+    fi
   # make sure dynamic linking to shared libraries is enabled
-  - sed -i 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
+  - $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
@@ -58,18 +66,20 @@ install:
      fi'
 
 script:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
   - ulimit -c unlimited -S
   - pushd sucpp; ./test_su; ./test_api; popd
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
   # santiy test io
-  - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted -n 2; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted; fi
   - python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
   # merge test
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
   - ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
-  - exp=$(md5sum ci/test.dm | awk '{ print $1 }')
-  - obs=$(md5sum ci/test.dm.partial | awk '{ print $1 }')
+  - exp=$($MD5 ci/test.dm | awk '{ print $1 }')
+  - obs=$($MD5 ci/test.dm.partial | awk '{ print $1 }')
   - python -c "assert '${obs}' == '${exp}'"

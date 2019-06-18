@@ -35,11 +35,12 @@ endif
 CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
 
 test: tree.o test_su.cpp biom.o unifrac.o unifrac_task.o api.o
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o -pthread
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o unifrac_task.o api.o -pthread
+	echo $(CPPFLAGS)
+	$(CXX) $(CPPFLAGS) -v -echo -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o unifrac_task.o api.o -pthread
+	$(CXX) $(CPPFLAGS) -v -echo -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o unifrac_task.o api.o -pthread
 
 main: tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o
-	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp -pthread
+	$(CXX) $(CPPFLAGS) -v -echo su.cpp -o ssu tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lhdf5_cpp -pthread
 	cp ssu ${PREFIX}/bin/
 
 rapi_test: main
@@ -56,8 +57,8 @@ rapi_test: main
 	pushd R_interface && Rscript rapi_test.R; popd
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
-	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
+	$(CXX) $(CPPFLAGS) -v -echo api.cpp -c -o api.o -fPIC
+	$(CXX) $(LDDFLAGS) -v -echo -o libssu.so tree.o biom.o unifrac.o cmd.o unifrac_task.o api.o -lc -lhdf5_cpp -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
@@ -65,7 +66,7 @@ capi_test: api
 	LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) -c -echo -c $< -o $@
 
 clean:
 	-rm -f *.o ssu
