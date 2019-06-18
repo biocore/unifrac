@@ -22,8 +22,9 @@ before_install:
   - export CC_FOR_BUILD=/usr/local/bin/gcc
   - export CXX_FOR_BUILD=/usr/local/bin/g++
   - export PERFORMING_CONDA_BUILD=True
-  - $CC_FOR_BUILD -v # verify gcc version
-  - $CXX_FOR_BUILD -v # verify g++ version
+  # verify compilter versions
+  - $CC_FOR_BUILD -v 
+  - $CXX_FOR_BUILD -v 
   # https://github.com/springmeyer/travis-coredump/blob/master/.travis.yml
   - ulimit -c
   - ulimit -a -S
@@ -33,20 +34,20 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  # linking against libhdf5_cpp fails right now if we do not use this conda environment.
-  # it is unclear why at this time.
-  # I think I fixed this, let me know if I should remove the above comment
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
   - conda install --yes numpy "h5py==2.7.0" "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
   - conda install --yes -c conda-forge cython "hdf5==1.8.17" biom-format
-  - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using compiler we want to use for this build
-  - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` # make sure hdf5 is using compiler we want to use for this build
-  - sed -i 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` # remove these flags for compiling with gcc
-  - sed -i 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` # remove these flags for compiling with gcc
-  - sed -i 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` # remove these flags for compiling with gcc
-  - sed -i 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` # make sure dynamic linking to shared libraries is enabled
+  # make sure hdf5 is using the compiler we want to use for this build
+  - sed -i "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
+  - sed -i "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` 
+  # remove these flags for compiling with gcc
+  - sed -i 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
+  - sed -i 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
+  - sed -i 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
+  # make sure dynamic linking to shared libraries is enabled
+  - sed -i 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
   - export CC=`which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
