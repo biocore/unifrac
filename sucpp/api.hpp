@@ -130,7 +130,6 @@ EXTERN IOStatus write_mat(const char* filename, mat_t* result);
  * The following error codes are returned:
  *
  * write_okay : no problems
- * open_error : could not open the file
  */
 EXTERN IOStatus write_vec(const char* filename, r_vec* result);
 
