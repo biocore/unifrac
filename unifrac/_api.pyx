@@ -93,7 +93,7 @@ def ssu(str biom_filename, str tree_filename,
 
     return skbio.DistanceMatrix(numpy_arr, ids)
 
-def stacked_faith(str biom_filename, str tree_filename):
+def faith_pd(str biom_filename, str tree_filename):
     """Execute a call to the Stacked Faith API in the UniFrac package
 
     Parameters

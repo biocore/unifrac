@@ -18,7 +18,7 @@ from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
 
-from unifrac import ssu, stacked_faith
+from unifrac import ssu, faith_pd
 
 
 class UnifracAPITests(unittest.TestCase):
@@ -588,7 +588,7 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
     def faith_pd_work(self, u_counts, otu_ids, sample_ids, tree):
         ta, tr = self.write_table_tree(u_counts, otu_ids, sample_ids, tree)
 
-        return stacked_faith(ta, tr)
+        return faith_pd(ta, tr)
 
     def setUp(self):
         self.counts = np.array([0, 1, 1, 4, 2, 5, 2, 4, 1, 2])
@@ -638,7 +638,7 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         table, tree = self.write_table_tree([], [], [],
                                             self.t1)
 
-        self.assertRaises(IOError, stacked_faith, table, tree)
+        self.assertRaises(IOError, faith_pd, table, tree)
 
     def test_faith_pd_all_observed(self):
         actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'],
@@ -752,8 +752,8 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
             bt.to_hdf5(fhdf5, 'Table for unit testing')
         tree.write(tr)
 
-        self.assertRaises(IOError, stacked_faith, 'dne.biom', tr)
-        self.assertRaises(IOError, stacked_faith, ta, 'dne.tre')
+        self.assertRaises(IOError, faith_pd, 'dne.biom', tr)
+        self.assertRaises(IOError, faith_pd, ta, 'dne.tre')
 
 
 if __name__ == "__main__":
