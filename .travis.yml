@@ -57,6 +57,8 @@ install:
   # make sure dynamic linking to shared libraries is enabled
   - $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
   - export CC=`which h5c++`
+  # cat h5c++ for debugging
+  - cat `which h5c++`
   - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
