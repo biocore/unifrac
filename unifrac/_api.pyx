@@ -140,6 +140,9 @@ def faith_pd(str biom_filename, str tree_filename):
             raise IOError("Table file not found.")
         elif status == table_empty:
             raise IOError("Table file is empty.")
+        elif status == table_and_tree_do_not_overlap:
+            raise ValueError("The table does not appear to be completely "
+                             "represented by the phylogeny.")
         else:
             raise ValueError("Unknown Error: {}".format(status))
 
