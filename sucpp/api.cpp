@@ -353,6 +353,7 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
         }
         output << std::endl;
     }
+    output.close();
 
     return write_okay;
 }
@@ -361,13 +362,14 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     std::ofstream output;
     output.open(output_filename);
 
-    // write ids in first column of file and sample id in second column
+    // write sample ids in first column of file and faith's pd in second column
     output << "#SampleID\tfaith_pd" << std::endl;
     for(unsigned int i = 0; i < result->n_samples; i++) {
         output << result->sample_ids[i];
         output << std::setprecision(16) << "\t" << result->values[i];
         output << std::endl;
     }
+    output.close();
 
     return write_okay;
 }

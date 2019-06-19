@@ -10,7 +10,7 @@
 
 
 void usage() {
-    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick>" << std::endl;
+    std::cout << "usage: faithpd -i <biom> -t <newick> -o <out.txt>" << std::endl;
     std::cout << std::endl;
     std::cout << "    -i\t\tThe input BIOM table." << std::endl;
     std::cout << "    -t\t\tThe input phylogeny in newick." << std::endl;
