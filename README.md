@@ -1,15 +1,18 @@
 # UniFrac
+##### Canonically pronounced *yew-nih-frak*
 
 [![Build Status](https://travis-ci.org/biocore/unifrac.svg?branch=master)](https://travis-ci.org/biocore/unifrac)
 
-The *de facto* repository for UniFrac, based on an implementation of the Strided State UniFrac algorithm (manuscript in prep) which is faster, and uses less memory than [Fast UniFrac](http://www.nature.com/ismej/journal/v4/n1/full/ismej200997a.html). Strided State UniFrac supports [Unweighted UniFrac](http://aem.asm.org/content/71/12/8228.abstract), [Weighted UniFrac](http://aem.asm.org/content/73/5/1576), [Generalized UniFrac](https://academic.oup.com/bioinformatics/article/28/16/2106/324465/Associating-microbiome-composition-with), [Variance Adjusted UniFrac](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-118) and [meta UniFrac](http://www.pnas.org/content/105/39/15076.short).
+The *de facto* repository for high-performance phylogenetic diversity calculations. The methods in this repository are based on an implementation of the [Strided State UniFrac](https://www.nature.com/articles/s41592-018-0187-8) algorithm which is faster, and uses less memory than [Fast UniFrac](http://www.nature.com/ismej/journal/v4/n1/full/ismej200997a.html). Strided State UniFrac supports [Unweighted UniFrac](http://aem.asm.org/content/71/12/8228.abstract), [Weighted UniFrac](http://aem.asm.org/content/73/5/1576), [Generalized UniFrac](https://academic.oup.com/bioinformatics/article/28/16/2106/324465/Associating-microbiome-composition-with), [Variance Adjusted UniFrac](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-118) and [meta UniFrac](http://www.pnas.org/content/105/39/15076.short).
+This repository also includes Stacked Faith (manuscript in preparation), a method for calculating Faith's PD that is faster and uses less memory than the Fast UniFrac-based [reference implementation](http://scikit-bio.org/).
 
 This repository produces a C API exposed via a shared library which can be linked against by any programming language. 
 
 # Citation
 
-A detailed description of the algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
+A detailed description of the Strided State UniFrac algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
 
+ssu
     For UniFrac, please see:
         McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
         Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
@@ -20,6 +23,9 @@ A detailed description of the algorithm can be found in [McDonald et al. 2018 Na
         Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342
     For Variance Adjusted UniFrac, please see: 
         Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
+faithpd
+    For Faith's PD, please see:
+        Faith Biological Conservation 1992; DOI: 10.1016/0006-3207(92)91201-3
 
 # Install
 
@@ -31,7 +37,7 @@ Installation time should be a few minutes at most.
 
 ## Install (QIIME2)
 
-The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2018.2/install/). The implementation of this algorithm is installed by default and is available under `qiime diversity beta-phylogenetic-alt`.
+The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.4/install/). The implementation of this algorithm is installed by default and is available under `qiime diversity beta-phylogenetic-alt`.
 
 ## Install (native)
 
@@ -54,12 +60,12 @@ Below are a few light examples of different ways to use this library.
 
 ## QIIME2 
 
-The to use this library through QIIME2, you need to provide a `FeatureTable[Frequency]` and a `Phylogeny[Rooted]` artifacts. An example of use is:
+To use Strided State UniFrac through QIIME2, you need to provide a `FeatureTable[Frequency]` and a `Phylogeny[Rooted]` artifacts. An example of use is:
 
-    qiime diversity beta-phylogenetic-alt --i-table table-evenly-samples.qza \
-                                          --i-phylogeny a-tree.qza \
-                                          --o-distance-matrix resulting-distance-matrix.qza \
-                                          --p-metric unweighted_unifrac
+    qiime diversity beta-phylogenetic --i-table table-evenly-samples.qza \
+                                      --i-phylogeny a-tree.qza \
+                                      --o-distance-matrix resulting-distance-matrix.qza \
+                                      --p-metric unweighted_unifrac
                                           
 ## Python
 
@@ -71,7 +77,7 @@ The library can be accessed directly from within Python. If operating in this mo
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
-    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'generalized', 'meta', 'pkg_resources', 'ssu', 'unweighted', 'weighted_normalized', 'weighted_unnormalized']
+    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'generalized', 'meta', 'pkg_resources', 'ssu', 'stacked_faith', 'unweighted', 'weighted_normalized', 'weighted_unnormalized']
     >>> print(unifrac.unweighted.__doc__)
     Compute Unweighted UniFrac
 
@@ -119,13 +125,36 @@ The library can be accessed directly from within Python. If operating in this mo
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
 
+	>>> print(unifrac.stacked_faith.__doc__)
+	Execute a call to the Stacked Faith API in the UniFrac package
+
+		Parameters
+		----------
+		biom_filename : str
+			A filepath to a BIOM 2.1 formatted table (HDF5)
+		tree_filename : str
+			A filepath to a Newick formatted tree
+
+		Returns
+		-------
+		pd.Series
+			Series of Faith's PD for each sample in `biom_filename`
+
+		Raises
+		------
+		IOError
+			If the tree file is not found
+			If the table is not found
+			If the table is empty
+	
+
 ## Command line
 
 The methods can also be used directly through the command line after install:
 
     $ which ssu
-    /Users/mcdonadt/miniconda3/envs/qiime2-2018.2/bin/ssu
-    (qiime2-2018.2) 09:02:29 (mcdonadt@codinator):~$ ssu --help
+    /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/ssu
+    $ ssu --help
     usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]
 
         -i		The input BIOM table.
@@ -147,6 +176,20 @@ The methods can also be used directly through the command line after install:
             Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342
         For Variance Adjusted UniFrac, please see:
             Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
+
+    $ which faithpd
+    /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/faithpd
+    $ faithpd --help
+	usage: faithpd -i <biom> -t <newick> -o <out.txt>
+
+		-i          The input BIOM table.
+		-t          The input phylogeny in newick.
+		-o          The output series.
+
+	Citations: 
+		For Faith's PD, please see:
+			Faith Biological Conservation 1992; DOI: 10.1016/0006-3207(92)91201-3
+
             
 ## Shared library access
 
