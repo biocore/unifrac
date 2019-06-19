@@ -83,3 +83,8 @@ script:
   - exp=$($MD5 ci/test.dm | awk '{ print $1 }')
   - obs=$($MD5 ci/test.dm.partial | awk '{ print $1 }')
   - python -c "assert '${obs}' == '${exp}'"
+  - ./sucpp/faithpd -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.faith.obs
+  - tail -n +2 ci/test.faith.obs > ci/test.faith.header-removed.obs
+  - exp1=$($MD5 unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
+  - obs1=$($MD5 ci/test.faith.header-removed.obs | awk '{ print $1 }')
+  - python -c "assert '${obs1}' == '${exp1}'"
