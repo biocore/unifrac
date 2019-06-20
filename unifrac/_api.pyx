@@ -40,7 +40,10 @@ def ssu(str biom_filename, str tree_filename,
         If the table is not found
         If the table is empty
     ValueError
+        If the table is not completely represented by the phylogeny
         If an unknown method is requested.
+    Exception
+        If an unkown error is returned from `one_off`
     """
     cdef:
         mat *result;
@@ -75,15 +78,17 @@ def ssu(str biom_filename, str tree_filename,
     if status != okay:
         if status == tree_missing:
             raise IOError("Tree file not found.")
-        if status == table_missing:
+        elif status == table_missing:
             raise IOError("Table file not found.")
-        if status == table_empty:
+        elif status == table_empty:
             raise IOError("Table file is empty.")
         elif status == table_and_tree_do_not_overlap:
             raise ValueError("The table does not appear to be completely "
                              "represented by the phylogeny.")
-        if status == unknown_method:
+        elif status == unknown_method:
             raise ValueError("Unknown method.")
+        else:
+            raise Exception("Unknown Error: {}".format(status))
 
     ids = []
     numpy_arr = np.zeros(result.cf_size, dtype=np.double)
@@ -117,6 +122,10 @@ def faith_pd(str biom_filename, str tree_filename):
         If the tree file is not found
         If the table is not found
         If the table is empty
+    ValueError
+        If the table is not completely represented by the phylogeny
+    Exception
+        If an unkown error is returned from `faith_pd_one_off`
     """
     cdef:
         results_vec *result;
@@ -147,7 +156,7 @@ def faith_pd(str biom_filename, str tree_filename):
             raise ValueError("The table does not appear to be completely "
                              "represented by the phylogeny.")
         else:
-            raise ValueError("Unknown Error: {}".format(status))
+            raise Exception("Unknown Error: {}".format(status))
 
     numpy_arr = np.zeros(result.n_samples, dtype=np.double)
     numpy_arr[:] = <np.double_t[:result.n_samples]> result.values
