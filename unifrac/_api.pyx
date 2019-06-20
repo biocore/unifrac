@@ -43,7 +43,7 @@ def ssu(str biom_filename, str tree_filename,
         If the table is not completely represented by the phylogeny
         If an unknown method is requested.
     Exception
-        If an unkown error is returned from `one_off`
+        If an unkown error is experienced
     """
     cdef:
         mat *result;
@@ -125,7 +125,7 @@ def faith_pd(str biom_filename, str tree_filename):
     ValueError
         If the table is not completely represented by the phylogeny
     Exception
-        If an unkown error is returned from `faith_pd_one_off`
+        If an unkown error is experienced
     """
     cdef:
         results_vec *result;
