@@ -28,7 +28,7 @@ std::string su::test_table_ids_are_subset_of_tree(su::biom &table, su::BPTree &t
     return a_missing_name;
 }
 
-int sync_printf(const char *format, ...) {
+void sync_printf(const char *format, ...) {
     // https://stackoverflow.com/a/23587285/19741
     va_list args;
     va_start(args, format);
