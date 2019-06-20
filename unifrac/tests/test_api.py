@@ -151,6 +151,14 @@ class EdgeCasesTests(unittest.TestCase):
             except OSError:
                 pass
 
+    def test_ssu_table_not_subset_tree(self):
+        tree = TreeNode.read(StringIO('((OTU1:0.5,OTU3:1.0):1.0)root;'))
+        expected_message = "The table does not appear to be completely "\
+                           "represented by the phylogeny."
+
+        with self.assertRaisesRegex(ValueError, expected_message):
+            self.unweighted_unifrac(self.b1[0], self.b1[1], self.oids1, tree)
+
     def test_unweighted_otus_out_of_order(self):
         # UniFrac API does not assert the observations are in tip order of the
         # input tree
@@ -568,16 +576,6 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
 
     package = 'unifrac.tests'
 
-    def assertRaisesWithMessage(self, msg, func, *args, **kwargs):
-        # see 'https://stackoverflow.com/questions/8672754/how-to-sho'
-        #     'w-the-error-messages-caught-by-assertraises-in-unittest'
-        #     '-in-python2-7'
-        try:
-            func(*args, **kwargs)
-            self.assertFail()
-        except Exception as inst:
-            self.assertEqual(inst.message, msg)
-
     def write_table_tree(self, u_counts, otu_ids, sample_ids, tree):
         data = np.array([u_counts]).T
 
@@ -657,8 +655,8 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
                                             tree)
         expected_message = "The table does not appear to be completely "\
                            "represented by the phylogeny."
-        self.assertRaisesWithMessage(expected_message, ValueError,
-                                     table, tree)
+        with self.assertRaisesRegex(ValueError, expected_message):
+            faith_pd(table, tree)
 
     def test_faith_pd_all_observed(self):
         actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'],

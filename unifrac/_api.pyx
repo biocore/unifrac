@@ -79,6 +79,9 @@ def ssu(str biom_filename, str tree_filename,
             raise IOError("Table file not found.")
         if status == table_empty:
             raise IOError("Table file is empty.")
+        elif status == table_and_tree_do_not_overlap:
+            raise ValueError("The table does not appear to be completely "
+                             "represented by the phylogeny.")
         if status == unknown_method:
             raise ValueError("Unknown method.")
 
