@@ -245,8 +245,8 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
 
     if(nthreads > dm_stripes.size()) {
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
         nthreads = dm_stripes.size();
-        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", nthreads);
     }
 
     std::vector<su::task_parameters> tasks(nthreads);
@@ -297,8 +297,8 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
 
     if(nthreads > dm_stripes.size()) {
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
         nthreads = dm_stripes.size();
-        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", nthreads);
     }
 
     std::vector<su::task_parameters> tasks(nthreads);
@@ -580,8 +580,8 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
     }
 
     if(nthreads > stripes.size()) {
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
         nthreads = stripes.size();
-        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", nthreads);
     }
 
     std::vector<su::task_parameters> tasks(nthreads);
