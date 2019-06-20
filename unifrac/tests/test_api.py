@@ -568,6 +568,16 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
 
     package = 'unifrac.tests'
 
+    def assertRaisesWithMessage(self, msg, func, *args, **kwargs):
+        # see 'https://stackoverflow.com/questions/8672754/how-to-sho'
+        #     'w-the-error-messages-caught-by-assertraises-in-unittest'
+        #     '-in-python2-7'
+        try:
+            func(*args, **kwargs)
+            self.assertFail()
+        except Exception as inst:
+            self.assertEqual(inst.message, msg)
+
     def write_table_tree(self, u_counts, otu_ids, sample_ids, tree):
         data = np.array([u_counts]).T
 
@@ -645,6 +655,10 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         table_ids = ['OTU1', 'OTU2']
         table, tree = self.write_table_tree([1, 0], table_ids, ['foo'],
                                             tree)
+        expected_message = "The table does not appear to be completely "\
+                           "represented by the phylogeny."
+        self.assertRaisesWithMessage(expected_message, ValueError,
+                                     table, tree)
 
     def test_faith_pd_all_observed(self):
         actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'],
