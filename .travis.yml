@@ -61,7 +61,6 @@ install:
   - make test
   - make main
   - make api
-  - make capi_test;
   - popd 
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
