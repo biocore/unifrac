@@ -732,7 +732,7 @@ void test_unnormalized_weighted_unifrac() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::weighted_unnormalized, strides, strides_total, &task_p);
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
@@ -763,7 +763,7 @@ void test_generalized_unifrac() {
     su::task_parameters w_task_p;
     w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
     w_task_p.g_unifrac_alpha = 1.0;
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::generalized, w_strides, w_strides_total, &w_task_p);
 
     // as computed by GUniFrac v1.0
@@ -786,7 +786,7 @@ void test_generalized_unifrac() {
     su::task_parameters d0_task_p;
     d0_task_p.start = 0; d0_task_p.stop = 3; d0_task_p.tid = 0; d0_task_p.n_samples = 6;
     d0_task_p.g_unifrac_alpha = 0.0;
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::generalized, d0_strides, d0_strides_total, &d0_task_p);
 
     // as computed by GUniFrac v1.0
@@ -809,7 +809,7 @@ void test_generalized_unifrac() {
     su::task_parameters d05_task_p;
     d05_task_p.start = 0; d05_task_p.stop = 3; d05_task_p.tid = 0; d05_task_p.n_samples = 6;
     d05_task_p.g_unifrac_alpha = 0.5;
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::generalized, d05_strides, d05_strides_total, &d05_task_p);
 
     for(unsigned int i = 0; i < 3; i++) {
@@ -855,7 +855,7 @@ void test_vaw_unifrac_weighted_normalized() {
     su::task_parameters w_task_p;
     w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
     w_task_p.g_unifrac_alpha = 1.0;
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac_vaw(table, tree, su::weighted_normalized, w_strides, w_strides_total, &w_task_p);
 
     for(unsigned int i = 0; i < 3; i++) {
@@ -951,7 +951,7 @@ void test_unweighted_unifrac() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
 
     for(unsigned int i = 0; i < 3; i++) {
@@ -983,7 +983,7 @@ void test_unweighted_unifrac_fast() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = true;
 
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
 
     for(unsigned int i = 0; i < 3; i++) {
@@ -1015,7 +1015,7 @@ void test_normalized_weighted_unifrac() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
-    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    static bool* report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, &task_p);
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
