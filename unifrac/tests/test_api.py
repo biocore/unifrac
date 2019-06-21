@@ -646,7 +646,7 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         table, tree = self.write_table_tree([], [], [],
                                             self.t1)
 
-        self.assertRaises(IOError, faith_pd, table, tree)
+        self.assertRaises(ValueError, faith_pd, table, tree)
 
     def test_faith_pd_table_not_subset_tree(self):
         tree = TreeNode.read(StringIO('((OTU1:0.5,OTU3:1.0):1.0)root;'))
