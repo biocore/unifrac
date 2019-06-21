@@ -151,6 +151,14 @@ class EdgeCasesTests(unittest.TestCase):
             except OSError:
                 pass
 
+    def test_ssu_table_not_subset_tree(self):
+        tree = TreeNode.read(StringIO('((OTU1:0.5,OTU3:1.0):1.0)root;'))
+        expected_message = "The table does not appear to be completely "\
+                           "represented by the phylogeny."
+
+        with self.assertRaisesRegex(ValueError, expected_message):
+            self.unweighted_unifrac(self.b1[0], self.b1[1], self.oids1, tree)
+
     def test_unweighted_otus_out_of_order(self):
         # UniFrac API does not assert the observations are in tip order of the
         # input tree
@@ -638,7 +646,17 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         table, tree = self.write_table_tree([], [], [],
                                             self.t1)
 
-        self.assertRaises(IOError, faith_pd, table, tree)
+        self.assertRaises(ValueError, faith_pd, table, tree)
+
+    def test_faith_pd_table_not_subset_tree(self):
+        tree = TreeNode.read(StringIO('((OTU1:0.5,OTU3:1.0):1.0)root;'))
+        table_ids = ['OTU1', 'OTU2']
+        table, tree = self.write_table_tree([1, 0], table_ids, ['foo'],
+                                            tree)
+        expected_message = "The table does not appear to be completely "\
+                           "represented by the phylogeny."
+        with self.assertRaisesRegex(ValueError, expected_message):
+            faith_pd(table, tree)
 
     def test_faith_pd_all_observed(self):
         actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'],
