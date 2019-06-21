@@ -602,7 +602,7 @@ void su::process_stripes(biom &table,
         threads[tid].join();
     }
 
-	if(report_status != NULL) {
+    if(report_status != NULL) {
         pthread_mutex_destroy(&printf_mutex);
         free(report_status);
     }
