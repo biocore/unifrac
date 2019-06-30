@@ -57,7 +57,11 @@ install:
   # make sure dynamic linking to shared libraries is enabled
   - $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
   - export CC=`which h5c++`
-  - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
+  - pushd sucpp
+  - make test
+  - make main
+  - make api
+  - popd 
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
@@ -68,7 +72,10 @@ install:
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
   - ulimit -c unlimited -S
-  - pushd sucpp; ./test_su; ./test_api; popd
+  - pushd sucpp
+  - ./test_su
+  - ./test_api
+  - popd
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu
