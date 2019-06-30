@@ -3,6 +3,7 @@
 #include <string>
 #include <iomanip>
 #include <glob.h>
+#include <signal.h>
 #include "api.hpp"
 #include "cmd.hpp"
 #include "tree.hpp"
@@ -274,7 +275,14 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
     return EXIT_SUCCESS;
 }
 
+void ssu_sig_handler(int signo) {
+    if (signo == SIGUSR1) {
+        printf("Status cannot be reported.\n");
+    }
+}
+
 int main(int argc, char **argv){
+    signal(SIGUSR1, ssu_sig_handler);
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h") || input.cmdOptionExists("--help") || argc == 1) {
         usage();

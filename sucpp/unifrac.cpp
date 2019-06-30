@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 static pthread_mutex_t printf_mutex;
+static bool* report_status;
 
 std::string su::test_table_ids_are_subset_of_tree(su::biom &table, su::BPTree &tree) {
     std::unordered_set<std::string> tip_names = tree.get_tip_names();
@@ -39,8 +40,6 @@ int sync_printf(const char *format, ...) {
 
     va_end(args);
 }
-
-static bool* report_status;
 
 void sig_handler(int signo) {
     // http://www.thegeekstuff.com/2012/03/catch-signals-sample-c-code
@@ -317,16 +316,6 @@ void su::unifrac(biom &table,
             break;
     }
 
-    // register a signal handler so we can ask the master thread for its
-    // progress
-    if(task_p->tid == 0) {
-        if (signal(SIGUSR1, sig_handler) == SIG_ERR)
-            fprintf(stderr, "Can't catch SIGUSR1\n");
-
-        report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
-        pthread_mutex_init(&printf_mutex, NULL);
-    }
-
     if(func == NULL) {
         fprintf(stderr, "Unknown unifrac task\n");
         exit(1);
@@ -460,16 +449,6 @@ void su::unifrac_vaw(biom &table,
             break;
     }
 
-    // register a signal handler so we can ask the master thread for its
-    // progress
-    if(task_p->tid == 0) {
-        if (signal(SIGUSR1, sig_handler) == SIG_ERR)
-            fprintf(stderr, "Can't catch SIGUSR1\n");
-
-        report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
-        pthread_mutex_init(&printf_mutex, NULL);
-    }
-
     if(func == NULL) {
         fprintf(stderr, "Unknown unifrac task\n");
         exit(1);
@@ -592,6 +571,14 @@ void su::process_stripes(biom &table,
                          std::vector<std::thread> &threads,
                          std::vector<su::task_parameters> &tasks) {
 
+    // register a signal handler so we can ask the master thread for its
+    // progress
+    if (signal(SIGUSR1, sig_handler) == SIG_ERR)
+        fprintf(stderr, "Can't catch SIGUSR1\n");
+
+    report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
+    pthread_mutex_init(&printf_mutex, NULL);
+
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             threads[tid] = std::thread(su::unifrac_vaw,
@@ -615,7 +602,8 @@ void su::process_stripes(biom &table,
         threads[tid].join();
     }
 
-	if(report_status != NULL) {
-		free(report_status);
+    if(report_status != NULL) {
+        pthread_mutex_destroy(&printf_mutex);
+        free(report_status);
     }
 }

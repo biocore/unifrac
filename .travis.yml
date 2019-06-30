@@ -41,10 +41,10 @@ before_install:
 install:
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
-  - conda install --yes numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
+  - conda config --add channels conda-forge
+  - conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
   # needed for the hdf5 dev tools
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then SED='sed -i'; else SED='sed -i '"'"''"'"' '; fi
-  - conda install --yes -c conda-forge cython "hdf5>=1.8.17" biom-format
   # make sure hdf5 is using the compiler we want to use for this build
   - $SED "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
   - $SED "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++` 
@@ -57,9 +57,11 @@ install:
   # make sure dynamic linking to shared libraries is enabled
   - $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++` 
   - export CC=`which h5c++`
-  # cat h5c++ for debugging
-  - cat `which h5c++`
-  - pushd sucpp; make test; make main; make api; make capi_test; make rapi_test; popd 
+  - pushd sucpp
+  - make test
+  - make main
+  - make api
+  - popd 
   # verify both installation methods
   - 'if [ ${EDITABLE_PIP} ]; then
         pip install -e . || travis_terminate 1;
@@ -70,7 +72,10 @@ install:
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
   - ulimit -c unlimited -S
-  - pushd sucpp; ./test_su; ./test_api; popd
+  - pushd sucpp
+  - ./test_su
+  - ./test_api
+  - popd
   - nosetests
   - flake8 unifrac setup.py
   - ./sucpp/ssu

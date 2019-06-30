@@ -732,7 +732,17 @@ void test_unnormalized_weighted_unifrac() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
-    su::unifrac(table, tree, su::weighted_unnormalized, strides, strides_total, &task_p);
+    std::vector<su::task_parameters> tasks;
+    tasks.push_back(task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::weighted_unnormalized,
+                        false,
+                        std::ref(strides),
+                        std::ref(strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
+
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);
@@ -762,7 +772,17 @@ void test_generalized_unifrac() {
     su::task_parameters w_task_p;
     w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
     w_task_p.g_unifrac_alpha = 1.0;
-    su::unifrac(table, tree, su::generalized, w_strides, w_strides_total, &w_task_p);
+
+    std::vector<su::task_parameters> tasks;
+    tasks.push_back(w_task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::generalized,
+                        false,
+                        std::ref(w_strides),
+                        std::ref(w_strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
 
     // as computed by GUniFrac v1.0
     //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
@@ -784,7 +804,17 @@ void test_generalized_unifrac() {
     su::task_parameters d0_task_p;
     d0_task_p.start = 0; d0_task_p.stop = 3; d0_task_p.tid = 0; d0_task_p.n_samples = 6;
     d0_task_p.g_unifrac_alpha = 0.0;
-    su::unifrac(table, tree, su::generalized, d0_strides, d0_strides_total, &d0_task_p);
+
+    tasks.clear();
+    tasks.push_back(d0_task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::generalized,
+                        false,
+                        std::ref(d0_strides),
+                        std::ref(d0_strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
 
     // as computed by GUniFrac v1.0
     //          Sample1   Sample2   Sample3   Sample4   Sample5   Sample6
@@ -806,7 +836,17 @@ void test_generalized_unifrac() {
     su::task_parameters d05_task_p;
     d05_task_p.start = 0; d05_task_p.stop = 3; d05_task_p.tid = 0; d05_task_p.n_samples = 6;
     d05_task_p.g_unifrac_alpha = 0.5;
-    su::unifrac(table, tree, su::generalized, d05_strides, d05_strides_total, &d05_task_p);
+
+    tasks.clear();
+    tasks.push_back(d05_task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::generalized,
+                        false,
+                        std::ref(d05_strides),
+                        std::ref(d05_strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
 
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
@@ -851,7 +891,17 @@ void test_vaw_unifrac_weighted_normalized() {
     su::task_parameters w_task_p;
     w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
     w_task_p.g_unifrac_alpha = 1.0;
-    su::unifrac_vaw(table, tree, su::weighted_normalized, w_strides, w_strides_total, &w_task_p);
+
+    std::vector<su::task_parameters> tasks;
+    tasks.push_back(w_task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::weighted_normalized,
+                        true,
+                        std::ref(w_strides),
+                        std::ref(w_strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
 
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
@@ -946,7 +996,16 @@ void test_unweighted_unifrac() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
-    su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
+    std::vector<su::task_parameters> tasks;
+    tasks.push_back(task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::unweighted,
+                        false,
+                        std::ref(strides),
+                        std::ref(strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
 
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
@@ -977,7 +1036,16 @@ void test_unweighted_unifrac_fast() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = true;
 
-    su::unifrac(table, tree, su::unweighted, strides, strides_total, &task_p);
+    std::vector<su::task_parameters> tasks;
+    tasks.push_back(task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::unweighted,
+                        false,
+                        std::ref(strides),
+                        std::ref(strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
 
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
@@ -1008,7 +1076,18 @@ void test_normalized_weighted_unifrac() {
     su::task_parameters task_p;
     task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
 
-    su::unifrac(table, tree, su::weighted_normalized, strides, strides_total, &task_p);
+
+    std::vector<su::task_parameters> tasks;
+    tasks.push_back(task_p);
+    su::process_stripes(std::ref(table), 
+                        std::ref(tree),
+                        su::weighted_normalized,
+                        false,
+                        std::ref(strides),
+                        std::ref(strides_total),
+                        std::ref(threads),
+                        std::ref(tasks));
+
     for(unsigned int i = 0; i < 3; i++) {
         for(unsigned int j = 0; j < 6; j++) {
             ASSERT(fabs(strides[i][j] - exp[i][j]) < 0.000001);

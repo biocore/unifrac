@@ -18,7 +18,7 @@ from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
 
-from unifrac import ssu, stacked_faith
+from unifrac import ssu, faith_pd
 
 
 class UnifracAPITests(unittest.TestCase):
@@ -150,6 +150,14 @@ class EdgeCasesTests(unittest.TestCase):
                 os.remove(f)
             except OSError:
                 pass
+
+    def test_ssu_table_not_subset_tree(self):
+        tree = TreeNode.read(StringIO('((OTU1:0.5,OTU3:1.0):1.0)root;'))
+        expected_message = "The table does not appear to be completely "\
+                           "represented by the phylogeny."
+
+        with self.assertRaisesRegex(ValueError, expected_message):
+            self.unweighted_unifrac(self.b1[0], self.b1[1], self.oids1, tree)
 
     def test_unweighted_otus_out_of_order(self):
         # UniFrac API does not assert the observations are in tip order of the
@@ -588,7 +596,7 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
     def faith_pd_work(self, u_counts, otu_ids, sample_ids, tree):
         ta, tr = self.write_table_tree(u_counts, otu_ids, sample_ids, tree)
 
-        return stacked_faith(ta, tr)
+        return faith_pd(ta, tr)
 
     def setUp(self):
         self.counts = np.array([0, 1, 1, 4, 2, 5, 2, 4, 1, 2])
@@ -638,7 +646,17 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         table, tree = self.write_table_tree([], [], [],
                                             self.t1)
 
-        self.assertRaises(IOError, stacked_faith, table, tree)
+        self.assertRaises(ValueError, faith_pd, table, tree)
+
+    def test_faith_pd_table_not_subset_tree(self):
+        tree = TreeNode.read(StringIO('((OTU1:0.5,OTU3:1.0):1.0)root;'))
+        table_ids = ['OTU1', 'OTU2']
+        table, tree = self.write_table_tree([1, 0], table_ids, ['foo'],
+                                            tree)
+        expected_message = "The table does not appear to be completely "\
+                           "represented by the phylogeny."
+        with self.assertRaisesRegex(ValueError, expected_message):
+            faith_pd(table, tree)
 
     def test_faith_pd_all_observed(self):
         actual = self.faith_pd_work([1, 1, 1, 1, 1], self.oids1, ['foo'],
@@ -752,8 +770,8 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
             bt.to_hdf5(fhdf5, 'Table for unit testing')
         tree.write(tr)
 
-        self.assertRaises(IOError, stacked_faith, 'dne.biom', tr)
-        self.assertRaises(IOError, stacked_faith, ta, 'dne.tre')
+        self.assertRaises(IOError, faith_pd, 'dne.biom', tr)
+        self.assertRaises(IOError, faith_pd, ta, 'dne.tre')
 
 
 if __name__ == "__main__":
