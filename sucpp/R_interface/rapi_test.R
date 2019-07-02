@@ -46,7 +46,7 @@ for ( i in 1:6){
 	aboutEquals(faith["faith_pd"][[1]][i], exp[i], "Output not as expected")
 }
 
-
+print('Success.')
 
 print('All tests pass')
 
