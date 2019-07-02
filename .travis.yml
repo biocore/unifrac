@@ -75,6 +75,9 @@ install:
     else
         brew install r ;
     fi
+  - R -e 'install.packages("Rcpp", repos="http://cran.us.r-project.org")'
+  # make c api for testing 
+  - make capi_test
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
@@ -104,7 +107,6 @@ script:
   - python -c "assert '${obs1}' == '${exp1}'"
   # test example API's
   - pushd sucpp
-  - make capi_test
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./capi_test 2 ; else ./capi_test 1 ; fi
   - make rapi_test
   - popd
