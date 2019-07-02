@@ -76,8 +76,10 @@ install:
         brew install r ;
     fi
   - R -e 'install.packages("Rcpp", repos="http://cran.us.r-project.org")'
+  - pushd sucpp
   # make c api for testing 
   - make capi_test
+  - popd
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
