@@ -14,7 +14,6 @@ addons:
 
 language: 
   - cpp
-  - r
 
 env:
   - PYTHON_VERSION=3.6 EDITABLE_PIP=1
@@ -70,6 +69,12 @@ install:
      else
         pip install . || travis_terminate 1;
      fi'
+  # install R for api example test
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
+        sudo apt-get update && sudo apt-get install r-base ;
+    else
+        brew install r ;
+    fi
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
