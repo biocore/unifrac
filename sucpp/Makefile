@@ -63,8 +63,8 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
-	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -o capi_test
-	LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
+	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
+	export LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
