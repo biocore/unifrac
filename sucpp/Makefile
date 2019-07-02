@@ -55,7 +55,7 @@ rapi_test: main
 	echo CXX1X=h5c++ > ~/.R/Makevars
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
-	pushd R_interface && Rscript rapi_test.R; popd
+	Rscript R_interface/rapi_test.R
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
