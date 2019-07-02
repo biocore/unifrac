@@ -17,7 +17,7 @@ void err(bool condition, const char* msg) {
     }
 } 
 
-void test_su(){
+void test_su(int num_cores){
     mat_t* result = NULL;
     const char* table = "test.biom";
     const char* tree = "test.tre";
@@ -26,7 +26,7 @@ void test_su(){
     
     ComputeStatus status;
     status = one_off(table, tree, method,
-                     false, 1.0, false, 2, &result);
+                     false, 1.0, false, num_cores, &result);
 
     err(status != okay, "Compute failed");
     err(result == NULL, "Empty result");
@@ -58,9 +58,10 @@ void test_faith_pd(){
 }
 
 int main(int argc, char** argv) {
+    int num_cores = strtol(argv[1], NULL, 10);
 
     printf("Testing Striped UniFrac...\n");
-    test_su();
+    test_su(num_cores);
     printf("Tests passed.\n");
     printf("Testing Faith's PD...\n");
     test_faith_pd();
