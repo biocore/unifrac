@@ -95,3 +95,9 @@ script:
   - exp1=$($MD5 unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
   - obs1=$($MD5 ci/test.faith.header-removed.obs | awk '{ print $1 }')
   - python -c "assert '${obs1}' == '${exp1}'"
+  # test example API's
+  - pushd sucpp
+  - make capi_test
+  - ./capi_test
+  - make rapi_test
+  - popd
