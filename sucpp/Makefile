@@ -55,7 +55,7 @@ rapi_test: main
 	echo CXX1X=h5c++ > ~/.R/Makevars
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
-	pushd R_interface && Rscript rapi_test.R; popd
+	Rscript R_interface/rapi_test.R
 	
 api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
@@ -63,8 +63,8 @@ api: tree.o biom.o unifrac.o cmd.o unifrac_task.o
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
-	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -o capi_test
-	LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
+	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
+	export LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@

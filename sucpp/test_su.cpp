@@ -730,7 +730,7 @@ void test_unnormalized_weighted_unifrac() {
     std::vector<double*> strides_total = su::make_strides(6);
 
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = false;
 
     std::vector<su::task_parameters> tasks;
     tasks.push_back(task_p);
@@ -770,7 +770,7 @@ void test_generalized_unifrac() {
     std::vector<double*> w_strides = su::make_strides(6);
     std::vector<double*> w_strides_total = su::make_strides(6);
     su::task_parameters w_task_p;
-    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
+    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6; w_task_p.bypass_tips = false;
     w_task_p.g_unifrac_alpha = 1.0;
 
     std::vector<su::task_parameters> tasks;
@@ -802,7 +802,7 @@ void test_generalized_unifrac() {
     std::vector<double*> d0_strides = su::make_strides(6);
     std::vector<double*> d0_strides_total = su::make_strides(6);
     su::task_parameters d0_task_p;
-    d0_task_p.start = 0; d0_task_p.stop = 3; d0_task_p.tid = 0; d0_task_p.n_samples = 6;
+    d0_task_p.start = 0; d0_task_p.stop = 3; d0_task_p.tid = 0; d0_task_p.n_samples = 6; d0_task_p.bypass_tips = false;
     d0_task_p.g_unifrac_alpha = 0.0;
 
     tasks.clear();
@@ -834,7 +834,7 @@ void test_generalized_unifrac() {
     std::vector<double*> d05_strides = su::make_strides(6);
     std::vector<double*> d05_strides_total = su::make_strides(6);
     su::task_parameters d05_task_p;
-    d05_task_p.start = 0; d05_task_p.stop = 3; d05_task_p.tid = 0; d05_task_p.n_samples = 6;
+    d05_task_p.start = 0; d05_task_p.stop = 3; d05_task_p.tid = 0; d05_task_p.n_samples = 6; d05_task_p.bypass_tips = false;
     d05_task_p.g_unifrac_alpha = 0.5;
 
     tasks.clear();
@@ -889,7 +889,7 @@ void test_vaw_unifrac_weighted_normalized() {
     std::vector<double*> w_strides = su::make_strides(6);
     std::vector<double*> w_strides_total = su::make_strides(6);
     su::task_parameters w_task_p;
-    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6;
+    w_task_p.start = 0; w_task_p.stop = 3; w_task_p.tid = 0; w_task_p.n_samples = 6; w_task_p.bypass_tips = false;
     w_task_p.g_unifrac_alpha = 1.0;
 
     std::vector<su::task_parameters> tasks;
@@ -994,7 +994,7 @@ void test_unweighted_unifrac() {
     std::vector<double*> strides_total = su::make_strides(6);
 
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = false;
 
     std::vector<su::task_parameters> tasks;
     tasks.push_back(task_p);
@@ -1074,7 +1074,7 @@ void test_normalized_weighted_unifrac() {
     std::vector<double*> strides_total = su::make_strides(6);
 
     su::task_parameters task_p;
-    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6;
+    task_p.start = 0; task_p.stop = 3; task_p.tid = 0; task_p.n_samples = 6; task_p.bypass_tips = false;
 
 
     std::vector<su::task_parameters> tasks;
@@ -1216,6 +1216,7 @@ void test_set_tasks() {
 
     exp[0].g_unifrac_alpha = 1.0;
     exp[0].n_samples = 100;
+    exp[0].bypass_tips = false;
     exp[0].start = 0;
     exp[0].stop = 100;
     exp[0].tid = 0;
@@ -1232,11 +1233,13 @@ void test_set_tasks() {
 
     exp2[0].g_unifrac_alpha = 1.0;
     exp2[0].n_samples = 100;
+    exp2[0].bypass_tips = false;
     exp2[0].start = 0;
     exp2[0].stop = 50;
     exp2[0].tid = 0;
     exp2[1].g_unifrac_alpha = 1.0;
     exp2[1].n_samples = 100;
+    exp2[1].bypass_tips = false;
     exp2[1].start = 50;
     exp2[1].stop = 100;
     exp2[1].tid = 1;
@@ -1255,16 +1258,19 @@ void test_set_tasks() {
 
     exp3[0].g_unifrac_alpha = 1.0;
     exp3[0].n_samples = 100;
+    exp3[0].bypass_tips = false;
     exp3[0].start = 25;
     exp3[0].stop = 50;
     exp3[0].tid = 0;
     exp3[1].g_unifrac_alpha = 1.0;
     exp3[1].n_samples = 100;
+    exp3[1].bypass_tips = false;
     exp3[1].start = 50;
     exp3[1].stop = 75;
     exp3[1].tid = 1;
     exp3[2].g_unifrac_alpha = 1.0;
     exp3[2].n_samples = 100;
+    exp3[2].bypass_tips = false;
     exp3[2].start = 75;
     exp3[2].stop = 100;
     exp3[2].tid = 2;
@@ -1283,16 +1289,19 @@ void test_set_tasks() {
 
     exp4[0].g_unifrac_alpha = 1.0;
     exp4[0].n_samples = 100;
+    exp4[0].bypass_tips = false;
     exp4[0].start = 26;
     exp4[0].stop = 51;
     exp4[0].tid = 0;
     exp4[1].g_unifrac_alpha = 1.0;
     exp4[1].n_samples = 100;
+    exp4[1].bypass_tips = false;
     exp4[1].start = 51;
     exp4[1].stop = 76;
     exp4[1].tid = 1;
     exp4[2].g_unifrac_alpha = 1.0;
     exp4[2].n_samples = 100;
+    exp4[2].bypass_tips = false;
     exp4[2].start = 76;
     exp4[2].stop = 100;
     exp4[2].tid = 2;

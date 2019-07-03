@@ -17,8 +17,7 @@ void err(bool condition, const char* msg) {
     }
 } 
 
-
-int main(int argc, char** argv) {
+void test_su(int num_cores){
     mat_t* result = NULL;
     const char* table = "test.biom";
     const char* tree = "test.tre";
@@ -27,7 +26,7 @@ int main(int argc, char** argv) {
     
     ComputeStatus status;
     status = one_off(table, tree, method,
-                     false, 1.0, false, 2, &result);
+                     false, 1.0, false, num_cores, &result);
 
     err(status != okay, "Compute failed");
     err(result == NULL, "Empty result");
@@ -38,6 +37,35 @@ int main(int argc, char** argv) {
     for(unsigned int i = 0; i < result->cf_size; i++) 
         err(fabs(exp[i] - result->condensed_form[i]) > 0.00001, "Result is wrong");
 
+}
+
+void test_faith_pd(){
+    r_vec* result = NULL;
+    const char* table = "test.biom";
+    const char* tree = "test.tre";
+    double exp[] = {4, 5, 6, 3, 2, 5};
+
+    ComputeStatus status;
+    status = faith_pd_one_off(table, tree, &result);
+
+    err(status != okay, "Compute failed");
+    err(result == NULL, "Empty result");
+    err(result->n_samples != 6, "Wrong number of samples");
+
+    for(unsigned int i = 0; i < result->n_samples; i++)
+        err(fabs(exp[i] - result->values[i]) > 0.00001, "Result is wrong");
+
+}
+
+int main(int argc, char** argv) {
+    int num_cores = strtol(argv[1], NULL, 10);
+
+    printf("Testing Striped UniFrac...\n");
+    test_su(num_cores);
+    printf("Tests passed.\n");
+    printf("Testing Faith's PD...\n");
+    test_faith_pd();
+    printf("Tests passed.\n");
     return 0;
 }
 

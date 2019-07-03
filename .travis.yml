@@ -12,7 +12,8 @@ addons:
       - g++-4.9
       - libhdf5-serial-dev
 
-language: cpp
+language: 
+  - cpp
 
 env:
   - PYTHON_VERSION=3.6 EDITABLE_PIP=1
@@ -68,6 +69,17 @@ install:
      else
         pip install . || travis_terminate 1;
      fi'
+  # install R for api example test
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
+        sudo apt-get update && sudo apt-get install r-base ;
+    else
+        brew install r ;
+    fi
+  - sudo R -e 'install.packages("Rcpp", repos="http://cran.us.r-project.org")'
+  - pushd sucpp
+  # make c api for testing 
+  - make capi_test
+  - popd
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MD5=md5sum; else MD5='md5 -r'; fi
@@ -95,3 +107,8 @@ script:
   - exp1=$($MD5 unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
   - obs1=$($MD5 ci/test.faith.header-removed.obs | awk '{ print $1 }')
   - python -c "assert '${obs1}' == '${exp1}'"
+  # test example API's
+  - pushd sucpp
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./capi_test 2 ; else ./capi_test 1 ; fi
+  - make rapi_test
+  - popd
