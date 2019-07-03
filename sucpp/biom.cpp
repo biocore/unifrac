@@ -18,7 +18,7 @@ const std::string SAMPLE_DATA = std::string("/sample/matrix/data");
 const std::string SAMPLE_IDS = std::string("/sample/ids");
 
 biom::biom(std::string filename) {
-    file = H5File(filename, H5F_ACC_RDONLY);
+    file = H5File(filename.c_str(), H5F_ACC_RDONLY);
 
     /* establish the datasets */
     obs_indices = file.openDataSet(OBS_INDICES.c_str());
