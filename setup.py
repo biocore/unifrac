@@ -21,6 +21,12 @@ SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 PREFIX = os.environ.get('PREFIX', "")
 
+base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 2.7.0",
+        "scikit-bio >= 0.5.1"]
+
+test = ["nose", "flake8"]
+
+all_deps = base + test
 
 # https://stackoverflow.com/a/33308902/379593
 if sys.platform == 'darwin':
@@ -82,16 +88,23 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
+with open('README.md') as f:
+    long_description = f.read()
+
 setup(
     name="unifrac",
-    version="0.9.2",
+    version="0.10.0",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',
     author_email="wasade@gmail.com",
     url="https://github.com/biocore/unifrac",
-    description="High performance UniFrac",
+    description="High performance phylogenetic diversity calculations",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     ext_modules=extensions,
+    install_requires=base,
+    extras_require={'test': test, 'all': all_deps},
     cmdclass={'build_ext': build_ext},
     package_data={
         'unifrac.tests': ['data/*', ]}
