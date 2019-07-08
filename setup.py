@@ -21,8 +21,8 @@ SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 PREFIX = os.environ.get('PREFIX', "")
 
-base = ["cython >= 0.26", "hdf5 >= 1.8.17", "biom-format", "numpy",
-        "h5py>=2.7.0", "scikit-bio>=0.5.1"]
+base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 2.7.0",
+        "scikit-bio >= 0.5.1"]
 
 test = ["nose", "flake8"]
 
