@@ -104,7 +104,7 @@ setup(
     long_description_content_type='text/markdown',
     ext_modules=extensions,
     install_requires=base,
-    extras_require={'test': test, 'all', all_deps}
+    extras_require={'test': test, 'all': all_deps}
     cmdclass={'build_ext': build_ext},
     package_data={
         'unifrac.tests': ['data/*', ]}
