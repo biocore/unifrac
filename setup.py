@@ -21,6 +21,12 @@ SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 PREFIX = os.environ.get('PREFIX', "")
 
+base = ["cython >= 0.26", "hdf5 >= 1.8.17", "biom-format", "numpy",
+        "h5py>=2.7.0", "scikit-bio>=0.5.1"]
+
+test = ["nose", "flake8"]
+
+all_deps = base + test
 
 # https://stackoverflow.com/a/33308902/379593
 if sys.platform == 'darwin':
@@ -97,6 +103,8 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     ext_modules=extensions,
+    install_requires=base,
+    extras_require={'test': test, 'all', all_deps}
     cmdclass={'build_ext': build_ext},
     package_data={
         'unifrac.tests': ['data/*', ]}
