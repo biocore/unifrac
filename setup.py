@@ -82,6 +82,9 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
+with open('README.md') as f:
+    long_description = f.read()
+
 setup(
     name="unifrac",
     version="0.10.0",
@@ -90,7 +93,9 @@ setup(
     license='BSD-3-Clause',
     author_email="wasade@gmail.com",
     url="https://github.com/biocore/unifrac",
-    description="High performance UniFrac",
+    description="High performance phylogenetic diversity calculations",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     ext_modules=extensions,
     cmdclass={'build_ext': build_ext},
     package_data={
