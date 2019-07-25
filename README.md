@@ -38,7 +38,7 @@ Installation time should be a few minutes at most.
 
 ## Install (QIIME2)
 
-The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.4/install/). The implementation of this algorithm is installed by default and is available under `qiime diversity beta-phylogenetic-alt`.
+The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.7/install/). The implementation of this algorithm is installed by default and is available under `qiime diversity beta-phylogenetic` for UniFrac and `qiime diversity alpha-phylogenetic-alt` for Faith's PD.
 
 ## Install (native)
 
