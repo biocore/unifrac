@@ -30,7 +30,7 @@ A detailed description of the Strided State UniFrac algorithm can be found in [M
 
 # Install
 
-At this time, there are two primary ways to install the library. The first is through QIIME 2, and the second is via `pip`. It is also possible to clone the repository and install using either the `sucpp/Makefile` or `setup.py`. 
+At this time, there are three primary ways to install the library. The first is through QIIME2, the second is through `bioconda`, and the third is via `pip`. It is also possible to clone the repository and install the C++ API with `sucpp/Makefile` or python bindings with `setup.py`. 
 
 Compilation has been performed on both LLVM 9.0.0 (OS X >= 10.12) or GCC 4.9.2 (Centos >= 6) and HDF5 >= 1.8.17. Python installation requires Python >= 3.5, NumPy >= 1.12.1, scikit-bio >= 0.5.1, and Cython >= 0.28.3. 
 
@@ -39,6 +39,20 @@ Installation time should be a few minutes at most.
 ## Install (QIIME2)
 
 The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.4/install/). The implementation of this algorithm is installed by default and is available under `qiime diversity beta-phylogenetic-alt`.
+
+## Install (bioconda)
+
+This library can also be installed via `bioconda`:
+
+```
+conda install -c bioconda unifrac
+```
+
+## Install (pip)
+
+```
+pip install unifrac
+```
 
 ## Install (native)
 
