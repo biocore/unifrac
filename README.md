@@ -38,7 +38,7 @@ Installation time should be a few minutes at most.
 
 ## Install (QIIME2)
 
-The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.4/install/). The implementation of this algorithm is installed by default and is available under `qiime diversity beta-phylogenetic-alt`.
+The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.7/install/). This library is installed by default with the QIIME 2 Core Distribution. Currently, this module is used for phylogenetic diversity calculations in `qiime diversity beta-phylogenetic` for UniFrac and `qiime diversity alpha-phylogenetic-alt` for Faith's PD.
 
 ## Install (bioconda)
 
@@ -77,10 +77,17 @@ Below are a few light examples of different ways to use this library.
 
 To use Strided State UniFrac through QIIME2, you need to provide a `FeatureTable[Frequency]` and a `Phylogeny[Rooted]` artifacts. An example of use is:
 
-    qiime diversity beta-phylogenetic --i-table table-evenly-samples.qza \
+    qiime diversity beta-phylogenetic --i-table table-evenly-sampled.qza \
                                       --i-phylogeny a-tree.qza \
                                       --o-distance-matrix resulting-distance-matrix.qza \
                                       --p-metric unweighted_unifrac
+
+To use Stacked Faith through QIIME2, given similar artifacts, you can use:
+
+    qiime diversity alpha-phylogenetic-alt --i-table table-evenly-sampled.qza \
+                                           --i-phylogeny a-tree.qza \
+                                           --o-alpha-diversity resulting-diversity-series.qza \
+                                           --p-metric faith_Pd
                                           
 ## Python
 
