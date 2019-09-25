@@ -63,16 +63,16 @@ Below are a few light examples of different ways to use this library.
 
 To use Strided State UniFrac through QIIME2, you need to provide a `FeatureTable[Frequency]` and a `Phylogeny[Rooted]` artifacts. An example of use is:
 
-    qiime diversity beta-phylogenetic --i-table table-evenly-samples.qza \
+    qiime diversity beta-phylogenetic --i-table table-evenly-sampled.qza \
                                       --i-phylogeny a-tree.qza \
                                       --o-distance-matrix resulting-distance-matrix.qza \
                                       --p-metric unweighted_unifrac
 
 To use Stacked Faith through QIIME2, given similar artifacts, you can use:
 
-    qiime diversity alpha-phylogenetic-alt --i-table table-evenly-samples.qza \
+    qiime diversity alpha-phylogenetic-alt --i-table table-evenly-sampled.qza \
                                            --i-phylogeny a-tree.qza \
-                                           --o-distance-matrix resulting-diversity-series.qza \
+                                           --o-alpha-diversity resulting-diversity-series.qza \
                                            --p-metric faith_Pd
                                           
 ## Python
