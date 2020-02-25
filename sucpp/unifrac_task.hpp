@@ -117,32 +117,73 @@ namespace su {
      * length <double> the branch length of the current node to its parent.
      * task_p <task_parameters*> task specific parameters.
      */
-    void _vaw_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                                 std::vector<double*> &__restrict__ dm_stripes_total,
-                                                 double* __restrict__ embedded_proportions,
-                                                 double* __restrict__ embedded_counts,
-                                                 double* __restrict__ sample_total_counts,
-                                                 double length,
-                                                 const su::task_parameters* task_p);
-    void _vaw_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                               std::vector<double*> &__restrict__ dm_stripes_total,
-                                               double* __restrict__ embedded_proportions,
-                                               double* __restrict__ embedded_counts,
-                                               double* __restrict__ sample_total_counts,
-                                               double length,
-                                               const su::task_parameters* task_p);
-    void _vaw_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                      std::vector<double*> &__restrict__ dm_stripes_total,
-                                      double* __restrict__ embedded_proportions,
-                                      double* __restrict__ embedded_counts,
-                                      double* __restrict__ sample_total_counts,
-                                      double length,
-                                      const su::task_parameters* task_p);
-    void _vaw_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                       std::vector<double*> &__restrict__ dm_stripes_total,
-                                       double* __restrict__ embedded_proportions,
-                                       double* __restrict__ embedded_counts,
-                                       double* __restrict__ sample_total_counts,
-                                       double length,
-                                       const su::task_parameters* task_p);
+    class UnifracVawTask : public UnifracTaskBase {
+      public:
+        const double * const embedded_proportions;
+        const double * const embedded_counts;
+        const double * const sample_total_counts;
+
+        UnifracVawTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, 
+                    const double * _embedded_proportions, const double * _embedded_counts, const double * _sample_total_counts,
+                    const su::task_parameters* _task_p)
+        : UnifracTaskBase(_dm_stripes, _dm_stripes_total, _task_p)
+        , embedded_proportions(_embedded_proportions), embedded_counts(_embedded_counts), sample_total_counts(_sample_total_counts) {}
+
+        UnifracVawTask(UnifracTaskBase &baseObj, 
+                    const double * _embedded_proportions, const double * _embedded_counts, const double * _sample_total_counts)
+        : UnifracTaskBase(baseObj)
+        , embedded_proportions(_embedded_proportions), embedded_counts(_embedded_counts), sample_total_counts(_sample_total_counts) {}
+
+
+
+       virtual ~UnifracVawTask() {}
+
+       virtual void run(double length) = 0;
+    };
+
+    class UnifracVawUnnormalizedWeightedTask : public UnifracVawTask {
+      public:
+        UnifracVawUnnormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, 
+                    const double * _embedded_proportions, const double * _embedded_counts, const double * _sample_total_counts, 
+                    const su::task_parameters* _task_p)
+        : UnifracVawTask(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_task_p) {}
+
+        virtual void run(double length) {_run(length);}
+
+        void _run(double length);
+    };
+    class UnifracVawNormalizedWeightedTask : public UnifracVawTask {
+      public:
+        UnifracVawNormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, 
+                    const double * _embedded_proportions, const double * _embedded_counts, const double * _sample_total_counts, 
+                    const su::task_parameters* _task_p)
+        : UnifracVawTask(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_task_p) {}
+
+        virtual void run(double length) {_run(length);}
+
+        void _run(double length);
+    };
+    class UnifracVawUnweightedTask : public UnifracVawTask {
+      public:
+        UnifracVawUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, 
+                    const double * _embedded_proportions, const double * _embedded_counts, const double * _sample_total_counts, 
+                    const su::task_parameters* _task_p)
+        : UnifracVawTask(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_task_p) {}
+
+        virtual void run(double length) {_run(length);}
+
+        void _run(double length);
+    };
+    class UnifracVawGeneralizedTask : public UnifracVawTask {
+      public:
+        UnifracVawGeneralizedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total,
+                    const double * _embedded_proportions, const double * _embedded_counts, const double * _sample_total_counts, 
+                    const su::task_parameters* _task_p)
+        : UnifracVawTask(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_task_p) {}
+
+        virtual void run(double length) {_run(length);}
+
+        void _run(double length);
+    };
+
 }

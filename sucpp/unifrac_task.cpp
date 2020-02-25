@@ -48,13 +48,7 @@ void su::UnifracUnnormalizedWeightedTask::_run(double length) {
     }
 }
 
-void su::_vaw_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                                 std::vector<double*> &__restrict__ dm_stripes_total,
-                                                 double* __restrict__ embedded_proportions,
-                                                 double* __restrict__ embedded_counts,
-                                                 double* __restrict__ sample_total_counts,
-                                                 double length,
-                                                 const su::task_parameters* task_p) {
+void su::UnifracVawUnnormalizedWeightedTask::_run(double length) {
     double *dm_stripe;
     for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
@@ -129,13 +123,7 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
     }
 }
 
-void su::_vaw_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                               std::vector<double*> &__restrict__ dm_stripes_total,
-                                               double* __restrict__ embedded_proportions, 
-                                               double* __restrict__ embedded_counts, 
-                                               double* __restrict__ sample_total_counts,
-                                               double length, 
-                                               const su::task_parameters* task_p) {
+void su::UnifracVawNormalizedWeightedTask::_run(double length) {
     double *dm_stripe;
     double *dm_stripe_total;
 
@@ -210,13 +198,7 @@ void su::UnifracGeneralizedTask::_run(double length) {
     }
 }
 
-void su::_vaw_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                       std::vector<double*> &__restrict__ dm_stripes_total,
-                                       double* __restrict__ embedded_proportions, 
-                                       double* __restrict__ embedded_counts, 
-                                       double* __restrict__ sample_total_counts,
-                                       double length, 
-                                       const su::task_parameters* task_p) {
+void su::UnifracVawGeneralizedTask::_run(double length) {
     double *dm_stripe;
     double *dm_stripe_total;
 
@@ -286,13 +268,7 @@ void su::UnifracUnweightedTask::_run(double length) {
     }
 }
 
-void su::_vaw_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                      std::vector<double*> &__restrict__ dm_stripes_total,
-                                      double* __restrict__ embedded_proportions, 
-                                      double* __restrict__ embedded_counts, 
-                                      double* __restrict__ sample_total_counts,
-                                      double length,  
-                                      const su::task_parameters* task_p) {
+void su::UnifracVawUnweightedTask::_run(double length) {
     double *dm_stripe;
     double *dm_stripe_total;
     
