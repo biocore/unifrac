@@ -2,11 +2,7 @@
 #include <cstdlib>
 
 
-void su::_unnormalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                             std::vector<double*> &__restrict__ dm_stripes_total,
-                                             double* __restrict__ embedded_proportions,
-                                             double length,
-                                             const su::task_parameters* task_p) {
+void su::UnifracUnnormalizedWeightedTask::_run(double length) {
     double *dm_stripe;
     for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
         dm_stripe = dm_stripes[stripe];
@@ -76,11 +72,7 @@ void su::_vaw_unnormalized_weighted_unifrac_task(std::vector<double*> &__restric
         }
     }
 }
-void su::_normalized_weighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                           std::vector<double*> &__restrict__ dm_stripes_total,
-                                           double* __restrict__ embedded_proportions, 
-                                           double length, 
-                                           const su::task_parameters* task_p) {
+void su::UnifracNormalizedWeightedTask::_run(double length) {
     double *dm_stripe;
     double *dm_stripe_total;
     unsigned int trailing = task_p->n_samples - (task_p->n_samples % 4);
@@ -174,11 +166,7 @@ void su::_vaw_normalized_weighted_unifrac_task(std::vector<double*> &__restrict_
                                    dm_stripe[j] += sum_pow1 * (sub1 / s); \
                                    dm_stripe_total[j] += sum_pow1; \
                                }
-void su::_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                   std::vector<double*> &__restrict__ dm_stripes_total,
-                                   double* __restrict__ embedded_proportions, 
-                                   double length, 
-                                   const su::task_parameters* task_p) {
+void su::UnifracGeneralizedTask::_run(double length) {
     double *dm_stripe;
     double *dm_stripe_total;
     unsigned int trailing = task_p->n_samples - (task_p->n_samples % 4);
@@ -255,11 +243,7 @@ void su::_vaw_generalized_unifrac_task(std::vector<double*> &__restrict__ dm_str
         }
     }
 }
-void su::_unweighted_unifrac_task(std::vector<double*> &__restrict__ dm_stripes, 
-                                  std::vector<double*> &__restrict__ dm_stripes_total,
-                                  double* __restrict__ embedded_proportions, 
-                                  double length,  
-                                  const su::task_parameters* task_p) {
+void su::UnifracUnweightedTask::_run(double length) {
     double *dm_stripe;
     double *dm_stripe_total;
     

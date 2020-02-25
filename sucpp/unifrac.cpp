@@ -273,7 +273,8 @@ void su::faith_pd(biom &table,
     }
 }
 
-void su::unifrac(biom &table,
+template<class TaskT>
+inline void unifracTT(biom &table,
                  BPTree &tree,
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
@@ -292,35 +293,6 @@ void su::unifrac(biom &table,
     }
 
 
-    void (*func)(std::vector<double*>&,  // dm_stripes
-                 std::vector<double*>&,  // dm_stripes_total
-                 double*,                // embedded_proportions
-                 double,                 // length
-                 const su::task_parameters*);
-
-    switch(unifrac_method) {
-        case unweighted:
-            func = &su::_unweighted_unifrac_task;
-            break;
-        case weighted_normalized:
-            func = &su::_normalized_weighted_unifrac_task;
-            break;
-        case weighted_unnormalized:
-            func = &su::_unnormalized_weighted_unifrac_task;
-            break;
-        case generalized:
-            func = &su::_generalized_unifrac_task;
-            break;
-        default:
-            func = NULL;
-            break;
-    }
-
-    if(func == NULL) {
-        fprintf(stderr, "Unknown unifrac task\n");
-        exit(1);
-    }
-
     PropStack propstack(table.n_samples);
 
     uint32_t node;
@@ -330,6 +302,8 @@ void su::unifrac(biom &table,
 
     initialize_embedded(embedded_proportions, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
+
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,task_p);
 
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
@@ -386,7 +360,7 @@ void su::unifrac(biom &table,
          * We end up performing N / 2 redundant calculations on the last stripe
          * (see C) but that is small over large N.
          */
-        func(dm_stripes, dm_stripes_total, embedded_proportions, length, task_p);
+        taskObj._run(length);
 
         if(__builtin_expect(report_status[task_p->tid], false)) {
             sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
@@ -403,6 +377,32 @@ void su::unifrac(biom &table,
     }
 
     free(embedded_proportions);
+}
+
+void su::unifrac(biom &table,
+                 BPTree &tree,
+                 Method unifrac_method,
+                 std::vector<double*> &dm_stripes,
+                 std::vector<double*> &dm_stripes_total,
+                 const su::task_parameters* task_p) {
+    switch(unifrac_method) {
+        case unweighted:
+            unifracTT<UnifracUnweightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            break;
+        case weighted_normalized:
+            unifracTT<UnifracNormalizedWeightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            break;
+        case weighted_unnormalized:
+            unifracTT<UnifracUnnormalizedWeightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            break;
+        case generalized:
+            unifracTT<UnifracGeneralizedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            break;
+        default:
+            fprintf(stderr, "Unknown unifrac task\n");
+            exit(1);
+            break;
+    }
 }
 
 void su::unifrac_vaw(biom &table,
