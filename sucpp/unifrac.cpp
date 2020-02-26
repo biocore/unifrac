@@ -284,11 +284,14 @@ inline void unifracTT(biom &table,
                  std::vector<double*> &dm_stripes_total,
                  const su::task_parameters* task_p) {
     // processor affinity
+#ifndef _OPENACC
+    // processor affinity, when not using openacc
     int err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
         exit(EXIT_FAILURE);
     }
+#endif
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
@@ -428,12 +431,14 @@ inline void unifrac_vawTT(biom &table,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const su::task_parameters* task_p) {
-    // processor affinity
+#ifndef _OPENACC
+    // processor affinity, when not using openacc
     int err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
         exit(EXIT_FAILURE);
     }
+#endif
 
     if(table.n_samples != task_p->n_samples) {
         fprintf(stderr, "Task and table n_samples not equal\n");
@@ -595,6 +600,31 @@ void su::process_stripes(biom &table,
     report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     pthread_mutex_init(&printf_mutex, NULL);
 
+    time_t now = time(0);
+    int inow = now;
+
+    //printf("process_stripes start: %i\n",inow);
+#ifdef _OPENACC
+    // cannot use threading with openacc
+    for(unsigned int tid = 0; tid < threads.size(); tid++) {
+        if(variance_adjust)
+            su::unifrac_vaw(
+                                       std::ref(table),
+                                       std::ref(tree_sheared),
+                                       method,
+                                       std::ref(dm_stripes),
+                                       std::ref(dm_stripes_total),
+                                       &tasks[tid]);
+        else
+            su::unifrac(
+                                       std::ref(table),
+                                       std::ref(tree_sheared),
+                                       method,
+                                       std::ref(dm_stripes),
+                                       std::ref(dm_stripes_total),
+                                       &tasks[tid]);
+    }
+#else
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             threads[tid] = std::thread(su::unifrac_vaw,
@@ -617,6 +647,12 @@ void su::process_stripes(biom &table,
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         threads[tid].join();
     }
+#endif
+    time_t now2 = time(0);
+    int inow2 = now2;
+    int idt = now2-now;
+
+    //printf("process_stripes end: %i dt %i\n",inow2,idt);
 
     if(report_status != NULL) {
         pthread_mutex_destroy(&printf_mutex);
