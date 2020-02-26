@@ -78,9 +78,8 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
     double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     // point of thread
-#pragma acc parallel loop present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
+#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
     for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-#pragma acc loop
         for(unsigned int j = 0; j < n_samples / 4; j++) {
             unsigned int idx = (stripe-start_idx)*n_samples;
             double *dm_stripe = dm_stripes_buf+idx;
@@ -122,7 +121,13 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
             dm_stripe_total[k + 3] += sum4 * length;
         }
 
-#pragma acc loop
+#ifdef _OPENACC
+    }
+
+    if (trailing<n_samples) {
+#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
+      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) 
+#endif
         for(unsigned int k = trailing; k < n_samples; k++) {
             unsigned int idx = (stripe-start_idx)*n_samples;
             double *dm_stripe = dm_stripes_buf+idx;
@@ -139,6 +144,7 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
             dm_stripe_total[k] += sum * length;
         }
     }
+
 }
 
 void su::UnifracVawNormalizedWeightedTask::_run(double length) {
