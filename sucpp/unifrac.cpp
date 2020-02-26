@@ -205,18 +205,23 @@ void initialize_embedded(double*& prop, const su::task_parameters* task_p) {
    prop=buf;
 }
 
-void initialize_sample_counts(double*& counts, const su::task_parameters* task_p, biom &table) {
+void initialize_sample_counts(double*& _counts, const su::task_parameters* task_p, biom &table) {
+    const unsigned int n_samples = task_p->n_samples;
+    double * counts = NULL;
     int err = 0;
-    err = posix_memalign((void **)&counts, 32, sizeof(double) * task_p->n_samples * 2);
+    err = posix_memalign((void **)&counts, 32, sizeof(double) * n_samples * 2);
     if(counts == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(double) * task_p->n_samples, err, __FILE__, __LINE__);
+                sizeof(double) * n_samples, err, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
     for(unsigned int i = 0; i < table.n_samples; i++) {
         counts[i] = table.sample_counts[i];
         counts[i + table.n_samples] = table.sample_counts[i];
     }
+
+#pragma acc enter data copyin(counts[:n_samples*2])
+   _counts=counts;
 }
 
 void initialize_stripes(std::vector<double*> &dm_stripes,
@@ -297,6 +302,7 @@ inline void unifracTT(biom &table,
         fprintf(stderr, "Task and table n_samples not equal\n");
         exit(EXIT_FAILURE);
     }
+    const unsigned int n_samples = task_p->n_samples;
 
 
     PropStack propstack(table.n_samples);
@@ -377,7 +383,6 @@ inline void unifracTT(biom &table,
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
         const unsigned int start_idx = task_p->start;
         const unsigned int stop_idx = task_p->stop;
-        const unsigned int n_samples = task_p->n_samples;
 
         double * const dm_stripes_buf = taskObj.dm_stripes.buf;
         const double * const dm_stripes_total_buf = taskObj.dm_stripes_total.buf;
@@ -392,7 +397,7 @@ inline void unifracTT(biom &table,
         
     }
 
-#pragma acc exit data delete(embedded_proportions)
+#pragma acc exit data delete(embedded_proportions[:n_samples*2])
     free(embedded_proportions);
 }
 
@@ -443,6 +448,7 @@ inline void unifrac_vawTT(biom &table,
         fprintf(stderr, "Task and table n_samples not equal\n");
         exit(EXIT_FAILURE);
     }
+    const unsigned int n_samples = task_p->n_samples;
 
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
@@ -487,15 +493,24 @@ inline void unifrac_vawTT(biom &table,
     }
 
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
-        for(unsigned int i = task_p->start; i < task_p->stop; i++) {
-            for(unsigned int j = 0; j < taskObj.dm_stripes.n_samples; j++) {
-                taskObj.dm_stripes[i][j] = taskObj.dm_stripes[i][j] / taskObj.dm_stripes_total[i][j];
+        const unsigned int start_idx = task_p->start;
+        const unsigned int stop_idx = task_p->stop;
+
+        double * const dm_stripes_buf = taskObj.dm_stripes.buf;
+        const double * const dm_stripes_total_buf = taskObj.dm_stripes_total.buf;
+
+#pragma acc parallel loop collapse(2) present(dm_stripes_buf,dm_stripes_total_buf)
+        for(unsigned int i = start_idx; i < stop_idx; i++)
+            for(unsigned int j = 0; j < n_samples; j++) {
+                unsigned int idx = (i-start_idx)*n_samples+j;
+                dm_stripes_buf[idx]=dm_stripes_buf[idx]/dm_stripes_total_buf[idx];
+                // taskObj.dm_stripes[i][j] = taskObj.dm_stripes[i][j] / taskObj.dm_stripes_total[i][j];
             }
-        }
+
     }
 
 
-#pragma acc exit data delete(embedded_proportions)
+#pragma acc exit data delete(embedded_proportions[:n_samples*2],embedded_counts[:n_samples*2],sample_total_counts[:n_samples*2])
     free(embedded_proportions);
     free(embedded_counts);
     free(sample_total_counts);

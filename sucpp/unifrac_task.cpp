@@ -58,11 +58,24 @@ void su::UnifracUnnormalizedWeightedTask::_run(double length) {
 }
 
 void su::UnifracVawUnnormalizedWeightedTask::_run(double length) {
-    double *dm_stripe;
-    for(unsigned int stripe=task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
+    const unsigned int start_idx = task_p->start;
+    const unsigned int stop_idx = task_p->stop;
+    const unsigned int n_samples = task_p->n_samples;
 
-        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+    // openacc only works weel with local variables
+    const double * const embedded_proportions = this->embedded_proportions;
+    const double * const embedded_counts = this->embedded_counts;
+    const double * const sample_total_counts = this->sample_total_counts;
+    double * const dm_stripes_buf = this->dm_stripes.buf;
+
+    // point of thread
+#pragma acc parallel loop collapse(2) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf)
+    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+        for(unsigned int j = 0; j < n_samples; j++) {
+            unsigned int idx = (stripe-start_idx)*n_samples;
+            double *dm_stripe = dm_stripes_buf+idx;
+            //double *dm_stripe = dm_stripes[stripe];
+
             double u = embedded_proportions[j];
             double v = embedded_proportions[j + stripe + 1];
 
@@ -75,6 +88,7 @@ void su::UnifracVawUnnormalizedWeightedTask::_run(double length) {
         }
     }
 }
+
 void su::UnifracNormalizedWeightedTask::_run(double length) {
     const unsigned int start_idx = task_p->start;
     const unsigned int stop_idx = task_p->stop;
@@ -157,15 +171,27 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
 }
 
 void su::UnifracVawNormalizedWeightedTask::_run(double length) {
-    double *dm_stripe;
-    double *dm_stripe_total;
+    const unsigned int start_idx = task_p->start;
+    const unsigned int stop_idx = task_p->stop;
+    const unsigned int n_samples = task_p->n_samples;
+
+    // openacc only works weel with local variables
+    const double * const embedded_proportions = this->embedded_proportions;
+    const double * const embedded_counts = this->embedded_counts;
+    const double * const sample_total_counts = this->sample_total_counts;
+    double * const dm_stripes_buf = this->dm_stripes.buf;
+    double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     // point of thread
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
+#pragma acc parallel loop collapse(2) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf)
+    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+        for(unsigned int j = 0; j < n_samples; j++) {
+            unsigned int idx = (stripe-start_idx)*n_samples;
+            double *dm_stripe = dm_stripes_buf+idx;
+            double *dm_stripe_total = dm_stripes_total_buf+idx;
+            //double *dm_stripe = dm_stripes[stripe];
+            //double *dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < task_p->n_samples; j++) {
             double u = embedded_proportions[j];
             double v = embedded_proportions[j + stripe + 1];
             
@@ -258,15 +284,29 @@ void su::UnifracGeneralizedTask::_run(double length) {
 }
 
 void su::UnifracVawGeneralizedTask::_run(double length) {
-    double *dm_stripe;
-    double *dm_stripe_total;
+    const unsigned int start_idx = task_p->start;
+    const unsigned int stop_idx = task_p->stop;
+    const unsigned int n_samples = task_p->n_samples;
+
+    const double g_unifrac_alpha = task_p->g_unifrac_alpha;
+
+    // openacc only works weel with local variables
+    const double * const embedded_proportions = this->embedded_proportions;
+    const double * const embedded_counts = this->embedded_counts;
+    const double * const sample_total_counts = this->sample_total_counts;
+    double * const dm_stripes_buf = this->dm_stripes.buf;
+    double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     // point of thread
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
+#pragma acc parallel loop collapse(2) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf)
+    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+        for(unsigned int j = 0; j < n_samples; j++) {
+            unsigned int idx = (stripe-start_idx)*n_samples;
+            double *dm_stripe = dm_stripes_buf+idx;
+            double *dm_stripe_total = dm_stripes_total_buf+idx;
+            //double *dm_stripe = dm_stripes[stripe];
+            //double *dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < task_p->n_samples; j++) {
             double m = sample_total_counts[j] + sample_total_counts[j + stripe + 1];
             double mi = embedded_counts[j] + embedded_counts[j + stripe + 1];
             double vaw = sqrt(mi * (m - mi));
@@ -277,7 +317,7 @@ void su::UnifracVawGeneralizedTask::_run(double length) {
             if(vaw > 0.0) {
                 double sum1 = (u1 + v1) / vaw;
                 double sub1 = fabs(u1 - v1) / vaw;
-                double sum_pow1 = pow(sum1, task_p->g_unifrac_alpha) * length;
+                double sum_pow1 = pow(sum1, g_unifrac_alpha) * length;
                 dm_stripe[j] += sum_pow1 * (sub1 / sum1);
                 dm_stripe_total[j] += sum_pow1;
             }
@@ -351,14 +391,27 @@ void su::UnifracUnweightedTask::_run(double length) {
 }
 
 void su::UnifracVawUnweightedTask::_run(double length) {
-    double *dm_stripe;
-    double *dm_stripe_total;
-    
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
+    const unsigned int start_idx = task_p->start;
+    const unsigned int stop_idx = task_p->stop;
+    const unsigned int n_samples = task_p->n_samples;
 
-        for(unsigned int j = 0; j < task_p->n_samples; j++) {
+    // openacc only works weel with local variables
+    const double * const embedded_proportions = this->embedded_proportions;
+    const double * const embedded_counts = this->embedded_counts;
+    const double * const sample_total_counts = this->sample_total_counts;
+    double * const dm_stripes_buf = this->dm_stripes.buf;
+    double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
+
+    // point of thread
+#pragma acc parallel loop collapse(2) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf)
+    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+        for(unsigned int j = 0; j < n_samples; j++) {
+            unsigned int idx = (stripe-start_idx)*n_samples;
+            double *dm_stripe = dm_stripes_buf+idx;
+            double *dm_stripe_total = dm_stripes_total_buf+idx;
+            //double *dm_stripe = dm_stripes[stripe];
+            //double *dm_stripe_total = dm_stripes_total[stripe];
+
             int32_t u = embedded_proportions[j] > 0;
             int32_t v = embedded_proportions[j + stripe + 1] > 0;
 
