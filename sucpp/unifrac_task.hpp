@@ -2,6 +2,7 @@
 #include <math.h>
 #include <vector>
 #include <stdint.h>
+#include <stddef.h>
 
 namespace su {
 
