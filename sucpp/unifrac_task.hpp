@@ -5,16 +5,69 @@
 
 namespace su {
 
+    // Note: This adds a copy, which is suboptimal
+    //       But was the easiest way to get a contiguous buffer
+    //       Future improvement welcome
+    class UnifracTaskVector {
+    private:
+      std::vector<double*> &dm_stripes;
+      const su::task_parameters* const task_p;
+
+    public:
+      const unsigned int start_idx;
+      const unsigned int n_samples;
+      double* const buf;
+
+      UnifracTaskVector(std::vector<double*> &_dm_stripes, const su::task_parameters* _task_p)
+      : dm_stripes(_dm_stripes), task_p(_task_p)
+      , start_idx(task_p->start), n_samples(task_p->n_samples)
+      , buf((dm_stripes[start_idx]==NULL) ? NULL : new double[n_samples*(task_p->stop-start_idx)]) // dm_stripes could be null, in which case keep it null
+      {
+        if (buf != NULL) {
+          for(unsigned int stripe=start_idx; stripe < task_p->stop; stripe++) {
+             double * dm_stripe = dm_stripes[stripe];
+             double * buf_stripe = this->operator[](stripe);
+             for(unsigned int j=0; j<n_samples; j++) {
+                // Note: We could probably just initialize to zero
+                buf_stripe[j] = dm_stripe[j];
+             }
+           }
+        }
+      }
+
+      double * operator[](unsigned int idx) { return buf+((idx-start_idx)*n_samples);}
+      const double * operator[](unsigned int idx) const { return buf+((idx-start_idx)*n_samples);}
+
+
+      ~UnifracTaskVector()
+      {
+        if (buf != NULL) {
+          for(unsigned int stripe=start_idx; stripe < task_p->stop; stripe++) {
+             double * dm_stripe = dm_stripes[stripe];
+             double * buf_stripe = this->operator[](stripe);
+             for(unsigned int j=0; j<n_samples; j++) {
+              dm_stripe[j] = buf_stripe[j];
+             }
+          }
+          delete [] buf;
+        }
+      }
+
+    private:
+      UnifracTaskVector() = delete;
+      UnifracTaskVector operator=(const UnifracTaskVector&other) const = delete;
+    };
+
     // Base task class to be shared by all tasks
     class UnifracTaskBase {
       public:
-        std::vector<double*> &dm_stripes;
-        std::vector<double*> &dm_stripes_total;
+        UnifracTaskVector dm_stripes;
+        UnifracTaskVector dm_stripes_total;
 
         const su::task_parameters* task_p;
 
         UnifracTaskBase(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, const su::task_parameters* _task_p)
-        : dm_stripes(_dm_stripes), dm_stripes_total(_dm_stripes_total), task_p(_task_p) {}
+        : dm_stripes(_dm_stripes,_task_p), dm_stripes_total(_dm_stripes_total,_task_p), task_p(_task_p) {}
 
         // Note: not const, since they share a mutable state
         UnifracTaskBase(UnifracTaskBase &baseObj)

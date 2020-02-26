@@ -370,8 +370,8 @@ inline void unifracTT(biom &table,
 
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
         for(unsigned int i = task_p->start; i < task_p->stop; i++) {
-            for(unsigned int j = 0; j < task_p->n_samples; j++) {
-                dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
+            for(unsigned int j = 0; j < taskObj.dm_stripes.n_samples; j++) {
+                taskObj.dm_stripes[i][j] = taskObj.dm_stripes[i][j] / taskObj.dm_stripes_total[i][j];
             }
         }
     }
@@ -469,8 +469,8 @@ inline void unifrac_vawTT(biom &table,
 
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
         for(unsigned int i = task_p->start; i < task_p->stop; i++) {
-            for(unsigned int j = 0; j < task_p->n_samples; j++) {
-                dm_stripes[i][j] = dm_stripes[i][j] / dm_stripes_total[i][j];
+            for(unsigned int j = 0; j < taskObj.dm_stripes.n_samples; j++) {
+                taskObj.dm_stripes[i][j] = taskObj.dm_stripes[i][j] / taskObj.dm_stripes_total[i][j];
             }
         }
     }
