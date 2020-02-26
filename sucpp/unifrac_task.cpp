@@ -67,16 +67,27 @@ void su::UnifracVawUnnormalizedWeightedTask::_run(double length) {
     }
 }
 void su::UnifracNormalizedWeightedTask::_run(double length) {
-    double *dm_stripe;
-    double *dm_stripe_total;
-    unsigned int trailing = task_p->n_samples - (task_p->n_samples % 4);
+    const unsigned int start_idx = task_p->start;
+    const unsigned int stop_idx = task_p->stop;
+    const unsigned int n_samples = task_p->n_samples;
+    const unsigned int trailing = n_samples - (n_samples % 4);
+
+    // openacc only works weel with local variables
+    const double * const embedded_proportions = this->embedded_proportions;
+    double * const dm_stripes_buf = this->dm_stripes.buf;
+    double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     // point of thread
-    for(unsigned int stripe = task_p->start; stripe < task_p->stop; stripe++) {
-        dm_stripe = dm_stripes[stripe];
-        dm_stripe_total = dm_stripes_total[stripe];
+#pragma acc parallel loop present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
+    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+#pragma acc loop
+        for(unsigned int j = 0; j < n_samples / 4; j++) {
+            unsigned int idx = (stripe-start_idx)*n_samples;
+            double *dm_stripe = dm_stripes_buf+idx;
+            double *dm_stripe_total = dm_stripes_total_buf+idx;
+            //double *dm_stripe = dm_stripes[stripe];
+            //double *dm_stripe_total = dm_stripes_total[stripe];
 
-        for(unsigned int j = 0; j < task_p->n_samples / 4; j++) {
             int k = j * 4;
             int l = k + stripe;
 
@@ -111,7 +122,14 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
             dm_stripe_total[k + 3] += sum4 * length;
         }
 
-        for(unsigned int k = trailing; k < task_p->n_samples; k++) {
+#pragma acc loop
+        for(unsigned int k = trailing; k < n_samples; k++) {
+            unsigned int idx = (stripe-start_idx)*n_samples;
+            double *dm_stripe = dm_stripes_buf+idx;
+            double *dm_stripe_total = dm_stripes_total_buf+idx;
+            //double *dm_stripe = dm_stripes[stripe];
+            //double *dm_stripe_total = dm_stripes_total[stripe];
+
             double u = embedded_proportions[k];
             double v = embedded_proportions[k + stripe + 1];
             double diff = u - v;   
