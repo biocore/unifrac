@@ -41,6 +41,7 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda update --yes conda
+  - Rscript -e "install.packages('Rcpp')"
 install:
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
