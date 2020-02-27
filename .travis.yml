@@ -41,7 +41,6 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda update --yes conda
-  - Rscript -e "install.packages('Rcpp')"
 install:
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
@@ -78,7 +77,7 @@ install:
     else
         brew install r ;
     fi
-  - sudo R -e 'install.packages("Rcpp", repos="http://cran.us.r-project.org")'
+  - sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
   - pushd sucpp
   # make c api for testing 
   - make capi_test
