@@ -8,7 +8,7 @@ void su::UnifracUnnormalizedWeightedTask::_run(double length) {
     const unsigned int n_samples = task_p->n_samples;
     const unsigned int trailing = n_samples - (n_samples % 4);
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     double * const dm_stripes_buf = this->dm_stripes.buf;
 
@@ -62,7 +62,7 @@ void su::UnifracVawUnnormalizedWeightedTask::_run(double length) {
     const unsigned int stop_idx = task_p->stop;
     const unsigned int n_samples = task_p->n_samples;
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     const double * const embedded_counts = this->embedded_counts;
     const double * const sample_total_counts = this->sample_total_counts;
@@ -95,7 +95,7 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
     const unsigned int n_samples = task_p->n_samples;
     const unsigned int trailing = n_samples - (n_samples % 4);
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     double * const dm_stripes_buf = this->dm_stripes.buf;
     double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
@@ -175,7 +175,7 @@ void su::UnifracVawNormalizedWeightedTask::_run(double length) {
     const unsigned int stop_idx = task_p->stop;
     const unsigned int n_samples = task_p->n_samples;
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     const double * const embedded_counts = this->embedded_counts;
     const double * const sample_total_counts = this->sample_total_counts;
@@ -221,7 +221,7 @@ void su::UnifracGeneralizedTask::_run(double length) {
 
     const double g_unifrac_alpha = task_p->g_unifrac_alpha;
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     double * const dm_stripes_buf = this->dm_stripes.buf;
     double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
@@ -290,7 +290,7 @@ void su::UnifracVawGeneralizedTask::_run(double length) {
 
     const double g_unifrac_alpha = task_p->g_unifrac_alpha;
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     const double * const embedded_counts = this->embedded_counts;
     const double * const sample_total_counts = this->sample_total_counts;
@@ -330,7 +330,7 @@ void su::UnifracUnweightedTask::_run(double length) {
     const unsigned int n_samples = task_p->n_samples;
     const unsigned int trailing = n_samples - (n_samples % 4);
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     double * const dm_stripes_buf = this->dm_stripes.buf;
     double * const dm_stripes_total_buf = this->dm_stripes_total.buf;
@@ -395,7 +395,7 @@ void su::UnifracVawUnweightedTask::_run(double length) {
     const unsigned int stop_idx = task_p->stop;
     const unsigned int n_samples = task_p->n_samples;
 
-    // openacc only works weel with local variables
+    // openacc only works well with local variables
     const double * const embedded_proportions = this->embedded_proportions;
     const double * const embedded_counts = this->embedded_counts;
     const double * const sample_total_counts = this->sample_total_counts;
