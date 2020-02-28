@@ -614,10 +614,6 @@ void su::process_stripes(biom &table,
     report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     pthread_mutex_init(&printf_mutex, NULL);
 
-    time_t now = time(0);
-    int inow = now;
-
-    //printf("process_stripes start: %i\n",inow);
 #ifdef _OPENACC
     // cannot use threading with openacc
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
@@ -662,11 +658,6 @@ void su::process_stripes(biom &table,
         threads[tid].join();
     }
 #endif
-    time_t now2 = time(0);
-    int inow2 = now2;
-    int idt = now2-now;
-
-    //printf("process_stripes end: %i dt %i\n",inow2,idt);
 
     if(report_status != NULL) {
         pthread_mutex_destroy(&printf_mutex);
