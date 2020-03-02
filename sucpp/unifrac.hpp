@@ -48,9 +48,9 @@
                              bool normalize = true);
         std::vector<double*> make_strides(unsigned int n_samples);
         inline void embed_proportions(double* out, double* in, uint32_t n) {
-            double val;
+#pragma acc parallel loop present(out) copyin(in[:n])
             for(unsigned int i = 0; i < n; i++) {
-                val = in[i];
+                double val = in[i];
                 out[i] = val;
                 out[i + n] = val;
             }
