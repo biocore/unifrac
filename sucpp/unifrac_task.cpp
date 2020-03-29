@@ -103,69 +103,24 @@ void su::UnifracNormalizedWeightedTask::_run(double length) {
     // point of thread
 #pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
     for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-        for(unsigned int j = 0; j < n_samples / 4; j++) {
+        for(unsigned int k = 0; k < n_samples ; k++) {
             unsigned int idx = (stripe-start_idx)*n_samples;
             double *dm_stripe = dm_stripes_buf+idx;
             double *dm_stripe_total = dm_stripes_total_buf+idx;
             //double *dm_stripe = dm_stripes[stripe];
             //double *dm_stripe_total = dm_stripes_total[stripe];
 
-            int k = j * 4;
             int l = k + stripe;
 
             double u1 = embedded_proportions[k];
-            double u2 = embedded_proportions[k + 1];
-            double u3 = embedded_proportions[k + 2];
-            double u4 = embedded_proportions[k + 3];
-         
             double v1 = embedded_proportions[l + 1];
-            double v2 = embedded_proportions[l + 2];
-            double v3 = embedded_proportions[l + 3];
-            double v4 = embedded_proportions[l + 4];
-            
             double diff1 = u1 - v1;   
-            double diff2 = u2 - v2;   
-            double diff3 = u3 - v3;   
-            double diff4 = u4 - v4;
-
             double sum1 = u1 + v1;   
-            double sum2 = u2 + v2;   
-            double sum3 = u3 + v3;   
-            double sum4 = u4 + v4;
 
             dm_stripe[k]     += fabs(diff1) * length;
-            dm_stripe[k + 1] += fabs(diff2) * length;
-            dm_stripe[k + 2] += fabs(diff3) * length;
-            dm_stripe[k + 3] += fabs(diff4) * length;
-
             dm_stripe_total[k]     += sum1 * length;
-            dm_stripe_total[k + 1] += sum2 * length;
-            dm_stripe_total[k + 2] += sum3 * length;
-            dm_stripe_total[k + 3] += sum4 * length;
         }
 
-#ifdef _OPENACC
-    }
-
-    if (trailing<n_samples) {
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
-      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) 
-#endif
-        for(unsigned int k = trailing; k < n_samples; k++) {
-            unsigned int idx = (stripe-start_idx)*n_samples;
-            double *dm_stripe = dm_stripes_buf+idx;
-            double *dm_stripe_total = dm_stripes_total_buf+idx;
-            //double *dm_stripe = dm_stripes[stripe];
-            //double *dm_stripe_total = dm_stripes_total[stripe];
-
-            double u = embedded_proportions[k];
-            double v = embedded_proportions[k + stripe + 1];
-            double diff = u - v;   
-            double sum = u + v;   
-               
-            dm_stripe[k] += fabs(diff) * length;
-            dm_stripe_total[k] += sum * length;
-        }
     }
 
 }
