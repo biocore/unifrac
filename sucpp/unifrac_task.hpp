@@ -24,7 +24,8 @@ namespace su {
       , start_idx(task_p->start), n_samples(task_p->n_samples)
       , buf((dm_stripes[start_idx]==NULL) ? NULL : new double[n_samples*(task_p->stop-start_idx)]) // dm_stripes could be null, in which case keep it null
       {
-        if (buf != NULL) {
+        double* const ibuf = buf;
+        if (ibuf != NULL) {
 #ifdef _OPENACC
           unsigned int bufels = n_samples*(task_p->stop-start_idx);
 #endif
@@ -37,7 +38,7 @@ namespace su {
              }
            }
 #ifdef _OPENACC
-#pragma acc enter data copyin(buf[:bufels])
+#pragma acc enter data copyin(ibuf[:bufels])
 #endif    
         }
       }
@@ -48,10 +49,11 @@ namespace su {
 
       ~UnifracTaskVector()
       {
-        if (buf != NULL) {
+        double* const ibuf = buf;
+        if (ibuf != NULL) {
 #ifdef _OPENACC
           unsigned int bufels = n_samples*(task_p->stop-start_idx);
-#pragma acc exit data copyout(buf[:bufels])
+#pragma acc exit data copyout(ibuf[:bufels])
 #endif    
           for(unsigned int stripe=start_idx; stripe < task_p->stop; stripe++) {
              double * dm_stripe = dm_stripes[stripe];
