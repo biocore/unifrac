@@ -192,16 +192,30 @@ void progressbar(float progress) {
     std::cout.flush();
 }
 
-void initialize_embedded(double*& prop, const su::task_parameters* task_p) {
+void embed_proportions(double* restrict out, const double* restrict in, unsigned int emb, uint32_t n_samples) {
+   uint64_t offset = emb;
+   offset *= n_samples*2;  // force 64-bit multiply
+
+#pragma acc parallel loop present(out) copyin(in[:n_samples])
+   for(unsigned int i = 0; i < n_samples; i++) {
+       double val = in[i];
+       out[offset + i] = val;
+       out[offset + i + n_samples] = val;
+   }
+}
+
+void initialize_embedded(double*& prop, unsigned int num, const su::task_parameters* task_p) {
     const unsigned int n_samples = task_p->n_samples;
+    uint64_t bsize = n_samples * 2;
+    bsize *= num; // force 64 bit multiplication
     double* buf = NULL;
-    int err = posix_memalign((void **)&buf, 32, sizeof(double) * n_samples * 2);
+    int err = posix_memalign((void **)&buf, 32*1024, sizeof(double) * bsize);
     if(buf == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(double) * n_samples * 2, err, __FILE__, __LINE__);
+                sizeof(double) * bsize, err, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-#pragma acc enter data create(buf[:n_samples*2])
+#pragma acc enter data create(buf[:bsize])
    prop=buf;
 }
 
@@ -307,19 +321,23 @@ inline void unifracTT(biom &table,
 
     PropStack propstack(table.n_samples);
 
+    const unsigned int max_emb = 128;
+
     uint32_t node;
     double *node_proportions;
     double *embedded_proportions;
-    double length;
+    double lengths[max_emb];
 
-    initialize_embedded(embedded_proportions, task_p);
+    initialize_embedded(embedded_proportions, max_emb, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
-    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,task_p);
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,max_emb,task_p);
+
+    unsigned int filled_emb = 0;
 
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
-        length = tree.lengths[node];
+        lengths[filled_emb] = tree.lengths[node];
 
         node_proportions = propstack.pop(node);
         set_proportions(node_proportions, tree, node, table, propstack);
@@ -327,7 +345,8 @@ inline void unifracTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
+        embed_proportions(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
+        filled_emb++;
         /*
          * The values in the example vectors correspond to index positions of an
          * element in the resulting distance matrix. So, in the example below,
@@ -372,13 +391,23 @@ inline void unifracTT(biom &table,
          * We end up performing N / 2 redundant calculations on the last stripe
          * (see C) but that is small over large N.
          */
-        taskObj._run(length);
 
-        if(__builtin_expect(report_status[task_p->tid], false)) {
+        if (filled_emb==max_emb) {
+          taskObj._run(filled_emb,lengths);
+          filled_emb=0;
+
+          if(__builtin_expect(report_status[task_p->tid], false)) {
             sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
             report_status[task_p->tid] = false;
+          }
         }
     }
+
+    if (filled_emb>0) {
+          taskObj._run(filled_emb,lengths);
+          filled_emb=0;
+    }
+
 
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
         const unsigned int start_idx = task_p->start;
@@ -397,7 +426,7 @@ inline void unifracTT(biom &table,
         
     }
 
-#pragma acc exit data delete(embedded_proportions[:n_samples*2])
+#pragma acc exit data delete(embedded_proportions[:n_samples*2*max_emb])
     free(embedded_proportions);
 }
 
@@ -453,24 +482,28 @@ inline void unifrac_vawTT(biom &table,
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
 
+    const unsigned int max_emb = 1;
+
     uint32_t node;
     double *node_proportions;
     double *node_counts;
     double *embedded_proportions;
     double *embedded_counts;
     double *sample_total_counts;
-    double length;
+    double lengths[max_emb];
 
-    initialize_embedded(embedded_proportions, task_p);
-    initialize_embedded(embedded_counts, task_p);
+    initialize_embedded(embedded_proportions, max_emb, task_p);
+    initialize_embedded(embedded_counts, max_emb, task_p);
     initialize_sample_counts(sample_total_counts, task_p, table);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
-    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), embedded_proportions, embedded_counts, sample_total_counts, task_p);
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), embedded_proportions, embedded_counts, sample_total_counts, max_emb, task_p);
+
+    unsigned int filled_emb = 0;
 
     for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
         node = tree.postorderselect(k);
-        length = tree.lengths[node];
+        lengths[filled_emb] = tree.lengths[node];
 
         node_proportions = propstack.pop(node);
         node_counts = countstack.pop(node);
@@ -481,15 +514,24 @@ inline void unifrac_vawTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions(embedded_proportions, node_proportions, task_p->n_samples);
-        embed_proportions(embedded_counts, node_counts, task_p->n_samples);
+        embed_proportions(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
+        embed_proportions(embedded_counts, node_counts, filled_emb, task_p->n_samples);
+        filled_emb++;
 
-        taskObj._run(length);
+        if (filled_emb==max_emb) {
+          taskObj._run(filled_emb,lengths);
+          filled_emb = 0;
 
-        if(__builtin_expect(report_status[task_p->tid], false)) {
+          if(__builtin_expect(report_status[task_p->tid], false)) {
             sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
             report_status[task_p->tid] = false;
+          }
         }
+    }
+
+    if (filled_emb>0) {
+          taskObj._run(filled_emb,lengths);
+          filled_emb = 0;
     }
 
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
@@ -510,7 +552,7 @@ inline void unifrac_vawTT(biom &table,
     }
 
 
-#pragma acc exit data delete(embedded_proportions[:n_samples*2],embedded_counts[:n_samples*2],sample_total_counts[:n_samples*2])
+#pragma acc exit data delete(embedded_proportions[:n_samples*2*max_emb],embedded_counts[:n_samples*2*max_emb],sample_total_counts[:n_samples*2])
     free(embedded_proportions);
     free(embedded_counts);
     free(sample_total_counts);
