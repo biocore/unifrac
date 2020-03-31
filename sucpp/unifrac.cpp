@@ -196,7 +196,6 @@ void embed_proportions(double* restrict out, const double* restrict in, unsigned
    uint64_t offset = emb;
    offset *= n_samples*2;  // force 64-bit multiply
 
-#pragma acc parallel loop present(out) copyin(in[:n_samples])
    for(unsigned int i = 0; i < n_samples; i++) {
        double val = in[i];
        out[offset + i] = val;
@@ -209,7 +208,7 @@ void initialize_embedded(double*& prop, unsigned int num, const su::task_paramet
     uint64_t bsize = n_samples * 2;
     bsize *= num; // force 64 bit multiplication
     double* buf = NULL;
-    int err = posix_memalign((void **)&buf, 32*1024, sizeof(double) * bsize);
+    int err = posix_memalign((void **)&buf, 4096, sizeof(double) * bsize);
     if(buf == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
                 sizeof(double) * bsize, err, __FILE__, __LINE__);
@@ -223,7 +222,7 @@ void initialize_sample_counts(double*& _counts, const su::task_parameters* task_
     const unsigned int n_samples = task_p->n_samples;
     double * counts = NULL;
     int err = 0;
-    err = posix_memalign((void **)&counts, 32, sizeof(double) * n_samples * 2);
+    err = posix_memalign((void **)&counts, 4096, sizeof(double) * n_samples * 2);
     if(counts == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
                 sizeof(double) * n_samples, err, __FILE__, __LINE__);
@@ -244,7 +243,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
                         const su::task_parameters* task_p) {
     int err = 0;
     for(unsigned int i = task_p->start; i < task_p->stop; i++){
-        err = posix_memalign((void **)&dm_stripes[i], 32, sizeof(double) * task_p->n_samples);
+        err = posix_memalign((void **)&dm_stripes[i], 4096, sizeof(double) * task_p->n_samples);
         if(dm_stripes[i] == NULL || err != 0) {
             fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
                     sizeof(double) * task_p->n_samples, err, __FILE__, __LINE__);
@@ -254,7 +253,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
             dm_stripes[i][j] = 0.;
 
         if(unifrac_method == unweighted || unifrac_method == weighted_normalized || unifrac_method == generalized) {
-            err = posix_memalign((void **)&dm_stripes_total[i], 32, sizeof(double) * task_p->n_samples);
+            err = posix_memalign((void **)&dm_stripes_total[i], 4096, sizeof(double) * task_p->n_samples);
             if(dm_stripes_total[i] == NULL || err != 0) {
                 fprintf(stderr, "Failed to allocate %zd bytes err %d; [%s]:%d\n",
                         sizeof(double) * task_p->n_samples, err, __FILE__, __LINE__);
@@ -326,12 +325,15 @@ inline void unifracTT(biom &table,
     uint32_t node;
     double *node_proportions;
     double *embedded_proportions;
-    double lengths[max_emb];
 
     initialize_embedded(embedded_proportions, max_emb, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,max_emb,task_p);
+
+    double *lengths = NULL;
+    posix_memalign((void **)&lengths, 4096, sizeof(double) * max_emb); // small enough, no eror checking
+#pragma acc enter data create(lengths[:max_emb])
 
     unsigned int filled_emb = 0;
 
@@ -393,6 +395,8 @@ inline void unifracTT(biom &table,
          */
 
         if (filled_emb==max_emb) {
+#pragma acc wait
+#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
 
@@ -404,10 +408,13 @@ inline void unifracTT(biom &table,
     }
 
     if (filled_emb>0) {
+#pragma acc wait
+#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
     }
 
+#pragma acc wait
 
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
         const unsigned int start_idx = task_p->start;
@@ -426,7 +433,9 @@ inline void unifracTT(biom &table,
         
     }
 
+#pragma acc exit data delete(lengths[:max_emb])
 #pragma acc exit data delete(embedded_proportions[:n_samples*2*max_emb])
+    free(lengths);
     free(embedded_proportions);
 }
 
@@ -490,7 +499,6 @@ inline void unifrac_vawTT(biom &table,
     double *embedded_proportions;
     double *embedded_counts;
     double *sample_total_counts;
-    double lengths[max_emb];
 
     initialize_embedded(embedded_proportions, max_emb, task_p);
     initialize_embedded(embedded_counts, max_emb, task_p);
@@ -498,6 +506,10 @@ inline void unifrac_vawTT(biom &table,
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), embedded_proportions, embedded_counts, sample_total_counts, max_emb, task_p);
+
+    double *lengths = NULL;
+    posix_memalign((void **)&lengths, 4096, sizeof(double) * max_emb); // small enough, no eror checking
+#pragma acc enter data create(lengths[:max_emb])
 
     unsigned int filled_emb = 0;
 
@@ -519,6 +531,8 @@ inline void unifrac_vawTT(biom &table,
         filled_emb++;
 
         if (filled_emb==max_emb) {
+#pragma acc wait
+#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
 
@@ -530,10 +544,13 @@ inline void unifrac_vawTT(biom &table,
     }
 
     if (filled_emb>0) {
+#pragma acc wait
+#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
     }
 
+#pragma acc wait
     if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
         const unsigned int start_idx = task_p->start;
         const unsigned int stop_idx = task_p->stop;
@@ -552,7 +569,9 @@ inline void unifrac_vawTT(biom &table,
     }
 
 
+#pragma acc exit data delete(lengths[:max_emb])
 #pragma acc exit data delete(embedded_proportions[:n_samples*2*max_emb],embedded_counts[:n_samples*2*max_emb],sample_total_counts[:n_samples*2])
+    free(lengths);
     free(embedded_proportions);
     free(embedded_counts);
     free(sample_total_counts);

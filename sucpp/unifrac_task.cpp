@@ -106,7 +106,7 @@ void su::UnifracNormalizedWeightedTask::_run(unsigned int filled_embs, const dou
     double * const restrict dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     // point of thread
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf) copyin(lengths[:filled_embs])
+#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
     for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int k = 0; k < n_samples ; k++) {
             uint64_t idx = (stripe-start_idx);
