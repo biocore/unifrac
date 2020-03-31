@@ -122,20 +122,20 @@ void su::UnifracNormalizedWeightedTask::_run(unsigned int filled_embs, const dou
             //double *dm_stripe = dm_stripes[stripe];
             //double *dm_stripe_total = dm_stripes_total[stripe];
 
-            uint64_t l = k + stripe;
-
 	    if (k>=n_samples) continue; // past the limit
+
+            unsigned int l1 = (k + stripe + 1)%n_samples; // wraparound
 
             double my_stripe = dm_stripe[k];
             double my_stripe_total = dm_stripe_total[k];
 
 #pragma acc loop seq
             for (unsigned int emb=0; emb<filled_embs; emb++) {
-                uint64_t offset = n_samples*2;
+                uint64_t offset = n_samples;
                 offset *= emb; // force 64-bit multiply
 
                 double u1 = embedded_proportions[offset + k];
-                double v1 = embedded_proportions[offset + l + 1];
+                double v1 = embedded_proportions[offset + l1];
                 double diff1 = u1 - v1;
                 double sum1 = u1 + v1;
                 double length = lengths[emb];

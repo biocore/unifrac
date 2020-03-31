@@ -194,18 +194,16 @@ void progressbar(float progress) {
 
 void embed_proportions(double* restrict out, const double* restrict in, unsigned int emb, uint32_t n_samples) {
    uint64_t offset = emb;
-   offset *= n_samples*2;  // force 64-bit multiply
+   offset *= n_samples;  // force 64-bit multiply
 
    for(unsigned int i = 0; i < n_samples; i++) {
-       double val = in[i];
-       out[offset + i] = val;
-       out[offset + i + n_samples] = val;
+       out[offset + i] = in[i];
    }
 }
 
 void initialize_embedded(double*& prop, unsigned int num, const su::task_parameters* task_p) {
     const unsigned int n_samples = task_p->n_samples;
-    uint64_t bsize = n_samples * 2;
+    uint64_t bsize = n_samples;
     bsize *= num; // force 64 bit multiplication
     double* buf = NULL;
     int err = posix_memalign((void **)&buf, 4096, sizeof(double) * bsize);
@@ -396,7 +394,7 @@ inline void unifracTT(biom &table,
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
 
@@ -409,7 +407,7 @@ inline void unifracTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
     }
@@ -434,7 +432,7 @@ inline void unifracTT(biom &table,
     }
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples*2*max_emb])
+#pragma acc exit data delete(embedded_proportions[:n_samples*max_emb])
     free(lengths);
     free(embedded_proportions);
 }
@@ -532,7 +530,7 @@ inline void unifrac_vawTT(biom &table,
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
 
@@ -545,7 +543,7 @@ inline void unifrac_vawTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*2*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
     }
@@ -570,7 +568,7 @@ inline void unifrac_vawTT(biom &table,
 
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples*2*max_emb],embedded_counts[:n_samples*2*max_emb],sample_total_counts[:n_samples*2])
+#pragma acc exit data delete(embedded_proportions[:n_samples*max_emb],embedded_counts[:n_samples*max_emb],sample_total_counts[:n_samples*2])
     free(lengths);
     free(embedded_proportions);
     free(embedded_counts);
