@@ -110,10 +110,9 @@ void su::UnifracNormalizedWeightedTask::_run(unsigned int filled_embs, const dou
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-#pragma acc loop vector
  	for(unsigned int ik = 0; ik < step_size ; ik++) {
 	    uint64_t k = sk*step_size + ik;
             uint64_t idx = (stripe-start_idx);
