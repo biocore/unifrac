@@ -105,10 +105,17 @@ void su::UnifracNormalizedWeightedTask::_run(unsigned int filled_embs, const dou
     double * const restrict dm_stripes_buf = this->dm_stripes.buf;
     double * const restrict dm_stripes_total_buf = this->dm_stripes_total.buf;
 
+
+    const unsigned int step_size = 128;
+    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+
     // point of thread
 #pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
-    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-        for(unsigned int k = 0; k < n_samples ; k++) {
+    for(unsigned int sk = 0; sk < sample_steps ; sk++) {
+      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+#pragma acc loop vector
+ 	for(unsigned int ik = 0; ik < step_size ; ik++) {
+	    uint64_t k = sk*step_size + ik;
             uint64_t idx = (stripe-start_idx);
             idx *= n_samples; // force 64 bit multiply
             double * restrict dm_stripe = dm_stripes_buf+idx;
@@ -117,6 +124,8 @@ void su::UnifracNormalizedWeightedTask::_run(unsigned int filled_embs, const dou
             //double *dm_stripe_total = dm_stripes_total[stripe];
 
             uint64_t l = k + stripe;
+
+	    if (k>=n_samples) continue; // past the limit
 
             double my_stripe = dm_stripe[k];
             double my_stripe_total = dm_stripe_total[k];
@@ -141,6 +150,7 @@ void su::UnifracNormalizedWeightedTask::_run(unsigned int filled_embs, const dou
 
         }
 
+      }
     }
 
 }
