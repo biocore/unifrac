@@ -320,7 +320,7 @@ inline void unifracTT(biom &table,
 
     PropStack propstack(table.n_samples);
 
-    const unsigned int max_emb = 128;
+    const unsigned int max_emb = 32;
 
     uint32_t node;
     double *node_proportions;
