@@ -20,6 +20,14 @@
                                               method = weighted_unnormalized;                                  \
                                           else if(std::strcmp(requested_method, "generalized") == 0)           \
                                               method = generalized;                                            \
+                                          else if(std::strcmp(requested_method, "unweighted_fp32") == 0)            \
+                                              method = unweighted_fp32;                                             \
+                                          else if(std::strcmp(requested_method, "weighted_normalized_fp32") == 0)   \
+                                              method = weighted_normalized_fp32;                                    \
+                                          else if(std::strcmp(requested_method, "weighted_unnormalized_fp32") == 0) \
+                                              method = weighted_unnormalized_fp32;                                  \
+                                          else if(std::strcmp(requested_method, "generalized_fp32") == 0)           \
+                                              method = generalized_fp32;                                            \
                                           else {                                                               \
                                               return err;                                                      \
                                           }

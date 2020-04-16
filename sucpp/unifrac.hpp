@@ -7,7 +7,7 @@
 
 #ifndef __UNIFRAC
     namespace su {
-        enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized};
+        enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized, unweighted_fp32, weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32};
         
         class PropStack {
             private:

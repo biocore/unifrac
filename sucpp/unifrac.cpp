@@ -10,6 +10,10 @@
 #include <algorithm>
 #include <pthread.h>
 
+// embed in this file, to properly instantiate the templatized functions
+#include "unifrac_task.cpp"
+
+
 static pthread_mutex_t printf_mutex;
 static bool* report_status;
 
@@ -192,7 +196,8 @@ void progressbar(float progress) {
     std::cout.flush();
 }
 
-void embed_proportions(double* restrict out, const double* restrict in, unsigned int emb, uint32_t n_samples) {
+template<class TFloat>
+void embed_proportions(TFloat* restrict out, const double* restrict in, unsigned int emb, uint32_t n_samples) {
    uint64_t offset = emb;
    offset *= n_samples;  // force 64-bit multiply
 
@@ -201,29 +206,31 @@ void embed_proportions(double* restrict out, const double* restrict in, unsigned
    }
 }
 
-void initialize_embedded(double*& prop, unsigned int num, const su::task_parameters* task_p) {
+template<class TFloat>
+void initialize_embedded(TFloat*& prop, unsigned int num, const su::task_parameters* task_p) {
     const unsigned int n_samples = task_p->n_samples;
     uint64_t bsize = n_samples;
     bsize *= num; // force 64 bit multiplication
-    double* buf = NULL;
-    int err = posix_memalign((void **)&buf, 4096, sizeof(double) * bsize);
+    TFloat* buf = NULL;
+    int err = posix_memalign((void **)&buf, 4096, sizeof(TFloat) * bsize);
     if(buf == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(double) * bsize, err, __FILE__, __LINE__);
+                sizeof(TFloat) * bsize, err, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
 #pragma acc enter data create(buf[:bsize])
    prop=buf;
 }
 
-void initialize_sample_counts(double*& _counts, const su::task_parameters* task_p, biom &table) {
+template<class TFloat>
+void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, biom &table) {
     const unsigned int n_samples = task_p->n_samples;
-    double * counts = NULL;
+    TFloat * counts = NULL;
     int err = 0;
-    err = posix_memalign((void **)&counts, 4096, sizeof(double) * n_samples * 2);
+    err = posix_memalign((void **)&counts, 4096, sizeof(TFloat) * n_samples * 2);
     if(counts == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(double) * n_samples, err, __FILE__, __LINE__);
+                sizeof(TFloat) * n_samples, err, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
     for(unsigned int i = 0; i < table.n_samples; i++) {
@@ -237,7 +244,7 @@ void initialize_sample_counts(double*& _counts, const su::task_parameters* task_
 
 void initialize_stripes(std::vector<double*> &dm_stripes,
                         std::vector<double*> &dm_stripes_total,
-                        Method unifrac_method,
+                        bool want_total,
                         const su::task_parameters* task_p) {
     int err = 0;
     for(unsigned int i = task_p->start; i < task_p->stop; i++){
@@ -250,7 +257,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
         for(unsigned int j = 0; j < task_p->n_samples; j++)
             dm_stripes[i][j] = 0.;
 
-        if(unifrac_method == unweighted || unifrac_method == weighted_normalized || unifrac_method == generalized) {
+        if(want_total) {
             err = posix_memalign((void **)&dm_stripes_total[i], 4096, sizeof(double) * task_p->n_samples);
             if(dm_stripes_total[i] == NULL || err != 0) {
                 fprintf(stderr, "Failed to allocate %zd bytes err %d; [%s]:%d\n",
@@ -292,17 +299,18 @@ void su::faith_pd(biom &table,
     }
 }
 
-template<class TaskT>
-inline void unifracTT(biom &table,
-                 BPTree &tree,
-                 Method unifrac_method,
-                 std::vector<double*> &dm_stripes,
-                 std::vector<double*> &dm_stripes_total,
-                 const su::task_parameters* task_p) {
+template<class TaskT, class TFloat>
+void unifracTT(biom &table,
+               BPTree &tree,
+               const bool want_total,
+               std::vector<double*> &dm_stripes,
+               std::vector<double*> &dm_stripes_total,
+               const su::task_parameters* task_p) {
+    int err;
     // processor affinity
 #ifndef _OPENACC
     // processor affinity, when not using openacc
-    int err = bind_to_core(task_p->tid);
+    err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
         exit(EXIT_FAILURE);
@@ -322,15 +330,19 @@ inline void unifracTT(biom &table,
 
     uint32_t node;
     double *node_proportions;
-    double *embedded_proportions;
+    TFloat *embedded_proportions;
 
-    initialize_embedded(embedded_proportions, max_emb, task_p);
-    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
+    initialize_embedded<TFloat>(embedded_proportions, max_emb, task_p);
+    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,max_emb,task_p);
 
-    double *lengths = NULL;
-    posix_memalign((void **)&lengths, 4096, sizeof(double) * max_emb); // small enough, no eror checking
+    TFloat *lengths = NULL;
+    err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
+    if(err != 0) {
+        fprintf(stderr, "posix_memalign(%d) failed: %d\n", sizeof(TFloat) * max_emb, task_p->tid, err);
+        exit(EXIT_FAILURE);
+    }
 #pragma acc enter data create(lengths[:max_emb])
 
     unsigned int filled_emb = 0;
@@ -345,7 +357,7 @@ inline void unifracTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
+        embed_proportions<TFloat>(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
         filled_emb++;
         /*
          * The values in the example vectors correspond to index positions of an
@@ -414,12 +426,12 @@ inline void unifracTT(biom &table,
 
 #pragma acc wait
 
-    if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
+    if(want_total) {
         const unsigned int start_idx = task_p->start;
         const unsigned int stop_idx = task_p->stop;
 
-        double * const dm_stripes_buf = taskObj.dm_stripes.buf;
-        const double * const dm_stripes_total_buf = taskObj.dm_stripes_total.buf;
+        TFloat * const dm_stripes_buf = taskObj.dm_stripes.buf;
+        const TFloat * const dm_stripes_total_buf = taskObj.dm_stripes_total.buf;
 
 #pragma acc parallel loop collapse(2) present(dm_stripes_buf,dm_stripes_total_buf)
         for(unsigned int i = start_idx; i < stop_idx; i++)
@@ -445,16 +457,28 @@ void su::unifrac(biom &table,
                  const su::task_parameters* task_p) {
     switch(unifrac_method) {
         case unweighted:
-            unifracTT<UnifracUnweightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifracTT<UnifracUnweightedTask<double>,double>(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         case weighted_normalized:
-            unifracTT<UnifracNormalizedWeightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifracTT<UnifracNormalizedWeightedTask<double>,double>(   table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         case weighted_unnormalized:
-            unifracTT<UnifracUnnormalizedWeightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifracTT<UnifracUnnormalizedWeightedTask<double>,double>( table, tree, false, dm_stripes,dm_stripes_total,task_p);
             break;
         case generalized:
-            unifracTT<UnifracGeneralizedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifracTT<UnifracGeneralizedTask<double>,double>(          table, tree, true,  dm_stripes,dm_stripes_total,task_p);
+            break;
+        case unweighted_fp32:
+            unifracTT<UnifracUnweightedTask<float >,float>(            table, tree, true,  dm_stripes,dm_stripes_total,task_p);
+            break;
+        case weighted_normalized_fp32:
+            unifracTT<UnifracNormalizedWeightedTask<float >,float>(    table, tree, true,  dm_stripes,dm_stripes_total,task_p);
+            break;
+        case weighted_unnormalized_fp32:
+            unifracTT<UnifracUnnormalizedWeightedTask<float >,float>(  table, tree, false, dm_stripes,dm_stripes_total,task_p);
+            break;
+        case generalized_fp32:
+            unifracTT<UnifracGeneralizedTask<float >,float>(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         default:
             fprintf(stderr, "Unknown unifrac task\n");
@@ -464,16 +488,17 @@ void su::unifrac(biom &table,
 }
 
 
-template<class TaskT>
-inline void unifrac_vawTT(biom &table,
-                     BPTree &tree,
-                     Method unifrac_method,
-                     std::vector<double*> &dm_stripes,
-                     std::vector<double*> &dm_stripes_total,
-                     const su::task_parameters* task_p) {
+template<class TaskT, class TFloat>
+void unifrac_vawTT(biom &table,
+                          BPTree &tree,
+                          const bool want_total,
+                          std::vector<double*> &dm_stripes,
+                          std::vector<double*> &dm_stripes_total,
+                          const su::task_parameters* task_p) {
+    int err;
 #ifndef _OPENACC
     // processor affinity, when not using openacc
-    int err = bind_to_core(task_p->tid);
+    err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
         exit(EXIT_FAILURE);
@@ -494,19 +519,23 @@ inline void unifrac_vawTT(biom &table,
     uint32_t node;
     double *node_proportions;
     double *node_counts;
-    double *embedded_proportions;
-    double *embedded_counts;
-    double *sample_total_counts;
+    TFloat *embedded_proportions;
+    TFloat *embedded_counts;
+    TFloat *sample_total_counts;
 
-    initialize_embedded(embedded_proportions, max_emb, task_p);
-    initialize_embedded(embedded_counts, max_emb, task_p);
-    initialize_sample_counts(sample_total_counts, task_p, table);
-    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), unifrac_method, task_p);
+    initialize_embedded<TFloat>(embedded_proportions, max_emb, task_p);
+    initialize_embedded<TFloat>(embedded_counts, max_emb, task_p);
+    initialize_sample_counts<TFloat>(sample_total_counts, task_p, table);
+    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), embedded_proportions, embedded_counts, sample_total_counts, max_emb, task_p);
 
-    double *lengths = NULL;
-    posix_memalign((void **)&lengths, 4096, sizeof(double) * max_emb); // small enough, no eror checking
+    TFloat *lengths = NULL;
+    err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
+    if(err != 0) {
+        fprintf(stderr, "posix_memalign(%d) failed: %d\n", sizeof(TFloat) * max_emb, task_p->tid, err);
+        exit(EXIT_FAILURE);
+    }
 #pragma acc enter data create(lengths[:max_emb])
 
     unsigned int filled_emb = 0;
@@ -524,8 +553,8 @@ inline void unifrac_vawTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
-        embed_proportions(embedded_counts, node_counts, filled_emb, task_p->n_samples);
+        embed_proportions<TFloat>(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
+        embed_proportions<TFloat>(embedded_counts, node_counts, filled_emb, task_p->n_samples);
         filled_emb++;
 
         if (filled_emb==max_emb) {
@@ -549,12 +578,12 @@ inline void unifrac_vawTT(biom &table,
     }
 
 #pragma acc wait
-    if(unifrac_method == weighted_normalized || unifrac_method == unweighted || unifrac_method == generalized) {
+    if(want_total) {
         const unsigned int start_idx = task_p->start;
         const unsigned int stop_idx = task_p->stop;
 
-        double * const dm_stripes_buf = taskObj.dm_stripes.buf;
-        const double * const dm_stripes_total_buf = taskObj.dm_stripes_total.buf;
+        TFloat * const dm_stripes_buf = taskObj.dm_stripes.buf;
+        const TFloat * const dm_stripes_total_buf = taskObj.dm_stripes_total.buf;
 
 #pragma acc parallel loop collapse(2) present(dm_stripes_buf,dm_stripes_total_buf)
         for(unsigned int i = start_idx; i < stop_idx; i++)
@@ -583,16 +612,28 @@ void su::unifrac_vaw(biom &table,
                      const su::task_parameters* task_p) {
     switch(unifrac_method) {
         case unweighted:
-            unifrac_vawTT<UnifracVawUnweightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifrac_vawTT<UnifracVawUnweightedTask<double>,double>(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         case weighted_normalized:
-            unifrac_vawTT<UnifracVawNormalizedWeightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifrac_vawTT<UnifracVawNormalizedWeightedTask<double>,double>(   table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         case weighted_unnormalized:
-            unifrac_vawTT<UnifracVawUnnormalizedWeightedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifrac_vawTT<UnifracVawUnnormalizedWeightedTask<double>,double>( table, tree, false, dm_stripes,dm_stripes_total,task_p);
             break;
         case generalized:
-            unifrac_vawTT<UnifracVawGeneralizedTask>(table, tree, unifrac_method, dm_stripes,dm_stripes_total,task_p);
+            unifrac_vawTT<UnifracVawGeneralizedTask<double>,double>(          table, tree, true,  dm_stripes,dm_stripes_total,task_p);
+            break;
+        case unweighted_fp32:
+            unifrac_vawTT<UnifracVawUnweightedTask<float >,float >(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
+            break;
+        case weighted_normalized_fp32:
+            unifrac_vawTT<UnifracVawNormalizedWeightedTask<float >,float >(   table, tree, true,  dm_stripes,dm_stripes_total,task_p);
+            break;
+        case weighted_unnormalized_fp32:
+            unifrac_vawTT<UnifracVawUnnormalizedWeightedTask<float >,float >( table, tree, false, dm_stripes,dm_stripes_total,task_p);
+            break;
+        case generalized_fp32:
+            unifrac_vawTT<UnifracVawGeneralizedTask<float >,float >(          table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         default:
             fprintf(stderr, "Unknown unifrac task\n");
