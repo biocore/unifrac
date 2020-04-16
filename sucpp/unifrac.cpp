@@ -197,7 +197,7 @@ void progressbar(float progress) {
 }
 
 template<class TFloat>
-void embed_proportions(TFloat* restrict out, const double* restrict in, unsigned int emb, uint32_t n_samples) {
+void embed_proportions(TFloat* __restrict__ out, const double* __restrict__ in, unsigned int emb, uint32_t n_samples) {
    uint64_t offset = emb;
    offset *= n_samples;  // force 64-bit multiply
 

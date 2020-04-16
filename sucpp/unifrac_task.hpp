@@ -131,7 +131,7 @@ namespace su {
 
        virtual ~UnifracTask() {}
 
-       virtual void run(unsigned int filled_embs, const TFloat * restrict length) = 0;
+       virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
     };
 
 
@@ -141,9 +141,9 @@ namespace su {
         UnifracUnnormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, const TFloat * _embedded_proportions, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
     class UnifracNormalizedWeightedTask : public UnifracTask<TFloat> {
@@ -151,9 +151,9 @@ namespace su {
         UnifracNormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, const TFloat * _embedded_proportions, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
     class UnifracUnweightedTask : public UnifracTask<TFloat> {
@@ -161,9 +161,9 @@ namespace su {
         UnifracUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, const TFloat * _embedded_proportions, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
     class UnifracGeneralizedTask : public UnifracTask<TFloat> {
@@ -171,9 +171,9 @@ namespace su {
         UnifracGeneralizedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, const TFloat * _embedded_proportions, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
 
     /* void su::unifrac_vaw tasks
@@ -219,7 +219,7 @@ namespace su {
 
        virtual ~UnifracVawTask() {}
 
-       virtual void run(unsigned int filled_embs, const TFloat * restrict length) = 0;
+       virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
     };
 
     template<class TFloat>
@@ -230,9 +230,9 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
     class UnifracVawNormalizedWeightedTask : public UnifracVawTask<TFloat> {
@@ -242,9 +242,9 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
     class UnifracVawUnweightedTask : public UnifracVawTask<TFloat> {
@@ -254,9 +254,9 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
     class UnifracVawGeneralizedTask : public UnifracVawTask<TFloat> {
@@ -266,9 +266,9 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat>(_dm_stripes,_dm_stripes_total,_embedded_proportions,_embedded_counts,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void run(unsigned int filled_embs, const TFloat * restrict length) {_run(filled_embs, length);}
+        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _run(unsigned int filled_embs, const TFloat * restrict length);
+        void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
 
 }

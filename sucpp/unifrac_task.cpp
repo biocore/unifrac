@@ -3,7 +3,7 @@
 
 
 template<class TFloat>
-void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
@@ -62,7 +62,7 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
 }
 
 template<class TFloat>
-void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
@@ -98,15 +98,15 @@ void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_em
 }
 
 template<class TFloat>
-void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
 
     // openacc only works well with local variables
-    const TFloat * const restrict embedded_proportions = this->embedded_proportions;
-    TFloat * const restrict dm_stripes_buf = this->dm_stripes.buf;
-    TFloat * const restrict dm_stripes_total_buf = this->dm_stripes_total.buf;
+    const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
+    TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
+    TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
 
     const unsigned int step_size = 128;
@@ -120,8 +120,8 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
 	    uint64_t k = sk*step_size + ik;
             uint64_t idx = (stripe-start_idx);
             idx *= n_samples; // force 64 bit multiply
-            TFloat * restrict dm_stripe = dm_stripes_buf+idx;
-            TFloat * restrict dm_stripe_total = dm_stripes_total_buf+idx;
+            TFloat * __restrict__ dm_stripe = dm_stripes_buf+idx;
+            TFloat * __restrict__ dm_stripe_total = dm_stripes_total_buf+idx;
             //TFloat *dm_stripe = dm_stripes[stripe];
             //TFloat *dm_stripe_total = dm_stripes_total[stripe];
 
@@ -158,7 +158,7 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
 }
 
 template<class TFloat>
-void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
@@ -205,7 +205,7 @@ void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs
                                    dm_stripe_total[j] += sum_pow1; \
                                }
 template<class TFloat>
-void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
@@ -279,7 +279,7 @@ void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TF
 }
 
 template<class TFloat>
-void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
@@ -324,7 +324,7 @@ void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const
     }
 }
 template<class TFloat>
-void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
@@ -394,7 +394,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 }
 
 template<class TFloat>
-void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * restrict lengths) {
+void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
