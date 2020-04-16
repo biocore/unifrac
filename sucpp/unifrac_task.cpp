@@ -109,7 +109,13 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
 
+#ifdef _OPENACC
+    // The parallel nature of GPUs needs a largish step
     const unsigned int step_size = 16;
+#else
+    // The serial nature of CPU cores prefers a small step
+    const unsigned int step_size = 1;
+#endif
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
