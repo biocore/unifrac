@@ -114,7 +114,7 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
     const unsigned int step_size = 16;
 #else
     // The serial nature of CPU cores prefers a small step
-    const unsigned int step_size = 1;
+    const unsigned int step_size = 4;
 #endif
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
