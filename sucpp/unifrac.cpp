@@ -514,7 +514,7 @@ void unifrac_vawTT(biom &table,
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
 
-    const unsigned int max_emb = 1;
+    const unsigned int max_emb = 128;
 
     uint32_t node;
     double *node_proportions;
@@ -559,7 +559,7 @@ void unifrac_vawTT(biom &table,
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
 
@@ -572,7 +572,7 @@ void unifrac_vawTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*2*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
     }
