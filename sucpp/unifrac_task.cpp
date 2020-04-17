@@ -7,57 +7,54 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
-    const unsigned int trailing = n_samples - (n_samples % 4);
 
     // openacc only works well with local variables
-    const TFloat * const embedded_proportions = this->embedded_proportions;
-    TFloat * const dm_stripes_buf = this->dm_stripes.buf;
-
-    // quick hack, to be finished
-    const TFloat length = lengths[0];
-
-    // point of thread
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf)
-    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-        for(unsigned int j = 0; j < n_samples / 4; j++) {
-            unsigned int idx = (stripe-start_idx)*n_samples;
-            TFloat *dm_stripe = dm_stripes_buf+idx;
-            //TFloat *dm_stripe = dm_stripes[stripe];
-
-            int k = j * 4;
-            TFloat u1 = embedded_proportions[k];
-            TFloat u2 = embedded_proportions[k + 1];
-            TFloat u3 = embedded_proportions[k + 2];
-            TFloat u4 = embedded_proportions[k + 3];
-
-            TFloat v1 = embedded_proportions[k + stripe + 1];
-            TFloat v2 = embedded_proportions[k + stripe + 2];
-            TFloat v3 = embedded_proportions[k + stripe + 3];
-            TFloat v4 = embedded_proportions[k + stripe + 4];
-            
-            dm_stripe[k] += fabs(u1 - v1) * length;
-            dm_stripe[k + 1] += fabs(u2 - v2) * length;
-            dm_stripe[k + 2] += fabs(u3 - v3) * length;
-            dm_stripe[k + 3] += fabs(u4 - v4) * length;
-        }
+    const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
+    TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
 #ifdef _OPENACC
-    }
-
-    if (trailing<n_samples) {
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf)
-      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++)
+    // The parallel nature of GPUs needs a largish step
+    const unsigned int step_size = 16;
+#else
+    // The serial nature of CPU cores prefers a small step
+    const unsigned int step_size = 4;
 #endif
-        for(unsigned int k = trailing; k < n_samples; k++) {
-                unsigned int idx = (stripe-start_idx)*n_samples;
-                TFloat *dm_stripe = dm_stripes_buf+idx;
-                //TFloat *dm_stripe = dm_stripes[stripe];
+    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
-                TFloat u = embedded_proportions[k];
-                TFloat v = embedded_proportions[k + stripe + 1];
- 
-                dm_stripe[k] += fabs(u - v) * length;
+    // point of thread
+#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,lengths) async
+    for(unsigned int sk = 0; sk < sample_steps ; sk++) {
+      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+        for(unsigned int ik = 0; ik < step_size ; ik++) {
+            uint64_t k = sk*step_size + ik;
+            uint64_t idx = (stripe-start_idx);
+            idx *= n_samples; // force 64 bit multiply
+            TFloat * __restrict__ dm_stripe = dm_stripes_buf+idx;
+            //TFloat *dm_stripe = dm_stripes[stripe];
+
+            if (k>=n_samples) continue; // past the limit
+
+            unsigned int l1 = (k + stripe + 1)%n_samples; // wraparound
+
+            TFloat my_stripe = dm_stripe[k];
+
+#pragma acc loop seq
+            for (unsigned int emb=0; emb<filled_embs; emb++) {
+                uint64_t offset = n_samples;
+                offset *= emb; // force 64-bit multiply
+
+                TFloat u1 = embedded_proportions[offset + k];
+                TFloat v1 = embedded_proportions[offset + l1];
+                TFloat diff1 = u1 - v1;
+                TFloat length = lengths[emb];
+
+                my_stripe     += fabs(diff1) * length;
+            }
+
+            dm_stripe[k]     = my_stripe;
         }
+
+      }
     }
 }
 
@@ -334,68 +331,63 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const unsigned int start_idx = this->task_p->start;
     const unsigned int stop_idx = this->task_p->stop;
     const unsigned int n_samples = this->task_p->n_samples;
-    const unsigned int trailing = n_samples - (n_samples % 4);
 
     // openacc only works well with local variables
-    const TFloat * const embedded_proportions = this->embedded_proportions;
-    TFloat * const dm_stripes_buf = this->dm_stripes.buf;
-    TFloat * const dm_stripes_total_buf = this->dm_stripes_total.buf;
+    const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
+    TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
+    TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
-    // quick hack, to be finished
-    const TFloat length = lengths[0];
+
+#ifdef _OPENACC
+    // The parallel nature of GPUs needs a largish step
+    const unsigned int step_size = 16;
+#else
+    // The serial nature of CPU cores prefers a small step
+    const unsigned int step_size = 4;
+#endif
+    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
-    for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-        for(unsigned int j = 0; j < n_samples / 4; j++) {
-            unsigned int idx = (stripe-start_idx)*n_samples;
-            TFloat *dm_stripe = dm_stripes_buf+idx;
-            TFloat *dm_stripe_total = dm_stripes_total_buf+idx;
+#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+    for(unsigned int sk = 0; sk < sample_steps ; sk++) {
+      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+        for(unsigned int ik = 0; ik < step_size ; ik++) {
+            uint64_t k = sk*step_size + ik;
+            uint64_t idx = (stripe-start_idx);
+            idx *= n_samples; // force 64 bit multiply
+            TFloat * __restrict__ dm_stripe = dm_stripes_buf+idx;
+            TFloat * __restrict__ dm_stripe_total = dm_stripes_total_buf+idx;
             //TFloat *dm_stripe = dm_stripes[stripe];
             //TFloat *dm_stripe_total = dm_stripes_total[stripe];
 
-            int k = j * 4;
-            int32_t u1 = embedded_proportions[k] > 0;
-            int32_t u2 = embedded_proportions[k + 1] > 0;
-            int32_t u3 = embedded_proportions[k + 2] > 0;
-            int32_t u4 = embedded_proportions[k + 3] > 0;
- 
-            int32_t v1 = embedded_proportions[k + stripe + 1] > 0;
-            int32_t v2 = embedded_proportions[k + stripe + 2] > 0;
-            int32_t v3 = embedded_proportions[k + stripe + 3] > 0;
-            int32_t v4 = embedded_proportions[k + stripe + 4] > 0;
+            if (k>=n_samples) continue; // past the limit
 
-            dm_stripe[k] += (u1 ^ v1) * length;
-            dm_stripe[k + 1] += (u2 ^ v2) * length;
-            dm_stripe[k + 2] += (u3 ^ v3) * length;
-            dm_stripe[k + 3] += (u4 ^ v4) * length;
- 
-            dm_stripe_total[k] += (u1 | v1) * length;
-            dm_stripe_total[k + 1] += (u2 | v2) * length;
-            dm_stripe_total[k + 2] += (u3 | v3) * length;
-            dm_stripe_total[k + 3] += (u4 | v4) * length;
+            unsigned int l1 = (k + stripe + 1)%n_samples; // wraparound
+
+            TFloat my_stripe = dm_stripe[k];
+            TFloat my_stripe_total = dm_stripe_total[k];
+
+#pragma acc loop seq
+            for (unsigned int emb=0; emb<filled_embs; emb++) {
+                uint64_t offset = n_samples;
+                offset *= emb; // force 64-bit multiply
+
+                TFloat u1 = embedded_proportions[offset + k];
+                TFloat v1 = embedded_proportions[offset + l1];
+                TFloat exor = u1 ^ v1;
+                TFloat eor = u1 | v1;
+                TFloat length = lengths[emb];
+
+                my_stripe     += exor * length;
+                my_stripe_total     += eor * length;
+            }
+
+            dm_stripe[k]     = my_stripe;
+            dm_stripe_total[k]     = my_stripe_total;
+
         }
-       
-#ifdef _OPENACC
-    }
 
-    if (trailing<n_samples) {
-#pragma acc parallel loop collapse(2) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf)
-      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++)
-#endif
-        for(unsigned int k = trailing; k < n_samples; k++) {
-                unsigned int idx = (stripe-start_idx)*n_samples;
-                TFloat *dm_stripe = dm_stripes_buf+idx;
-                TFloat *dm_stripe_total = dm_stripes_total_buf+idx;
-                //TFloat *dm_stripe = dm_stripes[stripe];
-                //TFloat *dm_stripe_total = dm_stripes_total[stripe];
-
-                int32_t u = embedded_proportions[k] > 0;
-                int32_t v = embedded_proportions[k + stripe + 1] > 0;
-
-                dm_stripe[k] += (u ^ v) * length;
-                dm_stripe_total[k] += (u | v) * length;
-        }
+      }
     }
 }
 
