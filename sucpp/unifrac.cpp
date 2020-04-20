@@ -198,19 +198,25 @@ void progressbar(float progress) {
 
 template<class TFloat>
 void embed_proportions(TFloat* __restrict__ out, const double* __restrict__ in, unsigned int emb, uint32_t n_samples) {
-   uint64_t offset = emb;
-   offset *= n_samples;  // force 64-bit multiply
+   const uint64_t n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
+   const uint64_t offset = emb * n_samples_r;
 
    for(unsigned int i = 0; i < n_samples; i++) {
        out[offset + i] = in[i];
+   }
+
+   // avoid NaNs
+   for(unsigned int i = n_samples; i < n_samples_r; i++) {
+       out[offset + i] = 1.0;
    }
 }
 
 template<class TFloat>
 void initialize_embedded(TFloat*& prop, unsigned int num, const su::task_parameters* task_p) {
     const unsigned int n_samples = task_p->n_samples;
-    uint64_t bsize = n_samples;
-    bsize *= num; // force 64 bit multiplication
+    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
+    uint64_t bsize = n_samples_r * num;
+
     TFloat* buf = NULL;
     int err = posix_memalign((void **)&buf, 4096, sizeof(TFloat) * bsize);
     if(buf == NULL || err != 0) {
@@ -225,20 +231,24 @@ void initialize_embedded(TFloat*& prop, unsigned int num, const su::task_paramet
 template<class TFloat>
 void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, biom &table) {
     const unsigned int n_samples = task_p->n_samples;
+    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
     TFloat * counts = NULL;
     int err = 0;
-    err = posix_memalign((void **)&counts, 4096, sizeof(TFloat) * n_samples * 2);
+    err = posix_memalign((void **)&counts, 4096, sizeof(TFloat) * n_samples_r);
     if(counts == NULL || err != 0) {
         fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(TFloat) * n_samples, err, __FILE__, __LINE__);
+                sizeof(TFloat) * n_samples_r, err, __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    for(unsigned int i = 0; i < table.n_samples; i++) {
+    for(unsigned int i = 0; i < n_samples; i++) {
         counts[i] = table.sample_counts[i];
-        counts[i + table.n_samples] = table.sample_counts[i];
     }
+   // avoid NaNs
+   for(unsigned int i = n_samples; i < n_samples_r; i++) {
+       counts[i] = 0.0;
+   }
 
-#pragma acc enter data copyin(counts[:n_samples*2])
+#pragma acc enter data copyin(counts[:n_samples_r])
    _counts=counts;
 }
 
@@ -322,6 +332,7 @@ void unifracTT(biom &table,
         exit(EXIT_FAILURE);
     }
     const unsigned int n_samples = task_p->n_samples;
+    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
 
     PropStack propstack(table.n_samples);
@@ -406,7 +417,7 @@ void unifracTT(biom &table,
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
 
@@ -419,7 +430,7 @@ void unifracTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
     }
@@ -436,7 +447,7 @@ void unifracTT(biom &table,
 #pragma acc parallel loop collapse(2) present(dm_stripes_buf,dm_stripes_total_buf)
         for(unsigned int i = start_idx; i < stop_idx; i++)
             for(unsigned int j = 0; j < n_samples; j++) {
-                unsigned int idx = (i-start_idx)*n_samples+j;
+                unsigned int idx = (i-start_idx)*n_samples_r+j;
                 dm_stripes_buf[idx]=dm_stripes_buf[idx]/dm_stripes_total_buf[idx];
                 // taskObj.dm_stripes[i][j] = taskObj.dm_stripes[i][j] / taskObj.dm_stripes_total[i][j];
             }
@@ -444,7 +455,7 @@ void unifracTT(biom &table,
     }
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples*max_emb])
+#pragma acc exit data delete(embedded_proportions[:n_samples_r*max_emb])
     free(lengths);
     free(embedded_proportions);
 }
@@ -510,6 +521,7 @@ void unifrac_vawTT(biom &table,
         exit(EXIT_FAILURE);
     }
     const unsigned int n_samples = task_p->n_samples;
+    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
@@ -559,7 +571,7 @@ void unifrac_vawTT(biom &table,
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],embedded_counts[:n_samples_r*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
 
@@ -572,7 +584,7 @@ void unifrac_vawTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples*filled_emb],embedded_counts[:n_samples*filled_emb],lengths[:filled_emb])
+#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],embedded_counts[:n_samples_r*filled_emb],lengths[:filled_emb])
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
     }
@@ -588,7 +600,7 @@ void unifrac_vawTT(biom &table,
 #pragma acc parallel loop collapse(2) present(dm_stripes_buf,dm_stripes_total_buf)
         for(unsigned int i = start_idx; i < stop_idx; i++)
             for(unsigned int j = 0; j < n_samples; j++) {
-                unsigned int idx = (i-start_idx)*n_samples+j;
+                unsigned int idx = (i-start_idx)*n_samples_r+j;
                 dm_stripes_buf[idx]=dm_stripes_buf[idx]/dm_stripes_total_buf[idx];
                 // taskObj.dm_stripes[i][j] = taskObj.dm_stripes[i][j] / taskObj.dm_stripes_total[i][j];
             }
@@ -597,7 +609,7 @@ void unifrac_vawTT(biom &table,
 
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples*max_emb],embedded_counts[:n_samples*max_emb],sample_total_counts[:n_samples*2])
+#pragma acc exit data delete(embedded_proportions[:n_samples_r*max_emb],embedded_counts[:n_samples_r*max_emb],sample_total_counts[:n_samples_r])
     free(lengths);
     free(embedded_proportions);
     free(embedded_counts);
