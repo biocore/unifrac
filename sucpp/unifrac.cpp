@@ -351,7 +351,7 @@ void unifracTT(biom &table,
     TFloat *lengths = NULL;
     err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
     if(err != 0) {
-        fprintf(stderr, "posix_memalign(%d) failed: %d\n", sizeof(TFloat) * max_emb, task_p->tid, err);
+        fprintf(stderr, "posix_memalign(%d) failed: %d\n", sizeof(TFloat) * max_emb,  err);
         exit(EXIT_FAILURE);
     }
 #pragma acc enter data create(lengths[:max_emb])
