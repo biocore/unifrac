@@ -4,13 +4,21 @@ PLATFORM := $(shell uname -s)
 COMPILER := $(shell ($(CXX) -v 2>&1) | tr A-Z a-z )
 
 ifdef DEBUG
-	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
+	ifneq (,$(findstring pgi,$(COMPILER)))
+		OPT = -g
+	else
+		OPT = -O0 -DDEBUG=1 --debug -g -ggdb
+	endif
 else
-	ifneq (,$(findstring gcc,$(COMPILER)))
+	ifneq (,$(findstring pgi,$(COMPILER)))
+		OPT = -fast
+	else
+	  ifneq (,$(findstring gcc,$(COMPILER)))
 		OPT = -O4
 		TGTFLAGS = -fwhole-program
-	else
+	  else
 		OPT = -O3
+	  endif
 	endif
 endif
 
@@ -26,21 +34,40 @@ else
 	LDDFLAGS = -shared
 endif
 
-ifeq ($(PERFORMING_CONDA_BUILD),True)
-	CPPFLAGS += -mtune=generic
-else
-	CPPFLAGS += -mfma -march=native
+ifndef NOGPU
+	ifneq (,$(findstring pgi,$(COMPILER)))
+		CPPFLAGS += -acc -ta=tesla
+		# optional info
+		CPPFLAGS += -Minfo=accel
+        endif	
 endif
 
-CPPFLAGS += -Wall -Wextra -std=c++11 -pedantic -I. $(OPT) -fPIC
+ifneq (,$(findstring pgi,$(COMPILER)))
+	ifeq ($(PERFORMING_CONDA_BUILD),True)
+		CPPFLAGS += -tp=px
+	endif
+else
+	ifeq ($(PERFORMING_CONDA_BUILD),True)
+		CPPFLAGS += -mtune=generic
+	else
+         	CPPFLAGS += -mfma -march=native
+	endif
+endif
+
+ifeq (,$(findstring pgi,$(COMPILER)))
+	# basically, not gcc
+	CPPFLAGS += -Wextra -Wno-unused-parameter
+endif
+
+CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC
 
 test: tree.o test_su.cpp biom.o unifrac.o api.o
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_su.cpp -o test_su tree.o biom.o unifrac.o api.o -pthread
-	$(CXX) $(CPPFLAGS) -Wno-unused-parameter test_api.cpp -o test_api tree.o biom.o unifrac.o api.o -pthread
+	$(CXX) $(CPPFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o api.o -lpthread
+	$(CXX) $(CPPFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o api.o -lpthread
 
 main: tree.o biom.o unifrac.o cmd.o api.o
-	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -pthread
-	$(CXX) $(CPPFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -pthread
+	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -lpthread
+	$(CXX) $(CPPFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -lpthread
 	cp ssu ${PREFIX}/bin/
 	cp faithpd ${PREFIX}/bin/
 
