@@ -40,6 +40,10 @@ ifndef NOGPU
 		# optional info
 		CPPFLAGS += -Minfo=accel
         endif	
+	ifdef SMALLGPU
+		CPPFLAGS += -DSMALLGPU
+	endif
+
 endif
 
 ifneq (,$(findstring pgi,$(COMPILER)))

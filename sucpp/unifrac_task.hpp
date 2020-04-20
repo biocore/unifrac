@@ -9,7 +9,22 @@
 
 namespace su {
 
+
+#ifdef _OPENACC
+
+  #ifndef SMALLGPU
+  // defaultt on larger alignment, which improves performance on GPUs like V100
+#define UNIFRAC_BLOCK 64
+  #else
+  // smaller GPUs prefer smaller allignment 
 #define UNIFRAC_BLOCK 32
+  #endif
+
+#else
+
+// CPUs don't need such a big alignment
+#define UNIFRAC_BLOCK 8
+#endif
 
     // Note: This adds a copy, which is suboptimal
     //       But was the easiest way to get a contiguous buffer
@@ -123,8 +138,15 @@ namespace su {
     class UnifracTask : public UnifracTaskBase<TFloat> {
       protected:
 #ifdef _OPENACC
+
         // The parallel nature of GPUs needs a largish step
+  #ifndef SMALLGPU
+        // default to larger step, which makes a big difference for bigger GPUs like V100
+        static const unsigned int step_size = 32;
+  #else
+        // smaller GPUs prefer a slightly smaller step
         static const unsigned int step_size = 16;
+  #endif
 #else
         // The serial nature of CPU cores prefers a small step
         static const unsigned int step_size = 4;
@@ -216,7 +238,13 @@ namespace su {
       protected:
 #ifdef _OPENACC
         // The parallel nature of GPUs needs a largish step
+  #ifndef SMALLGPU
+        // default to larger step, which makes a big difference for bigger GPUs like V100
+        static const unsigned int step_size = 32;
+  #else
+        // smaller GPUs prefer a slightly smaller step
         static const unsigned int step_size = 16;
+  #endif
 #else
         // The serial nature of CPU cores prefers a small step
         static const unsigned int step_size = 4;
