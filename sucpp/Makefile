@@ -34,12 +34,16 @@ else
 	LDDFLAGS = -shared
 endif
 
+EXEFLAGS =
+
 ifndef NOGPU
 	ifneq (,$(findstring pgi,$(COMPILER)))
 		CPPFLAGS += -acc -ta=tesla
 		# optional info
 		CPPFLAGS += -Minfo=accel
-        endif	
+	        LDDFLAGS += -shlib -acc -Bstatic_pgi
+	        EXEFLAGS += -Bstatic_pgi
+	endif	
 	ifdef SMALLGPU
 		CPPFLAGS += -DSMALLGPU
 	endif
@@ -66,12 +70,12 @@ endif
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC
 
 test: tree.o test_su.cpp biom.o unifrac.o api.o
-	$(CXX) $(CPPFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o api.o -lpthread
-	$(CXX) $(CPPFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o api.o -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o api.o -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o api.o -lpthread
 
 main: tree.o biom.o unifrac.o cmd.o api.o
-	$(CXX) $(CPPFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -lpthread
-	$(CXX) $(CPPFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -lpthread
 	cp ssu ${PREFIX}/bin/
 	cp faithpd ${PREFIX}/bin/
 
