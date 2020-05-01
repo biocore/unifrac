@@ -38,7 +38,12 @@ EXEFLAGS =
 
 ifndef NOGPU
 	ifneq (,$(findstring pgi,$(COMPILER)))
-		CPPFLAGS += -acc -ta=tesla
+		CPPFLAGS += -acc
+	        ifeq ($(PERFORMING_CONDA_BUILD),True)
+	            CPPFLAGS += -ta=tesla:ccall
+		else
+	            CPPFLAGS += -ta=tesla
+                endif
 		# optional info
 		CPPFLAGS += -Minfo=accel
 	        LDDFLAGS += -shlib -acc -Bstatic_pgi
