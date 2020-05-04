@@ -382,11 +382,15 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     return write_okay;
 }
 
-IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
+IOStatus write_partial_org(const char* output_filename, partial_mat_t* result) {
     std::ofstream output;
     output.open(output_filename, std::ios::binary);
     if(!output.is_open())
         return open_error;
+
+    time_t now = time(0);
+    int inow = now;
+    printf("write_partial start: %i\n",inow);
 
     uint32_t n_stripes = result->stripe_stop - result->stripe_start;
     std::string magic(PARTIAL_MAGIC);
@@ -419,6 +423,115 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     /* footer */
     output << magic;
     output.close();
+
+    time_t now2 = time(0);
+    int inow2 = now2;
+    int idt = now2-now;
+    printf("write_partial end: %i dt %i\n",inow2,idt);
+
+    return write_okay;
+}
+
+       #include <sys/types.h>
+       #include <sys/stat.h>
+       #include <fcntl.h>
+       #include <unistd.h>
+#include <lz4.h>
+
+IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
+    int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR |  S_IWUSR );
+    if (fd==-1) return open_error;
+
+    int cnt = -1;
+
+    time_t now = time(0);
+    int inow = now;
+    printf("write_partial(%i,%s) start: %i\n",fd,output_filename,inow);
+
+    uint32_t n_stripes = result->stripe_stop - result->stripe_start;
+    printf("n_stripes %i\n",n_stripes);
+
+    uint32_t sample_id_length = 0;
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        sample_id_length += strlen(result->sample_ids[i])+1;
+    }
+
+    {
+      char * const samples_buf = (char *)malloc(sample_id_length);
+ 
+      char *samples_ptr = samples_buf;
+
+      /* sample IDs */
+      for(unsigned int i = 0; i < result->n_samples; i++) {
+          uint32_t length = strlen(result->sample_ids[i])+1;
+          memcpy(samples_ptr,result->sample_ids[i],length);
+      }
+
+      int max_compressed = LZ4_compressBound(sample_id_length);
+      char * const cmp_buf = (char *)malloc(max_compressed);
+
+      int sample_id_length_compressed = LZ4_compress_default(samples_buf,cmp_buf,sample_id_length,max_compressed);
+      if (sample_id_length_compressed<1) return open_error;
+
+      uint32_t header[8];
+      header[0] = PARTIAL_MAGIC_V2;
+      header[1] = result->n_samples;
+      header[2] = n_stripes;
+      header[3] = result->stripe_start;
+      header[4] = result->stripe_total;
+      header[5] = result->is_upper_triangle;
+      header[6] = sample_id_length;
+      header[7] = sample_id_length_compressed;
+
+      cnt=write(fd,header, 8 * sizeof(uint32_t));
+      if (cnt<1) return open_error;
+      printf("%i %i write header %i\n",cnt,errno,8 * sizeof(uint32_t));
+
+      cnt=write(fd,cmp_buf, sample_id_length_compressed);
+      if (cnt<1) return open_error;
+      //printf("%i write ids %i\n",cnt,sample_id_length_compressed);
+
+      free(cmp_buf);
+      free(samples_buf);
+    }
+
+    {
+      int max_compressed = LZ4_compressBound(sizeof(double) * result->n_samples);
+      char * const cmp_buf_raw = (char *)malloc(max_compressed+sizeof(uint32_t));
+      char * const cmp_buf = cmp_buf_raw + sizeof(uint32_t);
+
+      /* stripe information */
+      for(unsigned int i = 0; i < n_stripes; i++) {
+        int cmp_size = LZ4_compress_default((const char *) result->stripes[i],cmp_buf,sizeof(double) * result->n_samples,max_compressed);
+        if (cmp_size<1) return open_error;
+
+        uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf_raw;
+        *cmp_buf_size_p = cmp_size;
+
+        cnt=write(fd, cmp_buf_raw, cmp_size+sizeof(uint32_t));
+        if (cnt<1) return open_error;
+        //printf("%i write %i %i\n",cnt,i,sizeof(double) * result->n_samples);
+      }
+
+      free(cmp_buf_raw);
+    }
+
+    /* footer */
+    {
+      uint32_t header[8];
+      header[0] = PARTIAL_MAGIC_V2;
+
+      cnt=write(fd,header, 1 * sizeof(uint32_t));
+      if (cnt<1) return open_error;
+    }
+
+    close(fd);
+    printf("write header and close\n");
+
+    time_t now2 = time(0);
+    int inow2 = now2;
+    int idt = now2-now;
+    printf("write_partial end: %i dt %i\n",inow2,idt);
 
     return write_okay;
 }
