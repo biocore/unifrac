@@ -7,6 +7,11 @@
 #include <thread>
 #include <cstring>
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <lz4.h>
+
+
 #define CHECK_FILE(filename, err) if(!is_file_exists(filename)) { \
                                       return err;                 \
                                   }
@@ -382,56 +387,6 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     return write_okay;
 }
 
-IOStatus write_partial_org(const char* output_filename, partial_mat_t* result) {
-    std::ofstream output;
-    output.open(output_filename, std::ios::binary);
-    if(!output.is_open())
-        return open_error;
-
-    time_t now = time(0);
-    int inow = now;
-    printf("write_partial start: %i\n",inow);
-
-    uint32_t n_stripes = result->stripe_stop - result->stripe_start;
-    std::string magic(PARTIAL_MAGIC);
-    uint32_t magic_len = magic.length();
-
-    /* header information */
-    output.write(reinterpret_cast<const char*>(&magic_len),                 sizeof(uint16_t));
-    output << magic;
-    output.write(reinterpret_cast<const char*>(&result->n_samples),         sizeof(uint32_t));
-    output.write(reinterpret_cast<const char*>(&n_stripes),                 sizeof(uint32_t));
-    output.write(reinterpret_cast<const char*>(&result->stripe_start),      sizeof(uint32_t));
-    output.write(reinterpret_cast<const char*>(&result->stripe_total),      sizeof(uint32_t));
-    output.write(reinterpret_cast<const char*>(&result->is_upper_triangle), sizeof(uint8_t));
-
-    /* sample IDs */
-    for(unsigned int i = 0; i < result->n_samples; i++) {
-        uint16_t length = strlen(result->sample_ids[i]);
-        output.write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
-        output << result->sample_ids[i];
-    }
-
-    /* stripe information */
-    for(unsigned int i = 0; i < n_stripes; i++) {
-        /// :( streamsize didn't seem to work. probably a fancy way to do this, but the regular loop is fast too
-        //output.write(reinterpret_cast<const char*>(&result->stripes[i]), std::streamsize(sizeof(double) * result->n_samples));
-        for(unsigned int j = 0; j < result->n_samples; j++)
-            output.write(reinterpret_cast<const char*>(&result->stripes[i][j]), sizeof(double));
-    }
-
-    /* footer */
-    output << magic;
-    output.close();
-
-    time_t now2 = time(0);
-    int inow2 = now2;
-    int idt = now2-now;
-    printf("write_partial end: %i dt %i\n",inow2,idt);
-
-    return write_okay;
-}
-
        #include <sys/types.h>
        #include <sys/stat.h>
        #include <fcntl.h>
@@ -439,7 +394,7 @@ IOStatus write_partial_org(const char* output_filename, partial_mat_t* result) {
 #include <lz4.h>
 
 IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
-    int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR |  S_IWUSR );
+    int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC,  S_IRUSR |  S_IWUSR );
     if (fd==-1) return open_error;
 
     int cnt = -1;
