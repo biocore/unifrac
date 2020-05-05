@@ -387,12 +387,6 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     return write_okay;
 }
 
-       #include <sys/types.h>
-       #include <sys/stat.h>
-       #include <fcntl.h>
-       #include <unistd.h>
-#include <lz4.h>
-
 IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC,  S_IRUSR |  S_IWUSR );
     if (fd==-1) return open_error;
@@ -420,13 +414,14 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
       for(unsigned int i = 0; i < result->n_samples; i++) {
           uint32_t length = strlen(result->sample_ids[i])+1;
           memcpy(samples_ptr,result->sample_ids[i],length);
+          samples_ptr+= length;
       }
 
       int max_compressed = LZ4_compressBound(sample_id_length);
       char * const cmp_buf = (char *)malloc(max_compressed);
 
       int sample_id_length_compressed = LZ4_compress_default(samples_buf,cmp_buf,sample_id_length,max_compressed);
-      if (sample_id_length_compressed<1) return open_error;
+      if (sample_id_length_compressed<1)  {close(fd); return open_error;}
 
       uint32_t header[8];
       header[0] = PARTIAL_MAGIC_V2;
@@ -439,11 +434,11 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
       header[7] = sample_id_length_compressed;
 
       cnt=write(fd,header, 8 * sizeof(uint32_t));
-      if (cnt<1) return open_error;
+      if (cnt<1)  {close(fd); return open_error;}
       printf("%i %i write header %i\n",cnt,errno,8 * sizeof(uint32_t));
 
       cnt=write(fd,cmp_buf, sample_id_length_compressed);
-      if (cnt<1) return open_error;
+      if (cnt<1)  {close(fd); return open_error;}
       //printf("%i write ids %i\n",cnt,sample_id_length_compressed);
 
       free(cmp_buf);
@@ -458,13 +453,13 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
       /* stripe information */
       for(unsigned int i = 0; i < n_stripes; i++) {
         int cmp_size = LZ4_compress_default((const char *) result->stripes[i],cmp_buf,sizeof(double) * result->n_samples,max_compressed);
-        if (cmp_size<1) return open_error;
+        if (cmp_size<1)  {close(fd); return open_error;}
 
         uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf_raw;
         *cmp_buf_size_p = cmp_size;
 
         cnt=write(fd, cmp_buf_raw, cmp_size+sizeof(uint32_t));
-        if (cnt<1) return open_error;
+        if (cnt<1) {return open_error;}
         //printf("%i write %i %i\n",cnt,i,sizeof(double) * result->n_samples);
       }
 
@@ -473,11 +468,11 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
 
     /* footer */
     {
-      uint32_t header[8];
+      uint32_t header[1];
       header[0] = PARTIAL_MAGIC_V2;
 
       cnt=write(fd,header, 1 * sizeof(uint32_t));
-      if (cnt<1) return open_error;
+      if (cnt<1)  {close(fd); return open_error;}
     }
 
     close(fd);
@@ -492,67 +487,45 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
 }
 
 IOStatus _is_partial_file(const char* input_filename) {
-    std::ifstream input;
-    input.open(input_filename, std::ios::in | std::ios::binary);
-    if(!input.is_open())
-        return open_error;
+    int fd = open(input_filename, O_RDONLY );
+    if (fd==-1) return open_error;
 
-    char magic[32];
-    uint16_t magic_len;
+    uint32_t header[1];
+    int cnt = read(fd,header,sizeof(uint32_t));
+    close(fd);
 
-    input.read((char*)&magic_len, 2);
+    if (cnt!=sizeof(uint32_t)) return magic_incompatible;
+    if ( header[0] != PARTIAL_MAGIC_V2) return magic_incompatible;
 
-    // if the length of the magic is unexpected then bail
-    if(magic_len <= 0 || magic_len > 32) {
-        return magic_incompatible;
-    }
-
-    input.read(magic, magic_len);
-    if(strncmp(magic, PARTIAL_MAGIC, magic_len) != 0) {
-        return magic_incompatible;
-    }
-
-    input.close();
     return read_okay;
 }
 
 IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
-    IOStatus err = _is_partial_file(input_filename);
+    int fd = open(input_filename, O_RDONLY );
+    if (fd==-1) return open_error;
+    //printf("read open\n");
 
-    if(err != read_okay)
-        return err;
+    int cnt=-1;
 
-    std::ifstream input;
-    input.open(input_filename, std::ios::binary);
+    uint32_t header[8];
+    cnt = read(fd,header,8*sizeof(uint32_t));
+    if (cnt != (8*sizeof(uint32_t))) {close(fd); return magic_incompatible;}
 
-    /* load header */
-    uint16_t magic_len;
-    input.read((char*)&magic_len, 2);  // magic length
+    if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
+    //printf("read magic\n");
 
-    char header_magic[32];
-    input.read(header_magic, magic_len);  // magic
-    header_magic[magic_len] = '\0';
-
-    uint32_t n_samples;
-    input.read((char*)&n_samples, 4);  // number of samples
-
-    uint32_t n_stripes;
-    input.read((char*)&n_stripes, 4);  // number of stripes
-
-    uint32_t stripe_start;
-    input.read((char*)&stripe_start, 4);  // stripe start
-
-    uint32_t stripe_total;
-    input.read((char*)&stripe_total, 4);  // stripe total
-
-    bool is_upper_triangle;
-    input.read((char*)&is_upper_triangle, 1);  // is_upper_triangle
+    const uint32_t n_samples = header[1];
+    const uint32_t n_stripes = header[2];
+    const uint32_t stripe_start = header[3];
+    const uint32_t stripe_total = header[4];
+    const bool is_upper_triangle = header[5];
 
     /* sanity check header */
-    if(n_samples <= 0 || n_stripes <= 0 || stripe_start < 0 || stripe_total <= 0 || is_upper_triangle < 0)
-        return bad_header;
+    if(n_samples <= 0 || n_stripes <= 0 || stripe_total <= 0 || is_upper_triangle < 0)
+         {close(fd); return bad_header;}
     if(stripe_total >= n_samples || n_stripes > stripe_total || stripe_start >= stripe_total || stripe_start + n_stripes > stripe_total)
-        return bad_header;
+         {close(fd); return bad_header;}
+    //printf("read header\n");
 
     /* initialize the partial result structure */
     partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
@@ -565,35 +538,81 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     result->stripe_total = stripe_total;
 
     /* load samples */
-    for(int i = 0; i < n_samples; i++) {
-        uint16_t sample_length;
-        input.read((char*)&sample_length, 2);
-        result->sample_ids[i] = (char*)malloc(sizeof(char) * (sample_length + 1));
-        input.read(result->sample_ids[i], sample_length);
-        result->sample_ids[i][sample_length] = '\0';
+    {
+      const uint32_t sample_id_length = header[6];
+      const uint32_t sample_id_length_compressed = header[7];
+
+      /* sanity check header */
+      if (sample_id_length<=0 || sample_id_length_compressed <=0)
+         {close(fd); return bad_header;}
+
+      char * const cmp_buf = (char *)malloc(sample_id_length_compressed);
+      cnt = read(fd,cmp_buf,sample_id_length_compressed);
+      if (cnt != sample_id_length_compressed) {close(fd); return magic_incompatible;}
+
+      char *samples_buf = (char *)malloc(sample_id_length);
+
+      cnt = LZ4_decompress_safe(cmp_buf,samples_buf,sample_id_length_compressed,sample_id_length);
+      if (cnt!=sample_id_length) {close(fd); return magic_incompatible;}
+
+      const char *samples_ptr = samples_buf;
+
+      for(int i = 0; i < n_samples; i++) {
+        uint32_t sample_length = strlen(samples_ptr);
+        if ((samples_ptr+sample_length+1)>(samples_buf+sample_id_length)) {close(fd); return magic_incompatible;}
+
+        result->sample_ids[i] = (char*)malloc(sample_length + 1);
+        memcpy(result->sample_ids[i],samples_ptr,sample_length + 1);
+        samples_ptr += sample_length + 1;
+      }
+      free(samples_buf);
+      free(cmp_buf);
     }
+    //printf("read samples\n");
 
     /* load stripes */
-    int current_to_load;
-    void *ptr;
-    for(int i = 0; i < n_stripes; i++) {
-        ptr = malloc(sizeof(double) * n_samples);
-        if(ptr == NULL) {
+    {
+      int max_compressed = LZ4_compressBound(sizeof(double) * result->n_samples);
+      char * const cmp_buf = (char *)malloc(max_compressed+sizeof(uint32_t));
+
+      uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf;
+
+      cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
+      if (cnt != sizeof(uint32_t) ) {close(fd); return magic_incompatible;}
+
+      for(int i = 0; i < n_stripes; i++) {
+        uint32_t cmp_size = *cmp_buf_size_p;
+
+        uint32_t read_size = cmp_size;
+        if ( (i+1)<n_stripes ) read_size += sizeof(uint32_t); // last one does not have the cmp_size
+
+        cnt = read(fd,cmp_buf , read_size );
+        if (cnt != read_size) {close(fd); return magic_incompatible;}
+
+        result->stripes[i] = (double *) malloc(sizeof(double) * n_samples);
+        if(result->stripes[i] == NULL) {
             fprintf(stderr, "failed\n");
             exit(1);
         }
-        result->stripes[i] = (double*)ptr;
-        input.read(reinterpret_cast<char*>(result->stripes[i]), sizeof(double) * n_samples);
+        cnt = LZ4_decompress_safe(cmp_buf, (char *) result->stripes[i],cmp_size,sizeof(double) * n_samples);
+        if (cnt != ( sizeof(double) * n_samples ) ) {close(fd); return magic_incompatible;}
+
+        cmp_buf_size_p = (uint32_t *)(cmp_buf+cmp_size);
+      }
+
+      free(cmp_buf);
     }
+    //printf("read stripes\n");
 
     /* sanity check the footer */
-    char footer_magic[32];
-    input.read(footer_magic, magic_len);
-    footer_magic[magic_len] = '\0';
+    header[0] = 0;
+    cnt = read(fd,header,sizeof(uint32_t));
+    if (cnt != (sizeof(uint32_t))) {close(fd); return magic_incompatible;}
 
-    if(strcmp(header_magic, footer_magic) != 0) {
-        return magic_incompatible;
-    }
+    if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
+    //printf("read footer\n");
+
+    close(fd);
 
     (*result_out) = result;
     return read_okay;
