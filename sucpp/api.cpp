@@ -393,12 +393,7 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
 
     int cnt = -1;
 
-    time_t now = time(0);
-    int inow = now;
-    printf("write_partial(%i,%s) start: %i\n",fd,output_filename,inow);
-
     uint32_t n_stripes = result->stripe_stop - result->stripe_start;
-    printf("n_stripes %i\n",n_stripes);
 
     uint32_t sample_id_length = 0;
     for(unsigned int i = 0; i < result->n_samples; i++) {
@@ -435,11 +430,9 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
 
       cnt=write(fd,header, 8 * sizeof(uint32_t));
       if (cnt<1)  {close(fd); return open_error;}
-      printf("%i %i write header %i\n",cnt,errno,8 * sizeof(uint32_t));
 
       cnt=write(fd,cmp_buf, sample_id_length_compressed);
       if (cnt<1)  {close(fd); return open_error;}
-      //printf("%i write ids %i\n",cnt,sample_id_length_compressed);
 
       free(cmp_buf);
       free(samples_buf);
@@ -460,7 +453,6 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
 
         cnt=write(fd, cmp_buf_raw, cmp_size+sizeof(uint32_t));
         if (cnt<1) {return open_error;}
-        //printf("%i write %i %i\n",cnt,i,sizeof(double) * result->n_samples);
       }
 
       free(cmp_buf_raw);
@@ -476,12 +468,6 @@ IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
     }
 
     close(fd);
-    printf("write header and close\n");
-
-    time_t now2 = time(0);
-    int inow2 = now2;
-    int idt = now2-now;
-    printf("write_partial end: %i dt %i\n",inow2,idt);
 
     return write_okay;
 }
@@ -503,7 +489,6 @@ IOStatus _is_partial_file(const char* input_filename) {
 IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     int fd = open(input_filename, O_RDONLY );
     if (fd==-1) return open_error;
-    //printf("read open\n");
 
     int cnt=-1;
 
@@ -512,7 +497,6 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     if (cnt != (8*sizeof(uint32_t))) {close(fd); return magic_incompatible;}
 
     if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
-    //printf("read magic\n");
 
     const uint32_t n_samples = header[1];
     const uint32_t n_stripes = header[2];
@@ -525,7 +509,6 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
          {close(fd); return bad_header;}
     if(stripe_total >= n_samples || n_stripes > stripe_total || stripe_start >= stripe_total || stripe_start + n_stripes > stripe_total)
          {close(fd); return bad_header;}
-    //printf("read header\n");
 
     /* initialize the partial result structure */
     partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
@@ -568,7 +551,6 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
       free(samples_buf);
       free(cmp_buf);
     }
-    //printf("read samples\n");
 
     /* load stripes */
     {
@@ -602,7 +584,6 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
       free(cmp_buf);
     }
-    //printf("read stripes\n");
 
     /* sanity check the footer */
     header[0] = 0;
@@ -610,7 +591,6 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     if (cnt != (sizeof(uint32_t))) {close(fd); return magic_incompatible;}
 
     if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
-    //printf("read footer\n");
 
     close(fd);
 
