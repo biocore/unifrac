@@ -45,7 +45,7 @@ install:
   - conda create --yes -n test-env python=$PYTHON_VERSION
   - source activate test-env
   - conda config --add channels conda-forge
-  - conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
+  - conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose lz4
   # needed for the hdf5 dev tools
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then SED='sed -i'; else SED='sed -i '"'"''"'"' '; fi
   # make sure hdf5 is using the compiler we want to use for this build
