@@ -7,7 +7,7 @@
 
 #ifndef __UNIFRAC
     namespace su {
-        enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized};
+        enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized, unweighted_fp32, weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32};
         
         class PropStack {
             private:
@@ -47,14 +47,6 @@
                              PropStack &ps,
                              bool normalize = true);
         std::vector<double*> make_strides(unsigned int n_samples);
-        inline void embed_proportions(double* out, double* in, uint32_t n) {
-#pragma acc parallel loop present(out) copyin(in[:n])
-            for(unsigned int i = 0; i < n; i++) {
-                double val = in[i];
-                out[i] = val;
-                out[i + n] = val;
-            }
-        }
 
         inline uint64_t comb_2(uint64_t N) {
             // based off of _comb_int_long
