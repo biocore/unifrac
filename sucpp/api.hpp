@@ -11,6 +11,8 @@
 #endif
 
 #define PARTIAL_MAGIC "SSU-PARTIAL-01"
+#define PARTIAL_MAGIC_V2 0x088ABA02
+
 
 typedef enum compute_status {okay=0, tree_missing, table_missing, table_empty, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
 typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
