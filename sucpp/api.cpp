@@ -9,7 +9,6 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <lz4.h>
 
 
 #define CHECK_FILE(filename, err) if(!is_file_exists(filename)) { \

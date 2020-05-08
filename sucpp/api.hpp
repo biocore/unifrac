@@ -10,6 +10,8 @@
 #define EXTERN
 #endif
 
+#include <lz4.h>
+
 #define PARTIAL_MAGIC "SSU-PARTIAL-01"
 #define PARTIAL_MAGIC_V2 0x088ABA02
 
