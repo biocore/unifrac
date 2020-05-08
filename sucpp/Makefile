@@ -95,6 +95,7 @@ rapi_test: main
 	echo CXX1X=h5c++ > ~/.R/Makevars
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
+	echo LDFLAGS=-llz4 >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
 api: tree.o biom.o unifrac.o cmd.o 
