@@ -66,6 +66,19 @@ class StateUnifracTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "No tables specified."):
             meta(tuple(), ('a', ))
 
+    def test_meta_validation(self):
+        t1 = self.get_data_path('t1.newick')
+        t2 = self.get_data_path('t2.newick')
+        e1 = self.get_data_path('e1.biom')
+        e2 = self.get_data_path('e2.biom')
+        not_a_table = e1
+        not_a_tree = t1
+        with self.assertRaisesRegex(ValueError, "position 1.*not.*BIOM"):
+            meta((t1, not_a_table), (e1, e2))
+
+        with self.assertRaisesRegex(ValueError, "position 1.*not.*newick"):
+            meta((t1, t2), (e1, not_a_tree))
+
     def test_meta_unifrac_no_method(self):
         with self.assertRaisesRegex(ValueError, "No method specified."):
             meta(('a', ), ('b', ))
