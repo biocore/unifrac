@@ -50,11 +50,11 @@ def _validate(table, phylogeny):
 def _validate_meta(tables, phylogenies):
     for idx, (table, phylogeny) in enumerate(zip(tables, phylogenies)):
         if not is_biom_v210(table):
-            raise ValueError(f"Table at position {idx} does not appear to be a "
-                             "BIOM-Format v2.1")
+            raise ValueError(f"Table at position {idx} does not appear to be a"
+                             " BIOM-Format v2.1")
         if not is_newick(phylogeny):
-            raise ValueError(f"The phylogeny at position {idx} does not appear "
-                             "to be newick")
+            raise ValueError(f"The phylogeny at position {idx} does not appear"
+                             " to be newick")
 
 
 def unweighted(table: str,
@@ -315,10 +315,10 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     Parameters
     ----------
     tables : tuple of str
-        Filepaths to a BIOM-Format 2.1 files. This tuple is expected to be in
+        Filepaths to BIOM-Format 2.1 files. This tuple is expected to be in
         index order with phylogenies.
     phylogenies : tuple of str
-        Filepaths to a Newick formatted trees. This tuple is expected to be in
+        Filepaths to Newick formatted trees. This tuple is expected to be in
         index order with tables.
     weights : tuple of float, optional
         The weight applied to each tree/table pair. This tuple is expected to
