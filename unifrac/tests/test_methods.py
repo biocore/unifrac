@@ -17,6 +17,15 @@ from unifrac import meta
 class StateUnifracTests(unittest.TestCase):
     package = 'unifrac.tests'
 
+    def setUp(self):
+        super().setUp()
+        self.table1 = self.get_data_path('e1.biom')
+        self.table2 = self.get_data_path('e2.biom')
+        self.tree1 = self.get_data_path('t1.newick')
+        self.tree2 = self.get_data_path('t2.newick')
+        self.not_a_table = self.tree1
+        self.not_a_tree = self.table1
+
     def get_data_path(self, filename):
         # adapted from qiime2.plugin.testing.TestPluginBase
         return pkg_resources.resource_filename(self.package,
@@ -24,12 +33,7 @@ class StateUnifracTests(unittest.TestCase):
 
     def test_meta_unifrac(self):
         """meta_unifrac should give correct result on sample trees"""
-        t1 = self.get_data_path('t1.newick')
-        t2 = self.get_data_path('t2.newick')
-        e1 = self.get_data_path('e1.biom')
-        e2 = self.get_data_path('e2.biom')
-
-        result = meta([e1, e2], [t1, t2],
+        result = meta([self.table1, self.table2], [self.tree1, self.tree2],
                       weights=[1, 1],
                       consolidation='skipping-missing-values',
                       method='unweighted')
@@ -47,43 +51,56 @@ class StateUnifracTests(unittest.TestCase):
     def test_meta_unifrac_unbalanced(self):
         with self.assertRaisesRegex(ValueError, ("Number of trees and tables "
                                                  "must be the same.")):
-            meta(('a', ), ('a', 'b'))
+            meta((self.table1, ), (self.tree1, self.tree2),
+                 method='unweighted')
 
         with self.assertRaisesRegex(ValueError, ("Number of trees and tables "
                                                  "must be the same.")):
-            meta(('a', 'b'), ('a', ))
+            meta((self.table1, self.table2), (self.tree1, ),
+                 method='unweighted')
 
     def test_meta_unifrac_unbalanced_weights(self):
         with self.assertRaisesRegex(ValueError, "Number of weights does not "
                                                 "match number of trees and "
                                                 "tables."):
-            meta(('c', 'd'), ('a', 'b'), weights=(1, 2, 3))
+            meta((self.table1, self.table2), (self.tree1, self.tree2),
+                 weights=(1, 2, 3), )
 
     def test_meta_unifrac_missing(self):
         with self.assertRaisesRegex(ValueError, "No trees specified."):
-            meta(('a', ), tuple())
+            meta((self.table1, ), tuple(), method='unweighted')
 
         with self.assertRaisesRegex(ValueError, "No tables specified."):
-            meta(tuple(), ('a', ))
+            meta(tuple(), (self.tree1, ), method='unweighted')
+
+    def test_meta_validation(self):
+        with self.assertRaisesRegex(ValueError, "position 1.*not.*BIOM"):
+            meta((self.table1, self.not_a_table), (self.tree1, self.tree2),
+                 method='unweighted')
+
+        with self.assertRaisesRegex(ValueError, "position 1.*not.*newick"):
+            meta((self.table1, self.table2), (self.tree1, self.not_a_tree),
+                 method='unweighted')
 
     def test_meta_unifrac_no_method(self):
         with self.assertRaisesRegex(ValueError, "No method specified."):
-            meta(('a', ), ('b', ))
+            meta((self.table1, ), (self.tree1, ))
 
     def test_meta_unifrac_bad_method(self):
         with self.assertRaisesRegex(ValueError, r"Method \(bar\) "
                                                 "unrecognized."):
-            meta(('a', ), ('b', ), method='bar')
+            meta((self.table1, ), (self.tree1, ), method='bar')
 
     def test_meta_unifrac_bad_consolidation(self):
         with self.assertRaisesRegex(ValueError,
                                     r"Consolidation \(foo\) unrecognized."):
-            meta(('a', ), ('b', ), method='unweighted', consolidation='foo')
+            meta((self.table1, ), (self.tree1, ), method='unweighted',
+                 consolidation='foo')
 
     def test_meta_unifrac_alpha_not_generalized(self):
         with self.assertRaisesRegex(ValueError,
                                     "The alpha parameter can"):
-            meta(('a', ), ('b', ), method='generalized',
+            meta((self.table1, ), (self.tree1, ), method='generalized',
                  alpha=1, consolidation='skipping_missing_matrices')
 
 

@@ -47,6 +47,16 @@ def _validate(table, phylogeny):
         raise ValueError("The phylogeny does not appear to be newick")
 
 
+def _validate_meta(tables, phylogenies):
+    for idx, (table, phylogeny) in enumerate(zip(tables, phylogenies)):
+        if not is_biom_v210(table):
+            raise ValueError(f"Table at position {idx} does not appear to be a"
+                             " BIOM-Format v2.1")
+        if not is_newick(phylogeny):
+            raise ValueError(f"The phylogeny at position {idx} does not appear"
+                             " to be newick")
+
+
 def unweighted(table: str,
                phylogeny: str,
                threads: int = 1,
@@ -153,6 +163,7 @@ def weighted_normalized(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
+    _validate(table, phylogeny)
     return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
                    variance_adjusted, 1.0, bypass_tips, threads)
 
@@ -208,6 +219,7 @@ def weighted_unnormalized(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
+    _validate(table, phylogeny)
     return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
                    variance_adjusted, 1.0, bypass_tips, threads)
 
@@ -274,6 +286,7 @@ def generalized(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
+    _validate(table, phylogeny)
     if alpha == 1.0:
         warn("alpha of 1.0 is weighted-normalized UniFrac. "
              "Weighted-normalized is being used instead as it is more "
@@ -302,10 +315,10 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     Parameters
     ----------
     tables : tuple of str
-        Filepaths to a BIOM-Format 2.1 files. This tuple is expected to be in
+        Filepaths to BIOM-Format 2.1 files. This tuple is expected to be in
         index order with phylogenies.
     phylogenies : tuple of str
-        Filepaths to a Newick formatted trees. This tuple is expected to be in
+        Filepaths to Newick formatted trees. This tuple is expected to be in
         index order with tables.
     weights : tuple of float, optional
         The weight applied to each tree/table pair. This tuple is expected to
@@ -405,6 +418,8 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
         raise ValueError("The alpha parameter can only be set when the method "
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
+
+    _validate_meta(tables, phylogenies)
 
     kwargs = {'threads': threads,
               'bypass_tips': bypass_tips,
