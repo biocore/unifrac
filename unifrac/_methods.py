@@ -392,8 +392,6 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     if len(tables) != len(phylogenies):
         raise ValueError("Number of trees and tables must be the same.")
 
-    _validate_meta(tables, phylogenies)
-
     if weights is None:
         weights = tuple(1 for _ in phylogenies)
     else:
@@ -420,6 +418,8 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
         raise ValueError("The alpha parameter can only be set when the method "
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
+
+    _validate_meta(tables, phylogenies)
 
     kwargs = {'threads': threads,
               'bypass_tips': bypass_tips,
