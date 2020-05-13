@@ -67,17 +67,17 @@ class StateUnifracTests(unittest.TestCase):
             meta(tuple(), ('a', ))
 
     def test_meta_validation(self):
-        t1 = self.get_data_path('t1.newick')
-        t2 = self.get_data_path('t2.newick')
-        e1 = self.get_data_path('e1.biom')
-        e2 = self.get_data_path('e2.biom')
-        not_a_table = e1
-        not_a_tree = t1
+        tree1 = self.get_data_path('t1.newick')
+        tree2 = self.get_data_path('t2.newick')
+        table1 = self.get_data_path('e1.biom')
+        table2 = self.get_data_path('e2.biom')
+        not_a_table = tree1
+        not_a_tree = table1
         with self.assertRaisesRegex(ValueError, "position 1.*not.*BIOM"):
-            meta((t1, not_a_table), (e1, e2))
+            meta((table1, not_a_table), (tree1, tree2))
 
         with self.assertRaisesRegex(ValueError, "position 1.*not.*newick"):
-            meta((t1, t2), (e1, not_a_tree))
+            meta((table1, table2), (tree1, not_a_tree))
 
     def test_meta_unifrac_no_method(self):
         with self.assertRaisesRegex(ValueError, "No method specified."):
