@@ -258,7 +258,7 @@ compute_status partial(const char* biom_filename, const char* tree_filename,
     std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
 
     if(nthreads > dm_stripes.size()) {
-        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
+        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", (table.n_samples +1) / 2);
         nthreads = dm_stripes.size();
     }
 
