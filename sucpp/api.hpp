@@ -123,6 +123,17 @@ EXTERN ComputeStatus faith_pd_one_off(const char* biom_filename, const char* tre
  */
 EXTERN IOStatus write_mat(const char* filename, mat_t* result);
 
+/* Write a matrix object using hdf5 format
+ *
+ * filename <const char*> the file to write into
+ * result <mat_t*> the results object
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_hdf5(const char* filename, mat_t* result);
+
 
 /* Write a series
  *

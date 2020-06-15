@@ -339,7 +339,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
 }
 
 IOStatus write_mat(const char* output_filename, mat_t* result) {
-    std::ofstream output;
+/*    std::ofstream output;
     output.open(output_filename);
 
     uint64_t comb_N = su::comb_2(result->n_samples);
@@ -367,8 +367,128 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
         output << std::endl;
     }
     output.close();
-
+*/
     return write_okay;
+}
+
+herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str)
+{
+  // this is the convoluted way to store a string
+  // Will use the FORTRAN forma, so we do not depend on null termination
+  hid_t filetype_id = H5Tcopy (H5T_FORTRAN_S1);
+  H5Tset_size(filetype_id, strlen(str));
+  hid_t memtype_id = H5Tcopy (H5T_C_S1);
+  H5Tset_size(memtype_id, strlen(str)+1);
+
+  hsize_t  dims[1] = {1};
+  hid_t dataspace_id = H5Screate_simple (1, dims, NULL);
+
+  hid_t dataset_id = H5Dcreate(output_file_id,dname, filetype_id, dataspace_id, H5P_DEFAULT, H5P_DEFAULT,
+                                H5P_DEFAULT);
+  herr_t status = H5Dwrite(dataset_id, memtype_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, str);
+
+  H5Dclose(dataset_id);
+  H5Sclose(dataspace_id);
+  H5Tclose(memtype_id);
+  H5Tclose(filetype_id);
+
+  return status;
+}
+
+IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
+   /* Create a new file using default properties. */
+   hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+   if (output_file_id<0) return open_error;
+
+   // simple header
+   if (write_hdf5_string(output_file_id,"format","BDSM")<0) {
+       H5Fclose (output_file_id);
+       return open_error;
+   }
+   if (write_hdf5_string(output_file_id,"version","2020.06")<0) {
+       H5Fclose (output_file_id);
+       return open_error;
+   }
+
+   // save the ids
+   {
+     hsize_t     dims[1];
+     dims[0] = result->n_samples;
+     hid_t dataspace_id = H5Screate_simple(1, dims, NULL);
+
+     // this is the convoluted way to store an array of strings
+     hid_t datatype_id = H5Tcopy(H5T_C_S1);
+     H5Tset_size(datatype_id,H5T_VARIABLE);
+
+     hid_t props_id = H5Pcreate(H5P_DATASET_CREATE);
+     hid_t dataset_id = H5Dcreate1(output_file_id, "order", datatype_id, dataspace_id, props_id);
+
+     herr_t status = H5Dwrite(dataset_id, datatype_id, H5S_ALL, H5S_ALL,
+                              H5P_DEFAULT, result->sample_ids);
+
+     H5Dclose(dataset_id);
+     H5Tclose(datatype_id);
+     H5Sclose(dataspace_id);
+     H5Pclose(props_id);
+
+     // check status after cleanup, for simplicity
+     if (status<0) {
+       H5Fclose (output_file_id);
+       return open_error;
+     }
+   }
+
+   // save the matrix
+   {
+     const uint64_t n_samples = result->n_samples;
+     double *buf2d = (double*) malloc(n_samples*n_samples*sizeof(double));
+     if (buf2d==NULL) {
+       H5Fclose (output_file_id);
+       return open_error; // we don't have a better error code
+     }
+
+     // but first compute the values to save
+     {
+       const uint64_t comb_N = su::comb_2(n_samples);
+       for(uint64_t i = 0; i < n_samples; i++) {
+        for(uint64_t j = 0; j < n_samples; j++) {
+            double v;
+            if(i < j) { // upper triangle
+                const uint64_t comb_N_minus = su::comb_2(n_samples - i);
+                v = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
+            } else if (i > j) { // lower triangle
+                const uint64_t comb_N_minus = su::comb_2(n_samples - j);
+                v = result->condensed_form[comb_N - comb_N_minus + (i - j - 1)];
+            } else {
+                v = 0.0;
+            }
+            buf2d[i*n_samples+j] = v;
+        }
+       }
+     }
+
+     hsize_t     dims[2];
+     dims[0] = result->n_samples;
+     dims[1] = result->n_samples;
+     hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
+
+     hid_t dataset_id = H5Dcreate2(output_file_id, "/matrix",H5T_IEEE_F64LE, dataspace_id,
+                                   H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+     herr_t status = H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                              buf2d);
+
+     H5Dclose(dataset_id);
+     free(buf2d);
+
+     // check status after cleanup, for simplicity
+     if (status<0) {
+       H5Fclose (output_file_id);
+       return open_error;
+     }
+   } 
+
+   H5Fclose (output_file_id);
+   return write_okay;
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
