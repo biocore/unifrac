@@ -420,8 +420,16 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
      hid_t datatype_id = H5Tcopy(H5T_C_S1);
      H5Tset_size(datatype_id,H5T_VARIABLE);
 
-     hid_t props_id = H5Pcreate(H5P_DATASET_CREATE);
-     hid_t dataset_id = H5Dcreate1(output_file_id, "order", datatype_id, dataspace_id, props_id);
+     hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+     // deflate does pretty good at 1, so keep it fast
+     if (H5Pset_deflate(dcpl_id, 1)<0) return open_error; // just abort on error
+
+     hsize_t     chunks[1];
+     chunks[0] = result->n_samples;
+
+     if (H5Pset_chunk (dcpl_id, 1, chunks)) return open_error; // just abort on error
+
+     hid_t dataset_id = H5Dcreate1(output_file_id, "order", datatype_id, dataspace_id, dcpl_id);
 
      herr_t status = H5Dwrite(dataset_id, datatype_id, H5S_ALL, H5S_ALL,
                               H5P_DEFAULT, result->sample_ids);
@@ -429,7 +437,7 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
      H5Dclose(dataset_id);
      H5Tclose(datatype_id);
      H5Sclose(dataspace_id);
-     H5Pclose(props_id);
+     H5Pclose(dcpl_id);
 
      // check status after cleanup, for simplicity
      if (status<0) {
@@ -472,12 +480,32 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
      dims[1] = result->n_samples;
      hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
 
-     hid_t dataset_id = H5Dcreate2(output_file_id, "/matrix",H5T_IEEE_F64LE, dataspace_id,
-                                   H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+     hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+     // deflate does pretty good at 1, so keep it fast
+     if (H5Pset_deflate(dcpl_id, 1)<0) return open_error; // just abort on error
+
+     // shoot for a 0.75M chunk size, to fit in default cache
+     hsize_t     chunks[2];
+     chunks[0] = 1;
+     chunks[1] = 96*1024;
+     if ( chunks[1]>(result->n_samples) ) {
+       chunks[1] = result->n_samples;
+       chunks[0] = 96*1024/chunks[1];
+       if ( chunks[0]>(result->n_samples) ) {
+          chunks[0] = result->n_samples;
+       }
+     }
+
+     if (H5Pset_chunk (dcpl_id, 2, chunks)) return open_error; // just abort on error
+
+     hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",H5T_IEEE_F64LE, dataspace_id,
+                                   H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
      herr_t status = H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                               buf2d);
 
+     H5Pclose(dcpl_id);
      H5Dclose(dataset_id);
+     H5Sclose(dataspace_id);
      free(buf2d);
 
      // check status after cleanup, for simplicity
