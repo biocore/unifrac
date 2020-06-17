@@ -16,7 +16,9 @@ def ssu(str biom_filename, str tree_filename,
         A filepath to a Newick formatted tree
     unifrac_method : str
         The requested UniFrac method, one of {unweighted,
-        weighted_normalized, weighted_unnormalized, generalized}
+        weighted_normalized, weighted_unnormalized, generalized,
+        unweighted_fp32, weighted_normalized_fp32, 
+        weighted_unnormalized_fp32, generalized_fp32}
     variance_adjust : bool
         Whether to perform Variance Adjusted UniFrac
     alpha : float
