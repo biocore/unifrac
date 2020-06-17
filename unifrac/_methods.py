@@ -113,6 +113,61 @@ def unweighted(table: str,
                    variance_adjusted, 1.0, bypass_tips, threads)
 
 
+def unweighted_fp32(table: str,
+                    phylogeny: str,
+                    threads: int = 1,
+                    variance_adjusted: bool = False,
+                    bypass_tips: bool = False) -> skbio.DistanceMatrix:
+    """Compute Unweighted UniFrac using fp32 math
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu(table, phylogeny, 'unweighted_fp32',
+                   variance_adjusted, 1.0, bypass_tips, threads)
+
 def weighted_normalized(table: str,
                         phylogeny: str,
                         threads: int = 1,
@@ -165,6 +220,60 @@ def weighted_normalized(table: str,
     """
     _validate(table, phylogeny)
     return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
+                   variance_adjusted, 1.0, bypass_tips, threads)
+
+def weighted_normalized_fp32(table: str,
+                             phylogeny: str,
+                             threads: int = 1,
+                             variance_adjusted: bool = False,
+                             bypass_tips: bool = False) -> skbio.DistanceMatrix:
+    """Compute weighted normalized UniFrac using fp32 math
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized_fp32',
                    variance_adjusted, 1.0, bypass_tips, threads)
 
 
@@ -221,6 +330,62 @@ def weighted_unnormalized(table: str,
     """
     _validate(table, phylogeny)
     return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
+                   variance_adjusted, 1.0, bypass_tips, threads)
+
+
+def weighted_unnormalized_fp32(table: str,
+                               phylogeny: str,
+                               threads: int = 1,
+                               variance_adjusted: bool = False,
+                               bypass_tips: bool = False) -> skbio.DistanceMatrix:
+    # noqa
+    """Compute weighted unnormalized UniFrac using fp32 math
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default is 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized_fp32',
                    variance_adjusted, 1.0, bypass_tips, threads)
 
 
@@ -298,11 +463,89 @@ def generalized(table: str,
         return qsu.ssu(str(table), str(phylogeny), 'generalized',
                        variance_adjusted, alpha, bypass_tips, threads)
 
+def generalized_fp32(table: str,
+                     phylogeny: str,
+                     threads: int = 1,
+                     alpha: float = 1.0,
+                     variance_adjusted: bool = False,
+                     bypass_tips: bool = False) -> skbio.DistanceMatrix:
+    """Compute Generalized UniFrac using fp32 math
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        The number of threads to use. Default is 1
+    alpha : float, optional
+        The level of contribution of high abundance branches. Higher alpha
+        increases the contribution of from high abundance branches while lower
+        alpha reduces the contribution. Alpha was originally defined over the
+        range [0, 1]. Default is 1.0.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Generalized UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, but was not described in as
+    applied to Generalized UniFrac. It is feasible to do, so it is exposed
+    here.
+
+    An alpha of 1.0 is Weighted normalized UniFrac. An alpha of 0.0 is
+    approximately Unweighted UniFrac, and is if the proportions are
+    dichotomized.
+
+    References
+    ----------
+    .. [1] Chen, J., Bittinger, K., Charlson, E. S., Hoffmann C., Lewis, J.,
+       Wu, G. D., Collman R. G., Bushman, F. D. & Hongzhe L. Associating
+       microbiome composition with environmental covariates using generalized
+       UniFrac distances. Bioinformatics 28(16), 2106–2113 (2012).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    if alpha == 1.0:
+        warn("alpha of 1.0 is weighted-normalized UniFrac. "
+             "Weighted-normalized is being used instead as it is more "
+             "optimized.",
+             Warning)
+        return weighted_normalized_fp32(table, phylogeny, threads,
+                                        variance_adjusted)
+    else:
+        return qsu.ssu(str(table), str(phylogeny), 'generalized_fp32',
+                       variance_adjusted, alpha, bypass_tips, threads)
+
 
 METHODS = {'unweighted': unweighted,
            'weighted_normalized': weighted_normalized,
            'weighted_unnormalized': weighted_unnormalized,
-           'generalized': generalized}
+           'generalized': generalized,
+           'unweighted_fp32': unweighted_fp32,
+           'weighted_normalized_fp32': weighted_normalized_fp32,
+           'weighted_unnormalized_fp32': weighted_unnormalized_fp32,
+           'generalized_fp32': generalized_fp32}
 
 
 def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
