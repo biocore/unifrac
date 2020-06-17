@@ -10,11 +10,12 @@
 #include "biom.hpp"
 #include "unifrac.hpp"
 
+enum Format {format_invalid,format_ascii, format_hdf5_fp32, format_hdf5_fp64, format_hdf5c_fp32, format_hdf5c_fp64};
 
 void usage() {
-    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]" << std::endl;
+    std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [-f]  [--vaw]" << std::endl;
     std::cout << "    [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]" << std::endl;
-    std::cout << "    [--n-partials number_of_partitions] [--report-bare]" << std::endl;
+    std::cout << "    [--n-partials number_of_partitions] [--report-bare] [--format|-r out-mode]" << std::endl;
     std::cout << std::endl;
     std::cout << "    -i\t\tThe input BIOM table." << std::endl;
     std::cout << "    -t\t\tThe input phylogeny in newick." << std::endl;
@@ -34,6 +35,12 @@ void usage() {
     std::cout << "    --partial-pattern\t[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge." << std::endl;
     std::cout << "    --n-partials\t[OPTIONAL] If mode==partial-report, the number of partitions to compute." << std::endl;
     std::cout << "    --report-bare\t[OPTIONAL] If mode==partial-report, produce barebones output." << std::endl;
+    std::cout << "    --format|-r\t[OPTIONAL]  Output format:" << std::endl;
+    std::cout << "    \t\t    ascii : [DEFAULT] Original ASCII format." << std::endl;
+    std::cout << "    \t\t    hfd5 : HFD5 format.  May be fp32 or fp64, depending on method." << std::endl;
+    std::cout << "    \t\t    hdf5_fp32 : HFD5 format, using fp32 precision." << std::endl;
+    std::cout << "    \t\t    hdf5_fp64 : HFD5 format, using fp64 precision." << std::endl;
+    std::cout << "    \t\t    hfd5c|hdf5c_fp32|hdf5c_fp64 : HFD5 format, with deflate ompression." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
     std::cout << "    For UniFrac, please see:" << std::endl;
@@ -131,7 +138,7 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
     }
 } 
 
-int mode_merge_partial(std::string output_filename,
+int mode_merge_partial(std::string output_filename, Format format_val,
                        std::string partial_pattern,
                        unsigned int nthreads) {
     if(output_filename.empty()) {
@@ -170,16 +177,27 @@ int mode_merge_partial(std::string output_filename,
         return EXIT_FAILURE;
     }
 
-    IOStatus io_err = write_mat(output_filename.c_str(), result);
-    if(io_err != write_okay) {
+    IOStatus iostatus;
+    if (format_val==format_hdf5_fp64) {
+     iostatus = write_mat_hdf5(output_filename.c_str(), result, 0);
+    } else if (format_val==format_hdf5_fp32) {
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 0);
+    } else if (format_val==format_hdf5c_fp64) {
+     iostatus = write_mat_hdf5(output_filename.c_str(), result, 5);
+    } else if (format_val==format_hdf5c_fp32) {
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 5);
+    } else {
+     iostatus = write_mat(output_filename.c_str(), result);
+    }
+    destroy_mat(&result);
+
+    if(iostatus != write_okay) {
         std::ostringstream msg;
-        msg << "Unable to write; err " << io_err;
+        msg << "Unable to write; err " << iostatus;
         err(msg.str());
         return EXIT_FAILURE;
     }
 
-    destroy_mat(&result);
-    
     return EXIT_SUCCESS;
 }
 
@@ -237,7 +255,7 @@ int mode_partial(std::string table_filename, std::string tree_filename,
 }
 
 int mode_one_off(std::string table_filename, std::string tree_filename, 
-                 std::string output_filename, std::string method_string,
+                 std::string output_filename, Format format_val, std::string method_string,
                  bool vaw, double g_unifrac_alpha, bool bypass_tips,
                  unsigned int nthreads) {
     if(output_filename.empty()) {
@@ -268,9 +286,25 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
         fprintf(stderr, "Compute failed in one_off: %s\n", compute_status_messages[status]);
         exit(EXIT_FAILURE);
     }
-   
-    write_mat(output_filename.c_str(), result);
+  
+    IOStatus iostatus; 
+    if (format_val==format_hdf5_fp64) {
+     iostatus = write_mat_hdf5(output_filename.c_str(), result, 0);
+    } else if (format_val==format_hdf5_fp32) {
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 0);
+    } else if (format_val==format_hdf5c_fp64) {
+     iostatus = write_mat_hdf5(output_filename.c_str(), result, 5);
+    } else if (format_val==format_hdf5c_fp32) {
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 5); 
+    } else {
+     iostatus = write_mat(output_filename.c_str(), result);
+    }
     destroy_mat(&result);
+
+    if(iostatus!=write_okay) {
+        err("Failed to write output file.");
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }
@@ -279,6 +313,30 @@ void ssu_sig_handler(int signo) {
     if (signo == SIGUSR1) {
         printf("Status cannot be reported.\n");
     }
+}
+
+Format get_format(const std::string &format_string, const std::string &method_string) {
+    Format format_val = format_invalid;
+    if (format_string.empty()) {
+        format_val = format_ascii;
+    } else if (format_string == "ascii") {
+        format_val = format_ascii;
+    } else if (format_string == "hdf5_fp32") {
+        format_val = format_hdf5_fp32;
+    } else if (format_string == "hdf5_fp64") {
+        format_val = format_hdf5_fp64;
+    } else if (format_string == "hdf5c_fp32") {
+        format_val = format_hdf5c_fp32;
+    } else if (format_string == "hdf5c_fp64") {
+        format_val = format_hdf5c_fp64;
+    } else if ((format_string == "hdf5")||(format_string == "hdf5c")) {
+        if ((method_string=="unweighted_fp32") || (method_string=="weighted_normalized_fp32") || (method_string=="weighted_unnormalized_fp32") || (method_string=="generalized_fp32"))
+           format_val = (format_string == "hdf5") ? format_hdf5_fp32 : format_hdf5c_fp32;
+        else
+           format_val = (format_string == "hdf5") ? format_hdf5_fp64 : format_hdf5c_fp64;
+    }
+
+    return format_val;
 }
 
 int main(int argc, char **argv){
@@ -304,6 +362,8 @@ int main(int argc, char **argv){
     const std::string &partial_pattern = input.getCmdOption("--partial-pattern");
     const std::string &npartials = input.getCmdOption("--n-partials");
     const std::string &report_bare = input.getCmdOption("--report-bare");
+    const std::string &format_arg = input.getCmdOption("--format");
+    const std::string &sformat_arg = input.getCmdOption("-r");
 
     if(nthreads_arg.empty()) {
         nthreads = 1;
@@ -340,12 +400,26 @@ int main(int argc, char **argv){
     else
         n_partials = atoi(npartials.c_str());
    
+    Format format_val = format_invalid;
+    if(!format_arg.empty()) {
+      format_val = get_format(format_arg,method_string);
+    } else {
+      format_val = get_format(sformat_arg,method_string);
+    }
+    if(format_val==format_invalid) {
+        err("Invalid format, must be one of ascii|hdf5|hdf5_fp32|hdf5_fp64");
+        return EXIT_FAILURE;
+    }
+
+
+
+
     if(mode_arg.empty() || mode_arg == "one-off")
-        return mode_one_off(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads);
+        return mode_one_off(table_filename, tree_filename, output_filename, format_val, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads);
     else if(mode_arg == "partial")
         return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
-        return mode_merge_partial(output_filename, partial_pattern, nthreads);
+        return mode_merge_partial(output_filename, format_val, partial_pattern, nthreads);
     else if(mode_arg == "partial-report")
         return mode_partial_report(table_filename, n_partials, bare);
     else 

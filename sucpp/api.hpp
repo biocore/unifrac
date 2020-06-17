@@ -127,12 +127,25 @@ EXTERN IOStatus write_mat(const char* filename, mat_t* result);
  *
  * filename <const char*> the file to write into
  * result <mat_t*> the results object
+ * compress_level - 0=no compression, 1-9 higher is slower
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_hdf5(const char* filename, mat_t* result);
+EXTERN IOStatus write_mat_hdf5(const char* filename, mat_t* result, unsigned int compress_level);
+
+/* Write a matrix object using hdf5 format, using fp32 precision
+ *
+ * filename <const char*> the file to write into
+ * result <mat_t*> the results object
+ * compress_level - 0=no compression, 1-9 higher is slower
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_hdf5_fp32(const char* filename, mat_t* result, unsigned int compress_level);
 
 
 /* Write a series

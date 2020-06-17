@@ -339,7 +339,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
 }
 
 IOStatus write_mat(const char* output_filename, mat_t* result) {
-/*    std::ofstream output;
+    std::ofstream output;
     output.open(output_filename);
 
     uint64_t comb_N = su::comb_2(result->n_samples);
@@ -367,7 +367,7 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
         output << std::endl;
     }
     output.close();
-*/
+
     return write_okay;
 }
 
@@ -395,7 +395,9 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
   return status;
 }
 
-IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
+// Internal: Make sure TReal and real_id match
+template<class TReal>
+IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -421,8 +423,7 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
      H5Tset_size(datatype_id,H5T_VARIABLE);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-     // deflate does pretty good at 1, so keep it fast
-     if (H5Pset_deflate(dcpl_id, 1)<0) return open_error; // just abort on error
+     if (H5Pset_deflate(dcpl_id, compress_level)<0) return open_error; // just abort on error
 
      hsize_t     chunks[1];
      chunks[0] = result->n_samples;
@@ -449,7 +450,7 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
    // save the matrix
    {
      const uint64_t n_samples = result->n_samples;
-     double *buf2d = (double*) malloc(n_samples*n_samples*sizeof(double));
+     TReal *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
      if (buf2d==NULL) {
        H5Fclose (output_file_id);
        return open_error; // we don't have a better error code
@@ -460,7 +461,7 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
        const uint64_t comb_N = su::comb_2(n_samples);
        for(uint64_t i = 0; i < n_samples; i++) {
         for(uint64_t j = 0; j < n_samples; j++) {
-            double v;
+            TReal v;
             if(i < j) { // upper triangle
                 const uint64_t comb_N_minus = su::comb_2(n_samples - i);
                 v = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
@@ -481,10 +482,9 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
      hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-     // deflate does pretty good at 1, so keep it fast
-     if (H5Pset_deflate(dcpl_id, 1)<0) return open_error; // just abort on error
+     if (H5Pset_deflate(dcpl_id, compress_level)<0) return open_error; // just abort on error
 
-     // shoot for a 0.75M chunk size, to fit in default cache
+     // shoot for a 0.75M chunk size at double, to fit in default cache
      hsize_t     chunks[2];
      chunks[0] = 1;
      chunks[1] = 96*1024;
@@ -498,9 +498,9 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
 
      if (H5Pset_chunk (dcpl_id, 2, chunks)) return open_error; // just abort on error
 
-     hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",H5T_IEEE_F64LE, dataspace_id,
+     hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",real_id, dataspace_id,
                                    H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
-     herr_t status = H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+     herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                               buf2d);
 
      H5Pclose(dcpl_id);
@@ -518,6 +518,15 @@ IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
    H5Fclose (output_file_id);
    return write_okay;
 }
+
+IOStatus write_mat_hdf5(const char* output_filename, mat_t* result, unsigned int compress_level) {
+  return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,compress_level);
+}
+
+IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result, unsigned int compress_level) {
+  return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
+}
+
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
     std::ofstream output;
