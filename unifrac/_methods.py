@@ -168,6 +168,7 @@ def unweighted_fp32(table: str,
     return qsu.ssu(table, phylogeny, 'unweighted_fp32',
                    variance_adjusted, 1.0, bypass_tips, threads)
 
+
 def weighted_normalized(table: str,
                         phylogeny: str,
                         threads: int = 1,
@@ -222,11 +223,13 @@ def weighted_normalized(table: str,
     return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
                    variance_adjusted, 1.0, bypass_tips, threads)
 
+
 def weighted_normalized_fp32(table: str,
                              phylogeny: str,
                              threads: int = 1,
                              variance_adjusted: bool = False,
-                             bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                             bypass_tips: bool = False
+                             ) -> skbio.DistanceMatrix:
     """Compute weighted normalized UniFrac using fp32 math
 
     Parameters
@@ -337,7 +340,8 @@ def weighted_unnormalized_fp32(table: str,
                                phylogeny: str,
                                threads: int = 1,
                                variance_adjusted: bool = False,
-                               bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                               bypass_tips: bool = False
+                               ) -> skbio.DistanceMatrix:
     # noqa
     """Compute weighted unnormalized UniFrac using fp32 math
 
@@ -462,6 +466,7 @@ def generalized(table: str,
     else:
         return qsu.ssu(str(table), str(phylogeny), 'generalized',
                        variance_adjusted, alpha, bypass_tips, threads)
+
 
 def generalized_fp32(table: str,
                      phylogeny: str,
