@@ -179,13 +179,13 @@ int mode_merge_partial(std::string output_filename, Format format_val,
 
     IOStatus iostatus;
     if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result, 0);
+     iostatus = write_mat_hdf5(output_filename.c_str(), result);
     } else if (format_val==format_hdf5_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 0);
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result);
     } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result, 5);
+     iostatus = write_mat_hdf5_compressed(output_filename.c_str(), result, 5);
     } else if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 5);
+     iostatus = write_mat_hdf5_fp32_compressed(output_filename.c_str(), result, 5);
     } else {
      iostatus = write_mat(output_filename.c_str(), result);
     }
@@ -289,13 +289,13 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
   
     IOStatus iostatus; 
     if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result, 0);
+     iostatus = write_mat_hdf5(output_filename.c_str(), result);
     } else if (format_val==format_hdf5_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 0);
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result);
     } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result, 5);
+     iostatus = write_mat_hdf5_compressed(output_filename.c_str(), result, 5);
     } else if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, 5); 
+     iostatus = write_mat_hdf5_fp32_compressed(output_filename.c_str(), result, 5); 
     } else {
      iostatus = write_mat(output_filename.c_str(), result);
     }

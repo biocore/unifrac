@@ -519,14 +519,21 @@ IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_
    return write_okay;
 }
 
-IOStatus write_mat_hdf5(const char* output_filename, mat_t* result, unsigned int compress_level) {
+IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
+  return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,0);
+}
+
+IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
+  return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,0);
+}
+
+IOStatus write_mat_hdf5_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
   return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,compress_level);
 }
 
-IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result, unsigned int compress_level) {
+IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
   return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
-
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
     std::ofstream output;
