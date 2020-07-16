@@ -72,7 +72,7 @@ ifeq (,$(findstring pgi,$(COMPILER)))
 	CPPFLAGS += -Wextra -Wno-unused-parameter
 endif
 
-CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC
+CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
 test: tree.o test_su.cpp biom.o unifrac.o api.o
 	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o api.o -llz4 -lpthread
