@@ -100,7 +100,7 @@ rapi_test: main
 	
 api: tree.o biom.o unifrac.o cmd.o 
 	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o api.o -lc -lhdf5_cpp -llz4 -L$(PREFIX)/lib
+	$(CXX) $(CPPFLAGS) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o api.o -lc -lhdf5_cpp -llz4 -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
