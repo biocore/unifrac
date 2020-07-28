@@ -169,6 +169,18 @@ EXTERN IOStatus write_mat_hdf5_compressed(const char* filename, mat_t* result, u
  */
 EXTERN IOStatus write_mat_hdf5_fp32_compressed(const char* filename, mat_t* result, unsigned int compress_level);
 
+/* Write a matrix object
+ *
+ * filename <const char*> the file to write into
+ * result <mat_t*> the results object
+ * buf <double *> buffer to write (must be NN size)
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_from_buf(const char* filename, mat_t* result, const double *buf);
+
 
 /* Write a matrix object from buffer using hdf5 format
  *
@@ -186,7 +198,7 @@ EXTERN IOStatus write_mat_from_buf_hdf5(const char* filename, mat_t* result, con
  *
  * filename <const char*> the file to write into
  * result <mat_t*> the results object
- * buf <double *> buffer to write (must be NN size)
+ * buf <float *> buffer to write (must be NN size)
  *
  * The following error codes are returned:
  *
@@ -211,7 +223,7 @@ EXTERN IOStatus write_mat_from_buf_hdf5_compressed(const char* filename, mat_t* 
  *
  * filename <const char*> the file to write into
  * result <mat_t*> the results object
- * buf <double *> buffer to write (must be NN size)
+ * buf <float *> buffer to write (must be NN size)
  * compress_level - 0=no compression, 1-9 higher is slower
  *
  * The following error codes are returned:

@@ -371,6 +371,29 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
+IOStatus write_mat_from_buf(const char* output_filename, mat_t* result, const double *buf2d) {
+    std::ofstream output;
+    output.open(output_filename);
+
+    double v;
+
+    for(unsigned int i = 0; i < result->n_samples; i++)
+        output << "\t" << result->sample_ids[i];
+    output << std::endl;
+
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        output << result->sample_ids[i];
+        for(unsigned int j = 0; j < result->n_samples; j++) {
+            v = buf2d[i*result->n_samples+j];
+            output << std::setprecision(16) << "\t" << v;
+        }
+        output << std::endl;
+    }
+    output.close();
+
+    return write_okay;
+}
+
 herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str)
 {
   // this is the convoluted way to store a string
