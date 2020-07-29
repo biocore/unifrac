@@ -180,6 +180,49 @@ void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, do
     }
 }
 
+// write in a format suitable for writing to disk
+// Note: Does not initialize the diagonal
+template<class TReal>
+void stripes_to_buf_D(std::vector<double*> &stripes, uint32_t n, TReal* &buf2d, unsigned int start, unsigned int stop) {
+    // n must be >= 2, but that should be enforced upstream as that would imply
+    // computing unifrac on a single sample.
+
+    for(unsigned int stripe = start; stripe < stop; stripe++) {
+        // compute the (i, j) position of each element in each stripe
+        uint64_t i = 0;
+        uint64_t j = stripe + 1;
+        for(uint64_t k = 0; k < n; k++, i++, j++) {
+            if(j == n) {
+                i = 0;
+                j = n - (stripe + 1);
+            }
+
+            double val = stripes[stripe][k];
+            // determine the position in the condensed form vector for a given (i, j)
+            // based off of
+            // https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html
+            // uint64_t comb_N_minus_i = comb_2(n - i);
+            //cf[comb_N - comb_N_minus_i + (j - i - 1)] = stripes[stripe][k];
+            // upper triangle
+            // const uint64_t comb_N_minus = su::comb_2(n - i);
+            // buf2d[i*n+j] = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
+            buf2d[i*n+j] = val;
+            // lower triangle
+            // const uint64_t comb_N_minus = su::comb_2(n - i);
+            // buf2d[j*n+i] = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
+            buf2d[j*n+i] = val;
+        }
+    }
+}
+
+void su::stripes_to_buf(std::vector<double*> &stripes, uint32_t n, double* &buf2d, unsigned int start, unsigned int stop) {
+  return stripes_to_buf_D(stripes, n, buf2d, start, stop);
+}
+
+void su::stripes_to_buf(std::vector<double*> &stripes, uint32_t n, float* &buf2d, unsigned int start, unsigned int stop) {
+  return stripes_to_buf_D(stripes, n, buf2d, start, stop);
+}
+
 void progressbar(float progress) {
     // from http://stackoverflow.com/a/14539953
     //

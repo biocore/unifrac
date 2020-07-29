@@ -360,6 +360,39 @@ EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
  */
 EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result);
 
+/* Merge partial results
+ *
+ * results <partial_mat_t**> an array of partial_mat_t*
+ * n_partials <int> number of partial mats
+ * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
+ * buf <double**> the buffer, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+EXTERN MergeStatus merge_partial_to_buf(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf);
+
+/* Merge partial results
+ *
+ * results <partial_mat_t**> an array of partial_mat_t*
+ * n_partials <int> number of partial mats
+ * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
+ * buf <double**> the buffer, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *             
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+EXTERN MergeStatus merge_partial_to_buf_fp32(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, float **buf);
+
+
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
 void set_tasks(std::vector<su::task_parameters> &tasks,
@@ -369,4 +402,5 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
                unsigned int stripe_stop,
                bool bypass_tips,
                unsigned int nthreads);
+
 #endif

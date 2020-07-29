@@ -41,6 +41,8 @@
         
         double** deconvolute_stripes(std::vector<double*> &stripes, uint32_t n);
         void stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* &cf, unsigned int start, unsigned int stop);
+        void stripes_to_buf(std::vector<double*> &stripes, uint32_t n, double* &buf2d, unsigned int start, unsigned int stop);
+        void stripes_to_buf(std::vector<double*> &stripes, uint32_t n, float* &buf2d, unsigned int start, unsigned int stop);
         void set_proportions(double* props, 
                              BPTree &tree, uint32_t node, 
                              biom &table, 

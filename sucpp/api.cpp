@@ -135,6 +135,20 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
     }
 }
 
+void initialize_mat_no_cond(mat_t* &result, char** sample_ids, unsigned int n_samples, bool is_upper_triangle) {
+    result = (mat_t*)malloc(sizeof(mat));
+    result->n_samples = n_samples;
+
+    result->cf_size = su::comb_2(n_samples);
+    result->is_upper_triangle = is_upper_triangle;
+    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
+    result->condensed_form = NULL;
+
+    for(unsigned int i = 0; i < n_samples; i++) {
+        result->sample_ids[i] = strdup(sample_ids[i]);
+    }
+}
+
 void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<double*> &dm_stripes,
                             unsigned int stripe_start, unsigned int stripe_stop, bool is_upper_triangle) {
     result = (partial_mat_t*)malloc(sizeof(partial_mat));
@@ -174,7 +188,9 @@ void destroy_mat(mat_t** result) {
         free((*result)->sample_ids[i]);
     };
     free((*result)->sample_ids);
-    free((*result)->condensed_form);
+    if (((*result)->condensed_form)!=NULL) {
+      free((*result)->condensed_form);
+    }
     free(*result);
 }
 
@@ -808,7 +824,7 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     return read_okay;
 }
 
-MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result) {
+MergeStatus check_partial(partial_mat_t** partial_mats, int n_partials) {
     if(n_partials <= 0) {
         fprintf(stderr, "Zero or less partials.\n");
         exit(EXIT_FAILURE);
@@ -854,6 +870,14 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
         return incomplete_stripe_set;
     }
 
+    return merge_okay;
+}
+
+MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result) {
+    MergeStatus err = check_partial(partial_mats, n_partials);
+    if (err!=merge_okay) return err;
+
+    int n_samples = partial_mats[0]->n_samples;
     std::vector<double*> stripes(partial_mats[0]->stripe_total);
     std::vector<double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
     for(int i = 0; i < n_partials; i++) {
@@ -864,14 +888,6 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
         }
     }
 
-    if(nthreads > stripes.size()) {
-        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n");
-        nthreads = stripes.size();
-    }
-
-    std::vector<su::task_parameters> tasks(nthreads);
-    std::vector<std::thread> threads(nthreads);
-
     initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
     su::stripes_to_condensed_form(stripes, n_samples, (*result)->condensed_form, 0, partial_mats[0]->stripe_total);
 
@@ -879,3 +895,42 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
 
     return merge_okay;
 }
+
+template<class TReal>
+MergeStatus merge_partial_to_buf_T(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, TReal **buf2d) {
+    MergeStatus err = check_partial(partial_mats, n_partials);
+    if (err!=merge_okay) return err;
+
+    uint64_t n_samples = partial_mats[0]->n_samples;
+    std::vector<double*> stripes(partial_mats[0]->stripe_total);
+    std::vector<double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
+    for(int i = 0; i < n_partials; i++) {
+        int n_stripes = partial_mats[i]->stripe_stop - partial_mats[i]->stripe_start;
+        for(int j = 0; j < n_stripes; j++) {
+            // as this is potentially a large amount of memory, don't copy, just adopt
+            *&(stripes[j + partial_mats[i]->stripe_start]) = partial_mats[i]->stripes[j];
+        }
+    }
+
+    initialize_mat_no_cond(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
+
+    *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
+
+    // initialize diagonal
+    for (uint64_t i=0; i<n_samples; i++) (*buf2d)[i*n_samples+i]=0.0;
+
+    su::stripes_to_buf(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
+
+    destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
+
+    return merge_okay;
+}
+
+MergeStatus merge_partial_to_buf(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf2d) {
+  return merge_partial_to_buf_T<double>(partial_mats, n_partials, nthreads, result, buf2d);
+}
+
+MergeStatus merge_partial_to_buf_fp32(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, float **buf2d) {
+  return merge_partial_to_buf_T<float>(partial_mats, n_partials, nthreads, result, buf2d);
+}
+
