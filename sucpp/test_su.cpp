@@ -611,7 +611,6 @@ void test_unifrac_set_proportions() {
     su::biom table = su::biom("test.biom");
     su::PropStack ps = su::PropStack(table.n_samples);
 
-    double sample_counts[] = {7, 3, 4, 6, 3, 4};
     double *obs = ps.pop(4); // GG_OTU_2
     double exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
     set_proportions(obs, tree, 4, table, ps);
@@ -1066,7 +1065,6 @@ void test_faith_pd_shear(){
 
 void test_unweighted_unifrac() {
     SUITE_START("test unweighted unifrac");
-    double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
@@ -1106,7 +1104,6 @@ void test_unweighted_unifrac() {
 
 void test_unweighted_unifrac_fast() {
     SUITE_START("test unweighted unifrac no tips");
-    double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
@@ -1146,7 +1143,6 @@ void test_unweighted_unifrac_fast() {
 
 void test_normalized_weighted_unifrac() {
     SUITE_START("test normalized weighted unifrac");
-    double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
