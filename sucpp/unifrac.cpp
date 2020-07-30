@@ -183,8 +183,8 @@ void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, do
 // write in a format suitable for writing to disk
 template<class TReal>
 void su::condensed_form_to_buf_T(double* cf, uint32_t n, TReal* buf2d) {
-       const uint64_t comb_N = su::comb_2(n);
-       for(uint64_t i = 0; i < n; i++) {
+     const uint64_t comb_N = su::comb_2(n);
+     for(uint64_t i = 0; i < n; i++) {
         for(uint64_t j = 0; j < n; j++) {
             TReal v;
             if(i < j) { // upper triangle
@@ -198,7 +198,7 @@ void su::condensed_form_to_buf_T(double* cf, uint32_t n, TReal* buf2d) {
             }
             buf2d[i*n+j] = v;
         }
-       }
+     }
 }
 
 
@@ -219,39 +219,35 @@ template<class TReal>
 void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
-   
-    // initialize diagonal
-    if (start==0) {
-     for (uint64_t k = 0; k < n; k++) {
-       buf2d[k*n+k] = 0.0;
-     }
-    }
 
-    for(unsigned int stripe = start; stripe < stop; stripe++) {
-        // compute the (i, j) position of each element in each stripe
-        uint64_t i = 0;
-        uint64_t j = stripe + 1;
-        for(uint64_t k = 0; k < n; k++, i++, j++) {
-            if(j == n) {
-                i = 0;
-                j = n - (stripe + 1);
-            }
+    for(uint64_t i = 0; i < n; i++) {
+      buf2d[i*n+i] = 0.0;
 
-            double val = stripes[stripe][k];
-            // determine the position in the condensed form vector for a given (i, j)
-            // based off of
-            // https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html
-            // uint64_t comb_N_minus_i = comb_2(n - i);
-            //cf[comb_N - comb_N_minus_i + (j - i - 1)] = stripes[stripe][k];
-            // upper triangle
-            // const uint64_t comb_N_minus = su::comb_2(n - i);
-            // buf2d[i*n+j] = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
-            buf2d[i*n+j] = val;
-            // lower triangle
-            // const uint64_t comb_N_minus = su::comb_2(n - i);
-            // buf2d[j*n+i] = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
-            buf2d[j*n+i] = val;
+      unsigned int stripe=0;
+      uint64_t k = i;
+
+      uint64_t j = i+1;
+      for(; (stripe<stop) && (j<n); stripe++, j++) {
+        TReal val = stripes[stripe][k];
+        buf2d[i*n+j] = val;
+      }
+
+      if (j<n) {
+        stripe=stripe-1+(n%2);
+        k+=(n/2)+1;
+        for(; j < n; j++, k++) {
+          --stripe; 
+          TReal val = stripes[stripe][k];
+          buf2d[i*n+j] = val;
         }
+      }
+    }
+    buf2d[uint64_t(n)*n-1] = 0.0;
+  
+    for(uint64_t i = 1; i < n; i++) {
+      for(uint64_t j = 0; j < i; j++) {
+        buf2d[i*n+j] = buf2d[j*n+i];
+      }
     }
 }
 
