@@ -215,11 +215,17 @@ void su::condensed_form_to_buf_fp32(double* cf, uint32_t n, float* buf2d) {
 }
 
 // write in a format suitable for writing to disk
-// Note: Does not initialize the diagonal
 template<class TReal>
 void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
+   
+    // initialize diagonal
+    if (start==0) {
+     for (uint64_t k = 0; k < n; k++) {
+       buf2d[k*n+k] = 0.0;
+     }
+    }
 
     for(unsigned int stripe = start; stripe < stop; stripe++) {
         // compute the (i, j) position of each element in each stripe

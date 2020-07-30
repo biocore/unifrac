@@ -898,9 +898,6 @@ MergeStatus merge_partial_to_buf_T(partial_mat_t** partial_mats, int n_partials,
 
     *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
 
-    // initialize diagonal
-    for (uint64_t i=0; i<n_samples; i++) (*buf2d)[i*n_samples+i]=0.0;
-
     su::stripes_to_buf_T(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
 
     destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
