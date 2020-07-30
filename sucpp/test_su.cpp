@@ -712,6 +712,66 @@ void test_unifrac_stripes_to_condensed_form_odd() {
     SUITE_END();
 }
 
+void test_unifrac_stripes_to_buf_even() {
+    SUITE_START("test stripes_to_buf even samples");
+    std::vector<double*> stripes;
+    double s1[] = {0, 5, 9, 12, 14, 4};
+    double s2[] = {1, 6, 10, 13, 3, 8};
+    double s3[] = {2, 7, 11, 2, 7, 11};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+
+    // test also double to float conversion
+    float exp[36] = {0, 0,  1,  2,  3,  4, 
+                     0, 0,  5,  6,  7,  8, 
+                     1, 5,  0,  9, 10, 11, 
+                     2, 6,  9,  0, 12, 13, 
+                     3, 7, 10, 12,  0, 14,
+                     4, 8, 11, 13, 14,  0};
+    float *obs = (float*)malloc(sizeof(float) * 36);
+    su::stripes_to_buf_fp32(stripes, 6, obs, 0, 3);
+    for(unsigned int i = 0; i < 36; i++) {
+        ASSERT(exp[i] == obs[i]);
+    }
+    free(obs);
+    SUITE_END();
+}
+
+void test_unifrac_stripes_to_buf_odd() {
+    SUITE_START("test stripes_to_buf odd samples");
+    std::vector<double*> stripes;
+    double s1[] = {1, 2, 3, 4, 5, 6, 0};
+    double s2[] = {12, 11, 10, 9, 8, 7, 1};
+    double s3[] = {13, 14, 15, 16, 17, 18, 2};
+
+    // {0, 1, 12, 13, 17,  7,  0},
+    // {x, 0,  2, 11, 14, 18,  1},
+    // {x, x,  0,  3, 10, 15,  2},
+    // {x, x,  x,  0,  4,  9, 16},
+    // {x, x,  x,  x,  0,  5,  8},
+    // {x, x,  x,  x,  x,  0,  6}
+    // {x, x,  x,  x,  x,  x,  0}
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+
+    double exp[49] = { 0,  1, 12, 13, 17,  7,  0, 
+                       1,  0,  2, 11, 14, 18,  1, 
+                      12,  2,  0,  3, 10, 15,  2, 
+                      13, 11,  3,  0,  4,  9, 16, 
+                      17, 14, 10,  4,  0,  5,  8, 
+                       7, 18, 15,  9,  5,  0,  6,
+                       0,  1,  2, 16,  8,  6,  0};
+    double *obs = (double*)malloc(sizeof(double) * 49);
+    su::stripes_to_buf(stripes, 7, obs, 0, 3);
+    for(unsigned int i = 0; i < 49; i++) {
+        ASSERT(exp[i] == obs[i]);
+    }
+    free(obs);
+    SUITE_END();
+}
+
 void test_unnormalized_weighted_unifrac() {
     SUITE_START("test unnormalized weighted unifrac");
 
@@ -1368,6 +1428,8 @@ int main(int argc, char** argv) {
     test_unifrac_deconvolute_stripes();
     test_unifrac_stripes_to_condensed_form_even();
     test_unifrac_stripes_to_condensed_form_odd();
+    test_unifrac_stripes_to_buf_even();
+    test_unifrac_stripes_to_buf_odd();
     test_unweighted_unifrac();
     test_unweighted_unifrac_fast();
     test_unnormalized_weighted_unifrac();
