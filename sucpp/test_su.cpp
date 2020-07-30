@@ -734,6 +734,20 @@ void test_unifrac_stripes_to_buf_even() {
     for(unsigned int i = 0; i < 36; i++) {
         ASSERT(exp[i] == obs[i]);
     }
+
+    // test also intermediate, 2-step procedure
+    double *obsC = (double*)malloc(sizeof(double) * 15);
+    su::stripes_to_condensed_form(stripes, 6, obsC, 0, 3);
+
+    float *obs2 = (float*)malloc(sizeof(float) * 36);
+    su::condensed_form_to_buf_fp32(obsC, 6, obs2);
+
+    for(unsigned int i = 0; i < 36; i++) {
+        ASSERT(exp[i] == obs2[i]);
+    }
+
+    free(obs2);
+    free(obsC);
     free(obs);
     SUITE_END();
 }
@@ -768,6 +782,20 @@ void test_unifrac_stripes_to_buf_odd() {
     for(unsigned int i = 0; i < 49; i++) {
         ASSERT(exp[i] == obs[i]);
     }
+
+    // test also intermediate, 2-step procedure
+    double *obsC = (double*)malloc(sizeof(double) * 21);
+    su::stripes_to_condensed_form(stripes, 7, obsC, 0, 3);
+
+    double *obs2 = (double*)malloc(sizeof(double) * 49);
+    su::condensed_form_to_buf(obsC, 7, obs2);
+    
+    for(unsigned int i = 0; i < 49; i++) {
+        ASSERT(exp[i] == obs2[i]);
+    }
+
+    free(obs2);
+    free(obsC);
     free(obs);
     SUITE_END();
 }
