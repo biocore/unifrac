@@ -660,23 +660,31 @@ void test_unifrac_deconvolute_stripes() {
 void test_unifrac_stripes_to_condensed_form_even() {
     SUITE_START("test stripes_to_condensed_form even samples");
     std::vector<double*> stripes;
-    double s1[] = {0, 5, 9, 12, 14, 4};
-    double s2[] = {1, 6, 10, 13, 3, 8};
-    double s3[] = {2, 7, 11, 2, 7, 11};
-    // {0, 0, 1, 2, 3, 4},
-    // {x, 0, 5, 6, 7, 8},
-    // {x, x, 0, 9, 10, 11},
-    // {x, x, x, 0, 12, 13},
-    // {x, x, x, x, 0, 14},
-    // {x, x, x, x, x, 0}
+    double s1[] = {0,  9, 17, 24, 30, 35, 39, 42, 44,  8};
+    double s2[] = {1, 10, 18, 25, 31, 36, 40, 43,  7, 16};
+    double s3[] = {2, 11, 19, 26, 32, 37, 41,  6, 15, 23};
+    double s4[] = {3, 12, 20, 27, 33, 38,  5, 14, 22, 29};
+    double s5[] = {4, 13, 21, 28, 34,  4, 13, 21, 28, 34};
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
 
-    double exp[15] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    double *obs = (double*)malloc(sizeof(double) * 15);
-    su::stripes_to_condensed_form(stripes, 6, obs, 0, 3);
-    for(unsigned int i = 0; i < 15; i++) {
+    double exp[45] = {/* 0, */  0,  1,  2,  3,  4,  5,  6,  7,  8,
+                      /* *,  0, */  9, 10, 11, 12, 13, 14, 15, 16,
+                      /* *,  *,  0, */ 17, 18, 19, 20, 21, 22, 23,
+                      /* *,  *,  *,  0, */ 24, 25, 26, 27, 28, 29,
+                      /* *,  *,  *,  *,  0, */ 30, 31, 32, 33, 34,
+                      /* *,  *,  *,  *,  *,  0, */ 35, 36, 37, 38,
+                      /* *,  *,  *,  *,  *,  *,  0, */ 39, 40, 41,
+                      /* *,  *,  *,  *,  *,  *,  *,  0, */ 42, 43,
+                      /* *,  *,  *,  *,  *,  *,  *,  *,  0, */ 44};
+                      /* *,  *,  *,  *,  *,  *,  *,  *,  *, *,  0 */
+
+    double *obs = (double*)malloc(sizeof(double) * 45);
+    su::stripes_to_condensed_form(stripes, 10, obs, 0, 5);
+    for(unsigned int i = 0; i < 45; i++) {
         ASSERT(exp[i] == obs[i]);
     }
     free(obs);
@@ -686,25 +694,31 @@ void test_unifrac_stripes_to_condensed_form_even() {
 void test_unifrac_stripes_to_condensed_form_odd() {
     SUITE_START("test stripes_to_condensed_form odd samples");
     std::vector<double*> stripes;
-    double s1[] = {1, 2, 3, 4, 5, 6, 0};
-    double s2[] = {12, 11, 10, 9, 8, 7, 1};
-    double s3[] = {13, 14, 15, 16, 17, 18, 2};
-
-    // {0, 1, 12, 13, 17,  7,  0},
-    // {x, 0,  2, 11, 14, 18,  1},
-    // {x, x,  0,  3, 10, 15,  2},
-    // {x, x,  x,  0,  4,  9, 16},
-    // {x, x,  x,  x,  0,  5,  8},
-    // {x, x,  x,  x,  x,  0,  6}
-    // {x, x,  x,  x,  x,  x,  0}
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 0};
+    double s2[] = {20, 19, 18, 17, 16, 15, 14 ,13, 12, 11, 1};
+    double s3[] = {21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 2};
+    double s4[] = {40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 3};
+    double s5[] = {41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 4};
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
 
-    double exp[21] = {1, 12, 13, 17, 7, 0, 2, 11, 14, 18, 1, 3, 10, 15, 2, 4, 9, 16, 5, 8, 6};
-    double *obs = (double*)malloc(sizeof(double) * 21);
-    su::stripes_to_condensed_form(stripes, 7, obs, 0, 3);
-    for(unsigned int i = 0; i < 21; i++) {
+    double exp[55] = {/* 0, */ 1, 20, 21, 40, 41, 47, 33, 29, 11,  0,
+                      /* 1,  0, */ 2, 19, 22, 39, 42, 48, 32, 30,  1,
+                      /*20,  2,  0, */ 3, 18, 23, 38, 43, 49, 31,  2,
+                      /*21, 19,  3,  0, */ 4, 17, 24, 37, 44, 50,  3,
+                      /*40, 22, 18,  4,  0, */ 5, 16, 25 ,36, 45 , 4,
+                      /*41, 39, 23, 17,  5,  0, */ 6, 15, 26, 35, 46,
+                      /*47, 42, 38, 24, 16,  6,  0, */ 7, 14, 27, 34,
+                      /*33, 48, 43, 37, 25, 15,  7,  0,*/  8, 13, 28,
+                      /*29, 32, 49, 44, 36, 26, 14,  8,  0, */ 9, 12,
+                      /*11, 30, 31, 50, 45, 35, 27, 13,  9,  0,*/ 10};
+                      /* 0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0}; */
+    double *obs = (double*)malloc(sizeof(double) * 55);
+    su::stripes_to_condensed_form(stripes, 11, obs, 0, 5);
+    for(unsigned int i = 0; i < 55; i++) {
         ASSERT(exp[i] == obs[i]);
     }
     free(obs);
@@ -714,34 +728,42 @@ void test_unifrac_stripes_to_condensed_form_odd() {
 void test_unifrac_stripes_to_buf_even() {
     SUITE_START("test stripes_to_buf even samples");
     std::vector<double*> stripes;
-    double s1[] = {0, 5, 9, 12, 14, 4};
-    double s2[] = {1, 6, 10, 13, 3, 8};
-    double s3[] = {2, 7, 11, 2, 7, 11};
+    double s1[] = {0,  9, 17, 24, 30, 35, 39, 42, 44,  8};
+    double s2[] = {1, 10, 18, 25, 31, 36, 40, 43,  7, 16};
+    double s3[] = {2, 11, 19, 26, 32, 37, 41,  6, 15, 23};
+    double s4[] = {3, 12, 20, 27, 33, 38,  5, 14, 22, 29};
+    double s5[] = {4, 13, 21, 28, 34,  4, 13, 21, 28, 34};
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
 
     // test also double to float conversion
-    float exp[36] = {0, 0,  1,  2,  3,  4, 
-                     0, 0,  5,  6,  7,  8, 
-                     1, 5,  0,  9, 10, 11, 
-                     2, 6,  9,  0, 12, 13, 
-                     3, 7, 10, 12,  0, 14,
-                     4, 8, 11, 13, 14,  0};
-    float *obs = (float*)malloc(sizeof(float) * 36);
-    su::stripes_to_buf_fp32(stripes, 6, obs, 0, 3);
-    for(unsigned int i = 0; i < 36; i++) {
+    float exp[100] = {0,  0,  1,  2,  3,  4,  5,  6,  7,  8, 
+                      0,  0,  9, 10, 11, 12, 13, 14, 15, 16,  
+                      1,  9,  0, 17, 18, 19, 20, 21, 22, 23,
+                      2, 10, 17,  0, 24, 25, 26, 27, 28, 29, 
+                      3, 11, 18, 24,  0, 30, 31, 32, 33, 34,
+                      4, 12, 19, 25, 30,  0, 35, 36, 37, 38,
+                      5, 13, 20, 26, 31, 35,  0, 39, 40, 41,
+                      6, 14, 21, 27, 32, 36, 39,  0, 42, 43,
+                      7, 15, 22, 28, 33, 37, 40, 42,  0, 44,
+                      8, 16, 23, 29, 34, 38, 41, 43, 44,  0};
+    float *obs = (float*)malloc(sizeof(float) * 100);
+    su::stripes_to_buf_fp32(stripes, 10, obs, 0, 5);
+    for(unsigned int i = 0; i < 100; i++) {
         ASSERT(exp[i] == obs[i]);
     }
 
     // test also intermediate, 2-step procedure
-    double *obsC = (double*)malloc(sizeof(double) * 15);
-    su::stripes_to_condensed_form(stripes, 6, obsC, 0, 3);
+    double *obsC = (double*)malloc(sizeof(double) * 45);
+    su::stripes_to_condensed_form(stripes, 10, obsC, 0, 5);
 
-    float *obs2 = (float*)malloc(sizeof(float) * 36);
-    su::condensed_form_to_buf_fp32(obsC, 6, obs2);
+    float *obs2 = (float*)malloc(sizeof(float) * 100);
+    su::condensed_form_to_buf_fp32(obsC, 10, obs2);
 
-    for(unsigned int i = 0; i < 36; i++) {
+    for(unsigned int i = 0; i < 100; i++) {
         ASSERT(exp[i] == obs2[i]);
     }
 
@@ -754,42 +776,42 @@ void test_unifrac_stripes_to_buf_even() {
 void test_unifrac_stripes_to_buf_odd() {
     SUITE_START("test stripes_to_buf odd samples");
     std::vector<double*> stripes;
-    double s1[] = {1, 2, 3, 4, 5, 6, 0};
-    double s2[] = {12, 11, 10, 9, 8, 7, 1};
-    double s3[] = {13, 14, 15, 16, 17, 18, 2};
-
-    // {0, 1, 12, 13, 17,  7,  0},
-    // {x, 0,  2, 11, 14, 18,  1},
-    // {x, x,  0,  3, 10, 15,  2},
-    // {x, x,  x,  0,  4,  9, 16},
-    // {x, x,  x,  x,  0,  5,  8},
-    // {x, x,  x,  x,  x,  0,  6}
-    // {x, x,  x,  x,  x,  x,  0}
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 0};
+    double s2[] = {20, 19, 18, 17, 16, 15, 14 ,13, 12, 11, 1};
+    double s3[] = {21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 2};
+    double s4[] = {40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 3};
+    double s5[] = {41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 4};
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
 
-    double exp[49] = { 0,  1, 12, 13, 17,  7,  0, 
-                       1,  0,  2, 11, 14, 18,  1, 
-                      12,  2,  0,  3, 10, 15,  2, 
-                      13, 11,  3,  0,  4,  9, 16, 
-                      17, 14, 10,  4,  0,  5,  8, 
-                       7, 18, 15,  9,  5,  0,  6,
-                       0,  1,  2, 16,  8,  6,  0};
-    double *obs = (double*)malloc(sizeof(double) * 49);
-    su::stripes_to_buf(stripes, 7, obs, 0, 3);
-    for(unsigned int i = 0; i < 49; i++) {
+    double exp[121] = { 0,  1, 20, 21, 40, 41, 47, 33, 29, 11,  0, 
+                        1,  0,  2, 19, 22, 39, 42, 48, 32, 30,  1,
+                       20,  2,  0,  3, 18, 23, 38, 43, 49, 31,  2,
+                       21, 19,  3,  0,  4, 17, 24, 37, 44, 50,  3,
+                       40, 22, 18,  4,  0,  5, 16, 25 ,36, 45 , 4, 
+                       41, 39, 23, 17,  5,  0,  6, 15, 26, 35, 46,
+                       47, 42, 38, 24, 16,  6,  0,  7, 14, 27, 34,
+                       33, 48, 43, 37, 25, 15,  7,  0,  8, 13, 28, 
+                       29, 32, 49, 44, 36, 26, 14,  8,  0,  9, 12,
+                       11, 30, 31, 50, 45, 35, 27, 13,  9,  0, 10,
+                        0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0};
+    double *obs = (double*)malloc(sizeof(double) * 121);
+    su::stripes_to_buf(stripes, 11, obs, 0, 5);
+    for(unsigned int i = 0; i < 121; i++) {
         ASSERT(exp[i] == obs[i]);
     }
 
     // test also intermediate, 2-step procedure
-    double *obsC = (double*)malloc(sizeof(double) * 21);
-    su::stripes_to_condensed_form(stripes, 7, obsC, 0, 3);
+    double *obsC = (double*)malloc(sizeof(double) * 55);
+    su::stripes_to_condensed_form(stripes, 11, obsC, 0, 5);
 
-    double *obs2 = (double*)malloc(sizeof(double) * 49);
-    su::condensed_form_to_buf(obsC, 7, obs2);
+    double *obs2 = (double*)malloc(sizeof(double) * 121);
+    su::condensed_form_to_buf(obsC, 11, obs2);
     
-    for(unsigned int i = 0; i < 49; i++) {
+    for(unsigned int i = 0; i < 121; i++) {
         ASSERT(exp[i] == obs2[i]);
     }
 
