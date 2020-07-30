@@ -157,7 +157,7 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
 }
 
 
-void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* &cf, unsigned int start, unsigned int stop) {
+void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* cf, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
@@ -181,9 +181,43 @@ void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, do
 }
 
 // write in a format suitable for writing to disk
+template<class TReal>
+void su::condensed_form_to_buf_T(double* cf, uint32_t n, TReal* buf2d) {
+       const uint64_t comb_N = su::comb_2(n);
+       for(uint64_t i = 0; i < n; i++) {
+        for(uint64_t j = 0; j < n; j++) {
+            TReal v;
+            if(i < j) { // upper triangle
+                const uint64_t comb_N_minus = su::comb_2(n - i);
+                v = cf[comb_N - comb_N_minus + (j - i - 1)];
+            } else if (i > j) { // lower triangle
+                const uint64_t comb_N_minus = su::comb_2(n - j);
+                v = cf[comb_N - comb_N_minus + (i - j - 1)];
+            } else {
+                v = 0.0;
+            }
+            buf2d[i*n+j] = v;
+        }
+       }
+}
+
+
+// make sure it is instantiated
+template void su::condensed_form_to_buf_T<double>(double* cf, uint32_t n, double* buf2d);
+template void su::condensed_form_to_buf_T<float>(double* cf, uint32_t n, float* buf2d);
+
+void su::condensed_form_to_buf(double* cf, uint32_t n, double* buf2d) {
+  su::condensed_form_to_buf_T<double>(cf,n,buf2d);
+}
+
+void su::condensed_form_to_buf_fp32(double* cf, uint32_t n, float* buf2d) {
+  su::condensed_form_to_buf_T<float>(cf,n,buf2d);
+}
+
+// write in a format suitable for writing to disk
 // Note: Does not initialize the diagonal
 template<class TReal>
-void stripes_to_buf_D(std::vector<double*> &stripes, uint32_t n, TReal* &buf2d, unsigned int start, unsigned int stop) {
+void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
@@ -215,13 +249,18 @@ void stripes_to_buf_D(std::vector<double*> &stripes, uint32_t n, TReal* &buf2d, 
     }
 }
 
-void su::stripes_to_buf(std::vector<double*> &stripes, uint32_t n, double* &buf2d, unsigned int start, unsigned int stop) {
-  return stripes_to_buf_D(stripes, n, buf2d, start, stop);
+// Make sure it gets instantiated
+template void su::stripes_to_buf_T<double>(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
+template void su::stripes_to_buf_T<float>(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
+
+void su::stripes_to_buf(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop) {
+   return su::stripes_to_buf_T<double>(stripes, n, buf2d, start, stop);
 }
 
-void su::stripes_to_buf(std::vector<double*> &stripes, uint32_t n, float* &buf2d, unsigned int start, unsigned int stop) {
-  return stripes_to_buf_D(stripes, n, buf2d, start, stop);
+void su::stripes_to_buf_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop) {
+  return su::stripes_to_buf_T<float>(stripes, n, buf2d, start, stop);
 }
+
 
 void progressbar(float progress) {
     // from http://stackoverflow.com/a/14539953

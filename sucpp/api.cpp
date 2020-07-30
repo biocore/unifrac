@@ -436,7 +436,7 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 
 // Internal: Make sure TReal and real_id match
 template<class TReal>
-IOStatus write_mat_from_buf_hdf5_D(const char* output_filename, mat_t* result, const TReal *buf2d, hid_t real_id, unsigned int compress_level) {
+IOStatus write_mat_from_buf_hdf5_T(const char* output_filename, mat_t* result, const TReal *buf2d, hid_t real_id, unsigned int compress_level) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -532,7 +532,7 @@ IOStatus write_mat_from_buf_hdf5_D(const char* output_filename, mat_t* result, c
 
 // Internal: Make sure TReal and real_id match
 template<class TReal>
-IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
+IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
      // compute the matrix
      const uint64_t n_samples = result->n_samples;
      TReal *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
@@ -540,61 +540,43 @@ IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_
        return open_error; // we don't have a better error code
      }
 
-     {
-       const uint64_t comb_N = su::comb_2(n_samples);
-       for(uint64_t i = 0; i < n_samples; i++) {
-        for(uint64_t j = 0; j < n_samples; j++) {
-            TReal v;
-            if(i < j) { // upper triangle
-                const uint64_t comb_N_minus = su::comb_2(n_samples - i);
-                v = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
-            } else if (i > j) { // lower triangle
-                const uint64_t comb_N_minus = su::comb_2(n_samples - j);
-                v = result->condensed_form[comb_N - comb_N_minus + (i - j - 1)];
-            } else {
-                v = 0.0;
-            }
-            buf2d[i*n_samples+j] = v;
-        }
-       }
-     }
-
-     IOStatus err =  write_mat_from_buf_hdf5_D(output_filename, result, buf2d, real_id, compress_level);
+     condensed_form_to_buf_T(result->condensed_form, n_samples, buf2d);
+     IOStatus err =  write_mat_from_buf_hdf5_T(output_filename, result, buf2d, real_id, compress_level);
 
      free(buf2d);
      return err;
 }
 
 IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,0);
+  return write_mat_hdf5_T<double>(output_filename,result,H5T_IEEE_F64LE,0);
 }
 
 IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,0);
+  return write_mat_hdf5_T<float>(output_filename,result,H5T_IEEE_F32LE,0);
 }
 
 IOStatus write_mat_hdf5_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,compress_level);
+  return write_mat_hdf5_T<double>(output_filename,result,H5T_IEEE_F64LE,compress_level);
 }
 
 IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
+  return write_mat_hdf5_T<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
 
 IOStatus write_mat_from_buf_hdf5(const char* output_filename, mat_t* result, const double *buf2d) {
-  return write_mat_from_buf_hdf5_D<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,0);
+  return write_mat_from_buf_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,0);
 }
 
 IOStatus write_mat_from_buf_hdf5_fp32(const char* output_filename, mat_t* result, const float *buf2d) {
-  return write_mat_from_buf_hdf5_D<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,0);
+  return write_mat_from_buf_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,0);
 }
 
 IOStatus write_mat_from_buf_hdf5_compressed(const char* output_filename, mat_t* result, const double *buf2d, unsigned int compress_level) {
-  return write_mat_from_buf_hdf5_D<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,compress_level);
+  return write_mat_from_buf_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,compress_level);
 }
 
 IOStatus write_mat_from_buf_hdf5_fp32_compressed(const char* output_filename, mat_t* result, const float *buf2d, unsigned int compress_level) {
-  return write_mat_from_buf_hdf5_D<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,compress_level);
+  return write_mat_from_buf_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,compress_level);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
@@ -919,7 +901,7 @@ MergeStatus merge_partial_to_buf_T(partial_mat_t** partial_mats, int n_partials,
     // initialize diagonal
     for (uint64_t i=0; i<n_samples; i++) (*buf2d)[i*n_samples+i]=0.0;
 
-    su::stripes_to_buf(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
+    su::stripes_to_buf_T(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
 
     destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
 
