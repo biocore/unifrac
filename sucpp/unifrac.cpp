@@ -220,35 +220,101 @@ void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
-    for(uint64_t i = 0; i < n; i++) {
-      buf2d[i*n+i] = 0.0;
+    // start must be 0
 
-      unsigned int stripe=0;
-      uint64_t k = i;
+    // tile for  for better memory access pattern 
+#ifdef MICRO_TILE
+    // micro tiles are mostly useful for testing
+    const uint32_t TILE = 4;
+#else
+    // larger tiles better for performance
+    const uint32_t TILE = 128/sizeof(TReal);
+#endif
 
-      uint64_t j = i+1;
-      for(; (stripe<stop) && (j<n); stripe++, j++) {
-        TReal val = stripes[stripe][k];
-        buf2d[i*n+j] = val;
-      }
+    for(uint32_t iOut = 0; iOut < n; iOut+=TILE) {
+      for(uint32_t jOut = 0; jOut < n; jOut+=TILE) {
+         uint32_t iMax = std::min(iOut+TILE,n);
+         uint32_t jMax = std::min(jOut+TILE,n);
 
-      if (j<n) {
-        stripe=stripe-1+(n%2);
-        k+=(n/2)+1;
-        for(; j < n; j++, k++) {
-          --stripe; 
-          TReal val = stripes[stripe][k];
-          buf2d[i*n+j] = val;
+
+        if (iOut==jOut) { 
+          // on diagonal
+          for(uint64_t i = iOut; i < iMax; i++) {
+             buf2d[i*n+i] = 0.0;
+
+             unsigned int stripe=0;
+             uint64_t k = i;
+
+             uint64_t j = i+1;
+             for(; (stripe<stop) && (j<jMax); stripe++, j++) {
+               TReal val = stripes[stripe][k];
+               buf2d[i*n+j] = val;
+             }
+
+             if (j<n) {
+               stripe=stripe-1+(n%2);
+               k+=(n/2)+1;
+               for(; j < jMax; j++, k++) {
+                 --stripe; 
+                 TReal val = stripes[stripe][k];
+                 buf2d[i*n+j] = val;
+               }
+             }
+          }
+
+          // lower triangle
+          for(uint64_t i = iOut+1; i < iMax; i++) {
+            for(uint64_t j = jOut; j < i; j++) {
+              buf2d[i*n+j] = buf2d[j*n+i];
+            }
+          }
+
+        } else if (iOut<jOut) {
+          // off diagonal
+          for(uint64_t i = iOut; i < iMax; i++) {
+             unsigned int stripe=0;
+             uint64_t k = i;
+
+             uint64_t j = i+1;
+             // we are off diagonal, so adjust
+             stripe += (jOut-j);
+             j=jOut;
+             if (stripe>stop) {
+               // ops, we overshoot... roll back
+               j-=(stripe-stop);
+               stripe=stop;
+             }
+             for(; (stripe<stop) && (j<jMax); stripe++, j++) {
+                TReal val = stripes[stripe][k];
+                buf2d[i*n+j] = val;
+             }
+
+             if (j<jMax) {
+               stripe=stripe-1+(n%2);
+               k+=(n/2)+1;
+               if (j<jOut) {
+                 stripe -= (jOut-j); // note: should not be able to overshoot
+                 k += (jOut-j);
+                 j=jOut;
+               } 
+               for(; j < jMax; j++, k++) {
+                 --stripe;
+                 TReal val = stripes[stripe][k];
+                 buf2d[i*n+j] = val;
+               }
+             }
+          }
+
+          // do the other off-diagonal immediately, so it is still in cache
+          for(uint64_t j = jOut; j < jMax; j++) {
+            for(uint64_t i = iOut; i < iMax; i++) {
+              buf2d[j*n+i] = buf2d[i*n+j];
+            }
+          }
         }
-      }
-    }
-    buf2d[uint64_t(n)*n-1] = 0.0;
-  
-    for(uint64_t i = 1; i < n; i++) {
-      for(uint64_t j = 0; j < i; j++) {
-        buf2d[i*n+j] = buf2d[j*n+i];
-      }
-    }
+ 
+      } //for jOut 
+    } // for iOut
 }
 
 // Make sure it gets instantiated
