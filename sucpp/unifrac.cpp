@@ -214,13 +214,28 @@ void su::condensed_form_to_buf_fp32(double* cf, uint32_t n, float* buf2d) {
   su::condensed_form_to_buf_T<float>(cf,n,buf2d);
 }
 
+/*
+ * The stripes end up computing the following positions in the distance
+ * matrix.
+ *
+ * x A B C x x
+ * x x A B C x
+ * x x x A B C
+ * C x x x A B
+ * B C x x x A
+ * A B C x x x
+ *
+ * However, we store those stripes as vectors, ie
+ * [ A A A A A A ]
+ */
+
 // write in a format suitable for writing to disk
 template<class TReal>
 void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
-    // start must be 0
+    // start must be 0, stop must bu total number of stripes
 
     // tile for  for better memory access pattern 
 #ifdef MICRO_TILE
@@ -242,21 +257,19 @@ void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2
           for(uint64_t i = iOut; i < iMax; i++) {
              buf2d[i*n+i] = 0.0;
 
-             unsigned int stripe=0;
-             uint64_t k = i;
+             int64_t stripe=0;
 
              uint64_t j = i+1;
              for(; (stripe<stop) && (j<jMax); stripe++, j++) {
-               TReal val = stripes[stripe][k];
+               TReal val = stripes[stripe][i];
                buf2d[i*n+j] = val;
              }
 
-             if (j<n) {
-               stripe=stripe-1+(n%2);
-               k+=(n/2)+1;
-               for(; j < jMax; j++, k++) {
-                 --stripe; 
-                 TReal val = stripes[stripe][k];
+             if (j<n) { // implies strip==stop, we are really looking at the mirror
+               stripe=n-stop-1;
+               for(; j < jMax; j++) {
+                 --stripe;
+                 TReal val = stripes[stripe][j];
                  buf2d[i*n+j] = val;
                }
              }
@@ -273,7 +286,6 @@ void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2
           // off diagonal
           for(uint64_t i = iOut; i < iMax; i++) {
              unsigned int stripe=0;
-             uint64_t k = i;
 
              uint64_t j = i+1;
              // we are off diagonal, so adjust
@@ -285,21 +297,19 @@ void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2
                stripe=stop;
              }
              for(; (stripe<stop) && (j<jMax); stripe++, j++) {
-                TReal val = stripes[stripe][k];
+                TReal val = stripes[stripe][i];
                 buf2d[i*n+j] = val;
              }
 
-             if (j<jMax) {
-               stripe=stripe-1+(n%2);
-               k+=(n/2)+1;
+             if (j<jMax) { // implies strip==stop, we are really looking at the mirror
+               stripe=n-stop-1;
                if (j<jOut) {
                  stripe -= (jOut-j); // note: should not be able to overshoot
-                 k += (jOut-j);
                  j=jOut;
                } 
-               for(; j < jMax; j++, k++) {
+               for(; j < jMax; j++) {
                  --stripe;
-                 TReal val = stripes[stripe][k];
+                 TReal val = stripes[stripe][j];
                  buf2d[i*n+j] = val;
                }
              }
