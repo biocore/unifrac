@@ -725,6 +725,39 @@ void test_unifrac_stripes_to_condensed_form_odd() {
     SUITE_END();
 }
 
+void test_unifrac_stripes_to_condensed_form_odd2() {
+    SUITE_START("test stripes_to_condensed_form odd samples");
+    std::vector<double*> stripes;
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9};
+    double s2[] = {18, 17, 16, 15, 14, 13, 12 ,11, 10};
+    double s3[] = {19, 20, 21, 22, 23, 24, 25, 26, 27};
+    double s4[] = {36, 35, 34, 33, 32, 31, 30, 29, 28};
+    double s5[] = {31, 30, 29, 28, 36, 35, 34, 33, 32};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
+
+    double exp[36] = {/* 0, */ 1, 18, 19, 36, 31, 25, 11,  9,
+                      /* 1,  0, */ 2, 17, 20, 35, 30, 26, 10,
+                      /*20,  2,  0, */ 3, 16, 21, 34, 29, 27,
+                      /*21, 19,  3,  0, */ 4, 15, 22, 33, 28,
+                      /*40, 22, 18,  4,  0, */ 5, 14, 23 ,32,
+                      /*41, 39, 23, 17,  5,  0, */ 6, 13, 24,
+                      /*47, 42, 38, 24, 16,  6,  0, */ 7, 12,
+                      /*47, 42, 38, 24, 16,  6,  7, 0, */  8};
+                      /* 0,  1,  2,  3,  4, 46, 34, 8,  8, 0}; */
+    double *obs = (double*)malloc(sizeof(double) * 36);
+    su::stripes_to_condensed_form(stripes, 9, obs, 0, 5);
+    for(unsigned int i = 0; i < 36; i++) {
+        ASSERT(exp[i] == obs[i]);
+    }
+    free(obs);
+    SUITE_END();
+}
+
+
 void test_unifrac_stripes_to_buf_even() {
     SUITE_START("test stripes_to_buf even samples");
     std::vector<double*> stripes;
@@ -820,6 +853,54 @@ void test_unifrac_stripes_to_buf_odd() {
     free(obs);
     SUITE_END();
 }
+
+void test_unifrac_stripes_to_buf_odd2() {
+    SUITE_START("test stripes_to_buf odd samples");
+    std::vector<double*> stripes;
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9};
+    double s2[] = {18, 17, 16, 15, 14, 13, 12 ,11, 10};
+    double s3[] = {19, 20, 21, 22, 23, 24, 25, 26, 27};
+    double s4[] = {36, 35, 34, 33, 32, 31, 30, 29, 28};
+    double s5[] = {31, 30, 29, 28, 36, 35, 34, 33, 32};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
+
+    double exp[81] = { 0,  1, 18, 19, 36, 31, 25, 11,  9,
+                       1,  0,  2, 17, 20, 35, 30, 26, 10,
+                      18,  2,  0,  3, 16, 21, 34, 29, 27,
+                      19, 17,  3,  0,  4, 15, 22, 33, 28,
+                      36, 20, 16,  4,  0,  5, 14, 23 ,32,
+                      31, 35, 21, 15,  5,  0,  6, 13, 24,
+                      25, 30, 34, 22, 14,  6,  0,  7, 12,
+                      11, 26, 29, 33, 23, 13,  7,  0,  8,
+                       9, 10, 27, 28, 32, 24, 12,  8,  0};
+
+    double *obs = (double*)malloc(sizeof(double) * 81);
+    su::stripes_to_buf(stripes, 9, obs, 0, 5);
+    for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs[i]);
+    }
+
+    // test also intermediate, 2-step procedure
+    double *obsC = (double*)malloc(sizeof(double) * 36);
+    su::stripes_to_condensed_form(stripes, 9, obsC, 0, 5);
+
+    double *obs2 = (double*)malloc(sizeof(double) * 81);
+    su::condensed_form_to_buf(obsC, 9, obs2);
+    
+    for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs2[i]);
+    }
+
+    free(obs2);
+    free(obsC);
+    free(obs);
+    SUITE_END();
+}
+
 
 void test_unnormalized_weighted_unifrac() {
     SUITE_START("test unnormalized weighted unifrac");
@@ -1474,8 +1555,10 @@ int main(int argc, char** argv) {
     test_unifrac_deconvolute_stripes();
     test_unifrac_stripes_to_condensed_form_even();
     test_unifrac_stripes_to_condensed_form_odd();
+    test_unifrac_stripes_to_condensed_form_odd2();
     test_unifrac_stripes_to_buf_even();
     test_unifrac_stripes_to_buf_odd();
+    test_unifrac_stripes_to_buf_odd2();
     test_unweighted_unifrac();
     test_unweighted_unifrac_fast();
     test_unnormalized_weighted_unifrac();
