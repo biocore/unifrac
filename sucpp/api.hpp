@@ -36,6 +36,32 @@ typedef struct mat {
     char** sample_ids;
 } mat_t;
 
+/* a result matrix, full, fp64
+ *
+ * n_samples <uint> the number of samples.
+ * matrix <double*> the matrix values, n_sample**2 size
+ * sample_ids <char**> the sample IDs of length n_samples.
+ */
+typedef struct mat_full_fp64 {
+    unsigned int n_samples;
+    double* matrix;
+    char** sample_ids;
+} mat_full_fp64_t;
+
+/* a result matrix, full, fp32
+ *
+ * n_samples <uint> the number of samples.
+ * matrix <float*> the matrix values, n_sample**2 size
+ * sample_ids <char**> the sample IDs of length n_samples.
+ */
+typedef struct mat_full_fp32 {
+    unsigned int n_samples;
+    float* matrix;
+    char** sample_ids;
+} mat_full_fp32_t;
+
+
+
 /* a result vector
  *
  * n_samples <uint> the number of samples.
@@ -70,6 +96,8 @@ typedef struct partial_mat {
 } partial_mat_t;
 
 void destroy_mat(mat_t** result);
+void destroy_mat_full_fp64(mat_full_fp64_t** result);
+void destroy_mat_full_fp32(mat_full_fp32_t** result);
 void destroy_partial_mat(partial_mat_t** result);
 void destroy_results_vec(r_vec** result);
 
@@ -172,65 +200,60 @@ EXTERN IOStatus write_mat_hdf5_fp32_compressed(const char* filename, mat_t* resu
 /* Write a matrix object
  *
  * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * buf <double *> buffer to write (must be NxN size)
+ * result <mat_full_t*> the results object
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix(const char* filename, mat_t* result, const double *buf);
+EXTERN IOStatus write_mat_from_matrix(const char* filename, const mat_full_fp64_t* result);
 
 
 /* Write a matrix object from buffer using hdf5 format
  *
  * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * buf <double *> buffer to write (must be NxN size)
+ * result <mat_full_t*> the results object
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, mat_t* result, const double *buf);
+EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, const mat_full_fp64_t* result);
 
 /* Write a matrix object from buffer using hdf5 format, using fp32 precision
  *
  * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * buf <float *> buffer to write (must be NxN size)
+ * result <mat_full_fp32_t*> the results object
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix_hdf5_fp32(const char* filename, mat_t* result, const float *buf);
+EXTERN IOStatus write_mat_from_matrix_hdf5_fp32(const char* filename, const mat_full_fp32_t* result);
 
 /* Write a matrix object from buffer using hdf5 format
  *
  * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * buf <double *> buffer to write (must be NxN size)
+ * result <mat_full_fp64_t*> the results object
  * compress_level - 0=no compression, 1-9 higher is slower
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix_hdf5_compressed(const char* filename, mat_t* result, const double *buf, unsigned int compress_level);
+EXTERN IOStatus write_mat_from_matrix_hdf5_compressed(const char* filename, const mat_full_fp64_t* result, unsigned int compress_level);
 
 /* Write a matrix object from buffer using hdf5 format, using fp32 precision
  *
  * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * buf <float *> buffer to write (must be NxN size)
+ * result <mat_full_fp32_t*> the results object
  * compress_level - 0=no compression, 1-9 higher is slower
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* filename, mat_t* result, const float *buf, unsigned int compress_level);
+EXTERN IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* filename, const mat_full_fp32_t* result, unsigned int compress_level);
 
 /* Write a series
  *
@@ -328,7 +351,7 @@ EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filenam
  * ### FOOTER ###
  * <MAGIC>              : char, e.g., SSU-PARTIAL-01, same as starting magic
  */
-EXTERN IOStatus write_partial(const char* filename, partial_mat_t* result);
+EXTERN IOStatus write_partial(const char* filename, const partial_mat_t* result);
 
 /* Read a partial matrix object
  *
@@ -364,8 +387,7 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
  *
  * partial_mats <partial_mat_t**> an array of partial_mat_t*
  * n_partials <int> number of partial mats
- * result <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
- * buf <double**> the matrix, output parameters, this is initialized in the method so using **
+ * result <mat_full_fp64_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
  * The following error codes are returned:
  *
@@ -374,14 +396,13 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-EXTERN MergeStatus merge_partial_to_matrix(const partial_mat_t*  const * partial_mats, int n_partials, mat_t** result, double **buf);
+MergeStatus merge_partial_to_matrix(const partial_mat_t*  const * partial_mats, int n_partials, mat_full_fp64_t** result);
 
 /* Merge partial results
  *
  * partial_mats <partial_mat_t**> an array of partial_mat_t*
  * n_partials <int> number of partial mats
- * result <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
- * buf <double**> the matrix, output parameters, this is initialized in the method so using **
+ * result <mat_full_fp32_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
  * The following error codes are returned:
  *             
@@ -390,7 +411,7 @@ EXTERN MergeStatus merge_partial_to_matrix(const partial_mat_t*  const * partial
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-EXTERN MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, float **buf);
+MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_full_fp32_t** result);
 
 
 #ifdef __cplusplus

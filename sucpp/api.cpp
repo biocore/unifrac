@@ -135,14 +135,15 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
     }
 }
 
-void initialize_mat_no_cond(mat_t* &result, char** sample_ids, unsigned int n_samples, bool is_upper_triangle) {
-    result = (mat_t*)malloc(sizeof(mat));
+template<class TReal, class TMat>
+void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids, unsigned int n_samples) {
+    result = (TMat*)malloc(sizeof(mat));
     result->n_samples = n_samples;
 
-    result->cf_size = su::comb_2(n_samples);
-    result->is_upper_triangle = is_upper_triangle;
-    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
-    result->condensed_form = NULL;
+    uint64_t n_samples_64 = result->n_samples; // force 64bit to avoit overflow problems
+
+    result->sample_ids = (char**)malloc(sizeof(char*) * n_samples_64);
+    result->matrix = (TReal*)malloc(sizeof(TReal) * n_samples_64 * n_samples_64);
 
     for(unsigned int i = 0; i < n_samples; i++) {
         result->sample_ids[i] = strdup(sample_ids[i]);
@@ -190,6 +191,28 @@ void destroy_mat(mat_t** result) {
     free((*result)->sample_ids);
     if (((*result)->condensed_form)!=NULL) {
       free((*result)->condensed_form);
+    }
+    free(*result);
+}
+
+void destroy_mat_full_fp64(mat_full_fp64_t** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);
+    };
+    free((*result)->sample_ids);
+    if (((*result)->matrix)!=NULL) {
+      free((*result)->matrix);
+    }
+    free(*result);
+}
+
+void destroy_mat_full_fp32(mat_full_fp32_t** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);
+    };
+    free((*result)->sample_ids);
+    if (((*result)->matrix)!=NULL) {
+      free((*result)->matrix);
     }
     free(*result);
 }
@@ -387,7 +410,9 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
-IOStatus write_mat_from_matrix(const char* output_filename, mat_t* result, const double *buf2d) {
+IOStatus write_mat_from_matrix(const char* output_filename, const mat_full_fp64_t* result) {
+    const double *buf2d  = result->matrix;
+
     std::ofstream output;
     output.open(output_filename);
 
@@ -435,8 +460,8 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 }
 
 // Internal: Make sure TReal and real_id match
-template<class TReal>
-IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, mat_t* result, const TReal *buf2d, hid_t real_id, unsigned int compress_level) {
+template<class TMat>
+IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * result, hid_t real_id, unsigned int compress_level) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -513,7 +538,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, mat_t* result
      hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",real_id, dataspace_id,
                                    H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
      herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                              buf2d);
+                              result->matrix);
 
      H5Pclose(dcpl_id);
      H5Dclose(dataset_id);
@@ -531,52 +556,57 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, mat_t* result
 }
 
 // Internal: Make sure TReal and real_id match
-template<class TReal>
+template<class TReal, class TMat>
 IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
      // compute the matrix
+     TMat mat_full;
+     mat_full.n_samples = result->n_samples;
+
      const uint64_t n_samples = result->n_samples;
-     TReal *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
-     if (buf2d==NULL) {
+     mat_full.matrix = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
+     if (mat_full.matrix==NULL) {
        return open_error; // we don't have a better error code
      }
 
-     condensed_form_to_matrix_T(result->condensed_form, n_samples, buf2d);
-     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, result, buf2d, real_id, compress_level);
+     mat_full.sample_ids = result->sample_ids; // just link
 
-     free(buf2d);
+     condensed_form_to_matrix_T(result->condensed_form, n_samples, mat_full.matrix);
+     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, &mat_full, real_id, compress_level);
+
+     free(mat_full.matrix);
      return err;
 }
 
 IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_T<double>(output_filename,result,H5T_IEEE_F64LE,0);
+  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
 }
 
 IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_T<float>(output_filename,result,H5T_IEEE_F32LE,0);
+  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
 }
 
 IOStatus write_mat_hdf5_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_T<double>(output_filename,result,H5T_IEEE_F64LE,compress_level);
+  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
 }
 
 IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_T<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
+  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
 
-IOStatus write_mat_from_matrix_hdf5(const char* output_filename, mat_t* result, const double *buf2d) {
-  return write_mat_from_matrix_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,0);
+IOStatus write_mat_from_matrix_hdf5(const char* output_filename, const mat_full_fp64_t* result) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
 }
 
-IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, mat_t* result, const float *buf2d) {
-  return write_mat_from_matrix_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,0);
+IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, const mat_full_fp32_t* result) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
 }
 
-IOStatus write_mat_from_matrix_hdf5_compressed(const char* output_filename, mat_t* result, const double *buf2d, unsigned int compress_level) {
-  return write_mat_from_matrix_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,compress_level);
+IOStatus write_mat_from_matrix_hdf5_compressed(const char* output_filename, const mat_full_fp64_t* result, unsigned int compress_level) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
 }
 
-IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* output_filename, mat_t* result, const float *buf2d, unsigned int compress_level) {
-  return write_mat_from_matrix_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,compress_level);
+IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* output_filename, const mat_full_fp32_t* result, unsigned int compress_level) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
@@ -595,7 +625,7 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     return write_okay;
 }
 
-IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
+IOStatus write_partial(const char* output_filename, const partial_mat_t* result) {
     int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC,  S_IRUSR |  S_IWUSR );
     if (fd==-1) return open_error;
 
@@ -878,8 +908,8 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
     return merge_okay;
 }
 
-template<class TReal>
-MergeStatus merge_partial_to_matrix_T(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, TReal **buf2d) {
+template<class TReal, class TMat>
+MergeStatus merge_partial_to_matrix_T(const partial_mat_t* const * partial_mats, int n_partials, TMat** result) {
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 
@@ -894,20 +924,18 @@ MergeStatus merge_partial_to_matrix_T(const partial_mat_t* const * partial_mats,
         }
     }
 
-    initialize_mat_no_cond(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, n_samples);
 
-    *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
-
-    su::stripes_to_matrix_T(stripes.data(), n_samples, partial_mats[0]->stripe_total, *buf2d);
+    su::stripes_to_matrix_T(stripes.data(), n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
 
     return merge_okay;
 }
 
-MergeStatus merge_partial_to_matrix(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, double **buf2d) {
-  return merge_partial_to_matrix_T<double>(partial_mats, n_partials, result, buf2d);
+MergeStatus merge_partial_to_matrix(const partial_mat_t* const * partial_mats, int n_partials, mat_full_fp64_t** result) {
+  return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, result);
 }
 
-MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, float **buf2d) {
-  return merge_partial_to_matrix_T<float>(partial_mats, n_partials, result, buf2d);
+MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_full_fp32_t** result) {
+  return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, result);
 }
 

@@ -139,12 +139,10 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
 } 
 
 int mode_merge_partial_fp32(const char * output_filename, Format format_val,
-                            size_t partials_size, partial_mat_t** partial_mats,
-                            unsigned int nthreads) {
-    mat_t *result = NULL;
-    float *buf2d = NULL;
+                            size_t partials_size, const partial_mat_t* const * partial_mats) {
+    mat_full_fp32_t *result = NULL;
 
-    MergeStatus status = merge_partial_to_matrix_fp32(partial_mats, partials_size, &result, &buf2d);
+    MergeStatus status = merge_partial_to_matrix_fp32(partial_mats, partials_size, &result);
 
     if(status != merge_okay) {
         std::ostringstream msg;
@@ -155,12 +153,11 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
 
     IOStatus iostatus;
     if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_from_matrix_hdf5_fp32_compressed(output_filename, result, buf2d, 5);
+     iostatus = write_mat_from_matrix_hdf5_fp32_compressed(output_filename, result, 5);
     } else {           
-     iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result, buf2d);
+     iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result);
     }   
-    free(buf2d);
-    destroy_mat(&result);
+    destroy_mat_full_fp32(&result);
     
     if(iostatus != write_okay) {
         std::ostringstream msg; 
@@ -173,12 +170,10 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
 }
 
 int mode_merge_partial_fp64(const char * output_filename, Format format_val,
-                            size_t partials_size, partial_mat_t** partial_mats,
-                            unsigned int nthreads) {
-    mat_t *result = NULL;
-    double *buf2d = NULL;
+                            size_t partials_size, const partial_mat_t* const * partial_mats) {
+    mat_full_fp64_t *result = NULL;
 
-    MergeStatus status = merge_partial_to_matrix(partial_mats, partials_size, &result, &buf2d);
+    MergeStatus status = merge_partial_to_matrix(partial_mats, partials_size, &result);
 
     if(status != merge_okay) {
         std::ostringstream msg;
@@ -189,14 +184,13 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
 
     IOStatus iostatus;
     if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_from_matrix_hdf5(output_filename, result, buf2d);
+     iostatus = write_mat_from_matrix_hdf5(output_filename, result);
     } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_from_matrix_hdf5_compressed(output_filename, result, buf2d, 5);
+     iostatus = write_mat_from_matrix_hdf5_compressed(output_filename, result, 5);
     } else {
-     iostatus = write_mat(output_filename, result);
+     iostatus = write_mat_from_matrix(output_filename, result);
     }
-    free(buf2d);
-    destroy_mat(&result);
+    destroy_mat_full_fp64(&result);
 
     if(iostatus != write_okay) {
         std::ostringstream msg;
@@ -209,8 +203,8 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
 }
 
 
-int mode_merge_partial(std::string output_filename, Format format_val,
-                       std::string partial_pattern,
+int mode_merge_partial(const std::string &output_filename, Format format_val,
+                       const std::string &partial_pattern,
                        unsigned int nthreads) {
     if(output_filename.empty()) {
         err("output filename missing");
@@ -239,11 +233,11 @@ int mode_merge_partial(std::string output_filename, Format format_val,
 
     int status;
     if ((format_val==format_hdf5_fp64) || (format_val==format_hdf5c_fp64)) {
-     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, nthreads);
+     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats);
     } else if ((format_val==format_hdf5_fp32) || (format_val==format_hdf5c_fp32)) {
-     status = mode_merge_partial_fp32(output_filename.c_str(), format_val, partials.size(), partial_mats, nthreads);
+     status = mode_merge_partial_fp32(output_filename.c_str(), format_val, partials.size(), partial_mats);
     } else {
-     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, nthreads);
+     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats);
     }
 
     for(size_t i = 0; i < partials.size(); i++) {
