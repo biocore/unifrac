@@ -43,9 +43,9 @@
 
         void stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* cf, unsigned int start, unsigned int stop);
 
-        template<class TReal> void stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop);
-        void stripes_to_matrix(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
-        void stripes_to_matrix_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
+        template<class TReal> void stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, TReal* buf2d);
+        void stripes_to_matrix(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, double* buf2d);
+        void stripes_to_matrix_fp32(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, float* buf2d);
 
 
         template<class TReal> void condensed_form_to_matrix_T(double* cf, uint32_t n, TReal* buf2d);

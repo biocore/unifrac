@@ -898,7 +898,7 @@ MergeStatus merge_partial_to_matrix_T(partial_mat_t** partial_mats, int n_partia
 
     *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
 
-    su::stripes_to_matrix_T(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
+    su::stripes_to_matrix_T(stripes, n_samples, partial_mats[0]->stripe_total, *buf2d);
 
     destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
 

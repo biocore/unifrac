@@ -784,7 +784,7 @@ void test_unifrac_stripes_to_matrix_even() {
                       7, 15, 22, 28, 33, 37, 40, 42,  0, 44,
                       8, 16, 23, 29, 34, 38, 41, 43, 44,  0};
     float *obs = (float*)malloc(sizeof(float) * 100);
-    su::stripes_to_matrix_fp32(stripes, 10, obs, 0, 5);
+    su::stripes_to_matrix_fp32(stripes, 10, 5, obs);
     for(unsigned int i = 0; i < 100; i++) {
         ASSERT(exp[i] == obs[i]);
     }
@@ -832,7 +832,7 @@ void test_unifrac_stripes_to_matrix_odd() {
                        11, 30, 31, 50, 45, 35, 27, 13,  9,  0, 10,
                         0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0};
     double *obs = (double*)malloc(sizeof(double) * 121);
-    su::stripes_to_matrix(stripes, 11, obs, 0, 5);
+    su::stripes_to_matrix(stripes, 11, 5, obs);
     for(unsigned int i = 0; i < 121; i++) {
         ASSERT(exp[i] == obs[i]);
     }
@@ -879,7 +879,7 @@ void test_unifrac_stripes_to_matrix_odd2() {
                        9, 10, 27, 28, 32, 24, 12,  8,  0};
 
     double *obs = (double*)malloc(sizeof(double) * 81);
-    su::stripes_to_matrix(stripes, 9, obs, 0, 5);
+    su::stripes_to_matrix(stripes, 9, 5, obs);
     for(unsigned int i = 0; i < 81; i++) {
         ASSERT(exp[i] == obs[i]);
     }

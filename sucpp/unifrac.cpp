@@ -234,11 +234,9 @@ void su::condensed_form_to_matrix_fp32(double* cf, uint32_t n, float* buf2d) {
 // write in a 2D matrix 
 // also suitable for writing to disk
 template<class TReal>
-void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
+void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, TReal* buf2d) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
-
-    // start must be 0, stop must bu total number of stripes
 
     // tile for  for better memory access pattern 
 #ifdef MICRO_TILE
@@ -249,31 +247,31 @@ void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* b
     const uint32_t TILE = 128/sizeof(TReal);
 #endif
 
-    for(uint32_t iOut = 0; iOut < n; iOut+=TILE) {
-      for(uint32_t jOut = 0; jOut < n; jOut+=TILE) {
-         uint32_t iMax = std::min(iOut+TILE,n);
-         uint32_t jMax = std::min(jOut+TILE,n);
+    for(uint32_t iOut = 0; iOut < n_samples; iOut+=TILE) {
+      for(uint32_t jOut = 0; jOut < n_samples; jOut+=TILE) {
+         uint32_t iMax = std::min(iOut+TILE,n_samples);
+         uint32_t jMax = std::min(jOut+TILE,n_samples);
 
 
         if (iOut==jOut) { 
           // on diagonal
           for(uint64_t i = iOut; i < iMax; i++) {
-             buf2d[i*n+i] = 0.0;
+             buf2d[i*n_samples+i] = 0.0;
 
              int64_t stripe=0;
 
              uint64_t j = i+1;
-             for(; (stripe<stop) && (j<jMax); stripe++, j++) {
+             for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
                TReal val = stripes[stripe][i];
-               buf2d[i*n+j] = val;
+               buf2d[i*n_samples+j] = val;
              }
 
-             if (j<n) { // implies strip==stop, we are really looking at the mirror
-               stripe=n-stop-1;
+             if (j<n_samples) { // implies strip==n_stripes, we are really looking at the mirror
+               stripe=n_samples-n_stripes-1;
                for(; j < jMax; j++) {
                  --stripe;
                  TReal val = stripes[stripe][j];
-                 buf2d[i*n+j] = val;
+                 buf2d[i*n_samples+j] = val;
                }
              }
           }
@@ -281,7 +279,7 @@ void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* b
           // lower triangle
           for(uint64_t i = iOut+1; i < iMax; i++) {
             for(uint64_t j = jOut; j < i; j++) {
-              buf2d[i*n+j] = buf2d[j*n+i];
+              buf2d[i*n_samples+j] = buf2d[j*n_samples+i];
             }
           }
 
@@ -294,18 +292,18 @@ void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* b
              // we are off diagonal, so adjust
              stripe += (jOut-j);
              j=jOut;
-             if (stripe>stop) {
+             if (stripe>n_stripes) {
                // ops, we overshoot... roll back
-               j-=(stripe-stop);
-               stripe=stop;
+               j-=(stripe-n_stripes);
+               stripe=n_stripes;
              }
-             for(; (stripe<stop) && (j<jMax); stripe++, j++) {
+             for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
                 TReal val = stripes[stripe][i];
-                buf2d[i*n+j] = val;
+                buf2d[i*n_samples+j] = val;
              }
 
-             if (j<jMax) { // implies strip==stop, we are really looking at the mirror
-               stripe=n-stop-1;
+             if (j<jMax) { // implies strip==n_stripes, we are really looking at the mirror
+               stripe=n_samples-n_stripes-1;
                if (j<jOut) {
                  stripe -= (jOut-j); // note: should not be able to overshoot
                  j=jOut;
@@ -313,7 +311,7 @@ void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* b
                for(; j < jMax; j++) {
                  --stripe;
                  TReal val = stripes[stripe][j];
-                 buf2d[i*n+j] = val;
+                 buf2d[i*n_samples+j] = val;
                }
              }
           }
@@ -321,7 +319,7 @@ void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* b
           // do the other off-diagonal immediately, so it is still in cache
           for(uint64_t j = jOut; j < jMax; j++) {
             for(uint64_t i = iOut; i < iMax; i++) {
-              buf2d[j*n+i] = buf2d[i*n+j];
+              buf2d[j*n_samples+i] = buf2d[i*n_samples+j];
             }
           }
         }
@@ -331,15 +329,15 @@ void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* b
 }
 
 // Make sure it gets instantiated
-template void su::stripes_to_matrix_T<double>(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
-template void su::stripes_to_matrix_T<float>(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
+template void su::stripes_to_matrix_T<double>(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, double* buf2d);
+template void su::stripes_to_matrix_T<float>(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, float* buf2d);
 
-void su::stripes_to_matrix(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop) {
-   return su::stripes_to_matrix_T<double>(stripes, n, buf2d, start, stop);
+void su::stripes_to_matrix(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, double* buf2d) {
+   return su::stripes_to_matrix_T<double>(stripes, n_samples, n_stripes, buf2d);
 }
 
-void su::stripes_to_matrix_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop) {
-  return su::stripes_to_matrix_T<float>(stripes, n, buf2d, start, stop);
+void su::stripes_to_matrix_fp32(std::vector<double*> &stripes, uint32_t n_samples, uint32_t n_stripes, float* buf2d) {
+  return su::stripes_to_matrix_T<float>(stripes, n_samples, n_stripes, buf2d);
 }
 
 
