@@ -192,7 +192,7 @@ EXTERN IOStatus write_mat_from_matrix(const char* filename, mat_t* result, const
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_mtrix_hdf5(const char* filename, mat_t* result, const double *buf);
+EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, mat_t* result, const double *buf);
 
 /* Write a matrix object from buffer using hdf5 format, using fp32 precision
  *
@@ -374,7 +374,7 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-EXTERN MergeStatus merge_partial_to_mtrix(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf);
+EXTERN MergeStatus merge_partial_to_matrix(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf);
 
 /* Merge partial results
  *

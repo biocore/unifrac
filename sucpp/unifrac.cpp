@@ -209,7 +209,7 @@ template void su::condensed_form_to_matrix_T<double>(double* cf, uint32_t n, dou
 template void su::condensed_form_to_matrix_T<float>(double* cf, uint32_t n, float* buf2d);
 
 void su::condensed_form_to_matrix(double* cf, uint32_t n, double* buf2d) {
-  su::condensed_form_to_mtrix_T<double>(cf,n,buf2d);
+  su::condensed_form_to_matrix_T<double>(cf,n,buf2d);
 }
 
 void su::condensed_form_to_matrix_fp32(double* cf, uint32_t n, float* buf2d) {

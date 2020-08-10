@@ -387,7 +387,7 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
-IOStatus write_mat_from_mtrix(const char* output_filename, mat_t* result, const double *buf2d) {
+IOStatus write_mat_from_matrix(const char* output_filename, mat_t* result, const double *buf2d) {
     std::ofstream output;
     output.open(output_filename);
 
