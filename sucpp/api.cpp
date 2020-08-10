@@ -806,7 +806,7 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     return read_okay;
 }
 
-MergeStatus check_partial(partial_mat_t** partial_mats, int n_partials) {
+MergeStatus check_partial(const partial_mat_t* const * partial_mats, int n_partials) {
     if(n_partials <= 0) {
         fprintf(stderr, "Zero or less partials.\n");
         exit(EXIT_FAILURE);
@@ -879,17 +879,17 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
 }
 
 template<class TReal>
-MergeStatus merge_partial_to_matrix_T(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, TReal **buf2d) {
+MergeStatus merge_partial_to_matrix_T(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, TReal **buf2d) {
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 
     uint64_t n_samples = partial_mats[0]->n_samples;
-    std::vector<double*> stripes(partial_mats[0]->stripe_total);
-    std::vector<double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
+    std::vector<const double*> stripes(partial_mats[0]->stripe_total);
+    std::vector<const double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
     for(int i = 0; i < n_partials; i++) {
         int n_stripes = partial_mats[i]->stripe_stop - partial_mats[i]->stripe_start;
         for(int j = 0; j < n_stripes; j++) {
-            // as this is potentially a large amount of memory, don't copy, just adopt
+            // as this is potentially a large amount of memory, don't copy, just keep a pointer to it
             *&(stripes[j + partial_mats[i]->stripe_start]) = partial_mats[i]->stripes[j];
         }
     }
@@ -898,18 +898,16 @@ MergeStatus merge_partial_to_matrix_T(partial_mat_t** partial_mats, int n_partia
 
     *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
 
-    su::stripes_to_matrix_T(stripes, n_samples, partial_mats[0]->stripe_total, *buf2d);
-
-    destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
+    su::stripes_to_matrix_T(stripes.data(), n_samples, partial_mats[0]->stripe_total, *buf2d);
 
     return merge_okay;
 }
 
-MergeStatus merge_partial_to_matrix(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf2d) {
-  return merge_partial_to_matrix_T<double>(partial_mats, n_partials, nthreads, result, buf2d);
+MergeStatus merge_partial_to_matrix(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, double **buf2d) {
+  return merge_partial_to_matrix_T<double>(partial_mats, n_partials, result, buf2d);
 }
 
-MergeStatus merge_partial_to_matrix_fp32(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, float **buf2d) {
-  return merge_partial_to_matrix_T<float>(partial_mats, n_partials, nthreads, result, buf2d);
+MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, float **buf2d) {
+  return merge_partial_to_matrix_T<float>(partial_mats, n_partials, result, buf2d);
 }
 

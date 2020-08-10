@@ -144,7 +144,7 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
     mat_t *result = NULL;
     float *buf2d = NULL;
 
-    MergeStatus status = merge_partial_to_matrix_fp32(partial_mats, partials_size, nthreads, &result, &buf2d);
+    MergeStatus status = merge_partial_to_matrix_fp32(partial_mats, partials_size, &result, &buf2d);
 
     if(status != merge_okay) {
         std::ostringstream msg;
@@ -178,7 +178,7 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
     mat_t *result = NULL;
     double *buf2d = NULL;
 
-    MergeStatus status = merge_partial_to_matrix(partial_mats, partials_size, nthreads, &result, &buf2d);
+    MergeStatus status = merge_partial_to_matrix(partial_mats, partials_size, &result, &buf2d);
 
     if(status != merge_okay) {
         std::ostringstream msg;
@@ -244,6 +244,10 @@ int mode_merge_partial(std::string output_filename, Format format_val,
      status = mode_merge_partial_fp32(output_filename.c_str(), format_val, partials.size(), partial_mats, nthreads);
     } else {
      status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, nthreads);
+    }
+
+    for(size_t i = 0; i < partials.size(); i++) {
+      destroy_partial_mat(&partial_mats[i]);
     }
 
     return status;

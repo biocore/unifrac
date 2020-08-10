@@ -347,7 +347,7 @@ EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
 
 /* Merge partial results
  *
- * results <partial_mat_t**> an array of partial_mat_t*
+ * results <partial_mat_t**> an array of partial_mat_t*, the buffers will be destroyed in the process
  * n_partials <int> number of partial mats
  * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
@@ -362,9 +362,9 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
 
 /* Merge partial results
  *
- * results <partial_mat_t**> an array of partial_mat_t*
+ * partial_mats <partial_mat_t**> an array of partial_mat_t*
  * n_partials <int> number of partial mats
- * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
+ * result <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
  * buf <double**> the matrix, output parameters, this is initialized in the method so using **
  *
  * The following error codes are returned:
@@ -374,13 +374,13 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-EXTERN MergeStatus merge_partial_to_matrix(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf);
+EXTERN MergeStatus merge_partial_to_matrix(const partial_mat_t*  const * partial_mats, int n_partials, mat_t** result, double **buf);
 
 /* Merge partial results
  *
- * results <partial_mat_t**> an array of partial_mat_t*
+ * partial_mats <partial_mat_t**> an array of partial_mat_t*
  * n_partials <int> number of partial mats
- * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
+ * result <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
  * buf <double**> the matrix, output parameters, this is initialized in the method so using **
  *
  * The following error codes are returned:
@@ -390,7 +390,7 @@ EXTERN MergeStatus merge_partial_to_matrix(partial_mat_t** partial_mats, int n_p
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-EXTERN MergeStatus merge_partial_to_matrix_fp32(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, float **buf);
+EXTERN MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_t** result, float **buf);
 
 
 #ifdef __cplusplus
