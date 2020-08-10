@@ -726,7 +726,7 @@ void test_unifrac_stripes_to_condensed_form_odd() {
 }
 
 void test_unifrac_stripes_to_condensed_form_odd2() {
-    SUITE_START("test stripes_to_condensed_form odd samples");
+    SUITE_START("test stripes_to_condensed_form odd(2) samples");
     std::vector<double*> stripes;
     double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9};
     double s2[] = {18, 17, 16, 15, 14, 13, 12 ,11, 10};
@@ -758,8 +758,8 @@ void test_unifrac_stripes_to_condensed_form_odd2() {
 }
 
 
-void test_unifrac_stripes_to_buf_even() {
-    SUITE_START("test stripes_to_buf even samples");
+void test_unifrac_stripes_to_matrix_even() {
+    SUITE_START("test stripes_to_matrix even samples");
     std::vector<double*> stripes;
     double s1[] = {0,  9, 17, 24, 30, 35, 39, 42, 44,  8};
     double s2[] = {1, 10, 18, 25, 31, 36, 40, 43,  7, 16};
@@ -784,7 +784,7 @@ void test_unifrac_stripes_to_buf_even() {
                       7, 15, 22, 28, 33, 37, 40, 42,  0, 44,
                       8, 16, 23, 29, 34, 38, 41, 43, 44,  0};
     float *obs = (float*)malloc(sizeof(float) * 100);
-    su::stripes_to_buf_fp32(stripes, 10, obs, 0, 5);
+    su::stripes_to_matrix_fp32(stripes, 10, obs, 0, 5);
     for(unsigned int i = 0; i < 100; i++) {
         ASSERT(exp[i] == obs[i]);
     }
@@ -794,7 +794,7 @@ void test_unifrac_stripes_to_buf_even() {
     su::stripes_to_condensed_form(stripes, 10, obsC, 0, 5);
 
     float *obs2 = (float*)malloc(sizeof(float) * 100);
-    su::condensed_form_to_buf_fp32(obsC, 10, obs2);
+    su::condensed_form_to_matrix_fp32(obsC, 10, obs2);
 
     for(unsigned int i = 0; i < 100; i++) {
         ASSERT(exp[i] == obs2[i]);
@@ -806,8 +806,8 @@ void test_unifrac_stripes_to_buf_even() {
     SUITE_END();
 }
 
-void test_unifrac_stripes_to_buf_odd() {
-    SUITE_START("test stripes_to_buf odd samples");
+void test_unifrac_stripes_to_matrix_odd() {
+    SUITE_START("test stripes_to_matrix odd samples");
     std::vector<double*> stripes;
     double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 0};
     double s2[] = {20, 19, 18, 17, 16, 15, 14 ,13, 12, 11, 1};
@@ -832,7 +832,7 @@ void test_unifrac_stripes_to_buf_odd() {
                        11, 30, 31, 50, 45, 35, 27, 13,  9,  0, 10,
                         0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0};
     double *obs = (double*)malloc(sizeof(double) * 121);
-    su::stripes_to_buf(stripes, 11, obs, 0, 5);
+    su::stripes_to_matrix(stripes, 11, obs, 0, 5);
     for(unsigned int i = 0; i < 121; i++) {
         ASSERT(exp[i] == obs[i]);
     }
@@ -842,7 +842,7 @@ void test_unifrac_stripes_to_buf_odd() {
     su::stripes_to_condensed_form(stripes, 11, obsC, 0, 5);
 
     double *obs2 = (double*)malloc(sizeof(double) * 121);
-    su::condensed_form_to_buf(obsC, 11, obs2);
+    su::condensed_form_to_matrix(obsC, 11, obs2);
     
     for(unsigned int i = 0; i < 121; i++) {
         ASSERT(exp[i] == obs2[i]);
@@ -854,8 +854,8 @@ void test_unifrac_stripes_to_buf_odd() {
     SUITE_END();
 }
 
-void test_unifrac_stripes_to_buf_odd2() {
-    SUITE_START("test stripes_to_buf odd samples");
+void test_unifrac_stripes_to_matrix_odd2() {
+    SUITE_START("test stripes_to_matrix odd(2) samples");
     std::vector<double*> stripes;
     double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9};
     double s2[] = {18, 17, 16, 15, 14, 13, 12 ,11, 10};
@@ -879,7 +879,7 @@ void test_unifrac_stripes_to_buf_odd2() {
                        9, 10, 27, 28, 32, 24, 12,  8,  0};
 
     double *obs = (double*)malloc(sizeof(double) * 81);
-    su::stripes_to_buf(stripes, 9, obs, 0, 5);
+    su::stripes_to_matrix(stripes, 9, obs, 0, 5);
     for(unsigned int i = 0; i < 81; i++) {
         ASSERT(exp[i] == obs[i]);
     }
@@ -889,7 +889,7 @@ void test_unifrac_stripes_to_buf_odd2() {
     su::stripes_to_condensed_form(stripes, 9, obsC, 0, 5);
 
     double *obs2 = (double*)malloc(sizeof(double) * 81);
-    su::condensed_form_to_buf(obsC, 9, obs2);
+    su::condensed_form_to_matrix(obsC, 9, obs2);
     
     for(unsigned int i = 0; i < 81; i++) {
         ASSERT(exp[i] == obs2[i]);
@@ -1556,9 +1556,9 @@ int main(int argc, char** argv) {
     test_unifrac_stripes_to_condensed_form_even();
     test_unifrac_stripes_to_condensed_form_odd();
     test_unifrac_stripes_to_condensed_form_odd2();
-    test_unifrac_stripes_to_buf_even();
-    test_unifrac_stripes_to_buf_odd();
-    test_unifrac_stripes_to_buf_odd2();
+    test_unifrac_stripes_to_matrix_even();
+    test_unifrac_stripes_to_matrix_odd();
+    test_unifrac_stripes_to_matrix_odd2();
     test_unweighted_unifrac();
     test_unweighted_unifrac_fast();
     test_unnormalized_weighted_unifrac();

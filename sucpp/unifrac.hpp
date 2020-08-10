@@ -43,14 +43,14 @@
 
         void stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* cf, unsigned int start, unsigned int stop);
 
-        template<class TReal> void stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop);
-        void stripes_to_buf(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
-        void stripes_to_buf_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
+        template<class TReal> void stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop);
+        void stripes_to_matrix(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
+        void stripes_to_matrix_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
 
 
-        template<class TReal> void condensed_form_to_buf_T(double* cf, uint32_t n, TReal* buf2d);
-        void condensed_form_to_buf(double* cf, uint32_t n, double* buf2d);
-        void condensed_form_to_buf_fp32(double* cf, uint32_t n, float* buf2d);
+        template<class TReal> void condensed_form_to_matrix_T(double* cf, uint32_t n, TReal* buf2d);
+        void condensed_form_to_matrix(double* cf, uint32_t n, double* buf2d);
+        void condensed_form_to_matrix_fp32(double* cf, uint32_t n, float* buf2d);
 
         void set_proportions(double* props, 
                              BPTree &tree, uint32_t node, 

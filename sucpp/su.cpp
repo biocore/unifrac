@@ -144,7 +144,7 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
     mat_t *result = NULL;
     float *buf2d = NULL;
 
-    MergeStatus status = merge_partial_to_buf_fp32(partial_mats, partials_size, nthreads, &result, &buf2d);
+    MergeStatus status = merge_partial_to_matrix_fp32(partial_mats, partials_size, nthreads, &result, &buf2d);
 
     if(status != merge_okay) {
         std::ostringstream msg;
@@ -155,9 +155,9 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
 
     IOStatus iostatus;
     if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_from_buf_hdf5_fp32_compressed(output_filename, result, buf2d, 5);
+     iostatus = write_mat_from_matrix_hdf5_fp32_compressed(output_filename, result, buf2d, 5);
     } else {           
-     iostatus = write_mat_from_buf_hdf5_fp32(output_filename, result, buf2d);
+     iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result, buf2d);
     }   
     free(buf2d);
     destroy_mat(&result);
@@ -178,7 +178,7 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
     mat_t *result = NULL;
     double *buf2d = NULL;
 
-    MergeStatus status = merge_partial_to_buf(partial_mats, partials_size, nthreads, &result, &buf2d);
+    MergeStatus status = merge_partial_to_matrix(partial_mats, partials_size, nthreads, &result, &buf2d);
 
     if(status != merge_okay) {
         std::ostringstream msg;
@@ -189,9 +189,9 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
 
     IOStatus iostatus;
     if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_from_buf_hdf5(output_filename, result, buf2d);
+     iostatus = write_mat_from_matrix_hdf5(output_filename, result, buf2d);
     } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_from_buf_hdf5_compressed(output_filename, result, buf2d, 5);
+     iostatus = write_mat_from_matrix_hdf5_compressed(output_filename, result, buf2d, 5);
     } else {
      iostatus = write_mat(output_filename, result);
     }

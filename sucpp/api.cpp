@@ -387,7 +387,7 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
-IOStatus write_mat_from_buf(const char* output_filename, mat_t* result, const double *buf2d) {
+IOStatus write_mat_from_mtrix(const char* output_filename, mat_t* result, const double *buf2d) {
     std::ofstream output;
     output.open(output_filename);
 
@@ -436,7 +436,7 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 
 // Internal: Make sure TReal and real_id match
 template<class TReal>
-IOStatus write_mat_from_buf_hdf5_T(const char* output_filename, mat_t* result, const TReal *buf2d, hid_t real_id, unsigned int compress_level) {
+IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, mat_t* result, const TReal *buf2d, hid_t real_id, unsigned int compress_level) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -540,8 +540,8 @@ IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_
        return open_error; // we don't have a better error code
      }
 
-     condensed_form_to_buf_T(result->condensed_form, n_samples, buf2d);
-     IOStatus err =  write_mat_from_buf_hdf5_T(output_filename, result, buf2d, real_id, compress_level);
+     condensed_form_to_matrix_T(result->condensed_form, n_samples, buf2d);
+     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, result, buf2d, real_id, compress_level);
 
      free(buf2d);
      return err;
@@ -563,20 +563,20 @@ IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* resu
   return write_mat_hdf5_T<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
 
-IOStatus write_mat_from_buf_hdf5(const char* output_filename, mat_t* result, const double *buf2d) {
-  return write_mat_from_buf_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,0);
+IOStatus write_mat_from_matrix_hdf5(const char* output_filename, mat_t* result, const double *buf2d) {
+  return write_mat_from_matrix_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,0);
 }
 
-IOStatus write_mat_from_buf_hdf5_fp32(const char* output_filename, mat_t* result, const float *buf2d) {
-  return write_mat_from_buf_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,0);
+IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, mat_t* result, const float *buf2d) {
+  return write_mat_from_matrix_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,0);
 }
 
-IOStatus write_mat_from_buf_hdf5_compressed(const char* output_filename, mat_t* result, const double *buf2d, unsigned int compress_level) {
-  return write_mat_from_buf_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,compress_level);
+IOStatus write_mat_from_matrix_hdf5_compressed(const char* output_filename, mat_t* result, const double *buf2d, unsigned int compress_level) {
+  return write_mat_from_matrix_hdf5_T<double>(output_filename,result,buf2d,H5T_IEEE_F64LE,compress_level);
 }
 
-IOStatus write_mat_from_buf_hdf5_fp32_compressed(const char* output_filename, mat_t* result, const float *buf2d, unsigned int compress_level) {
-  return write_mat_from_buf_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,compress_level);
+IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* output_filename, mat_t* result, const float *buf2d, unsigned int compress_level) {
+  return write_mat_from_matrix_hdf5_T<float>(output_filename,result,buf2d,H5T_IEEE_F32LE,compress_level);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
@@ -879,7 +879,7 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
 }
 
 template<class TReal>
-MergeStatus merge_partial_to_buf_T(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, TReal **buf2d) {
+MergeStatus merge_partial_to_matrix_T(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, TReal **buf2d) {
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 
@@ -898,18 +898,18 @@ MergeStatus merge_partial_to_buf_T(partial_mat_t** partial_mats, int n_partials,
 
     *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
 
-    su::stripes_to_buf_T(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
+    su::stripes_to_matrix_T(stripes, n_samples, *buf2d, 0, partial_mats[0]->stripe_total);
 
     destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
 
     return merge_okay;
 }
 
-MergeStatus merge_partial_to_buf(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf2d) {
-  return merge_partial_to_buf_T<double>(partial_mats, n_partials, nthreads, result, buf2d);
+MergeStatus merge_partial_to_matrix(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, double **buf2d) {
+  return merge_partial_to_matrix_T<double>(partial_mats, n_partials, nthreads, result, buf2d);
 }
 
-MergeStatus merge_partial_to_buf_fp32(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, float **buf2d) {
-  return merge_partial_to_buf_T<float>(partial_mats, n_partials, nthreads, result, buf2d);
+MergeStatus merge_partial_to_matrix_fp32(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result, float **buf2d) {
+  return merge_partial_to_matrix_T<float>(partial_mats, n_partials, nthreads, result, buf2d);
 }
 

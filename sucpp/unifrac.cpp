@@ -180,9 +180,11 @@ void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, do
     }
 }
 
-// write in a format suitable for writing to disk
+
+// write in a 2D matrix 
+// also suitable for writing to disk
 template<class TReal>
-void su::condensed_form_to_buf_T(double* cf, uint32_t n, TReal* buf2d) {
+void su::condensed_form_to_matrix_T(double* cf, uint32_t n, TReal* buf2d) {
      const uint64_t comb_N = su::comb_2(n);
      for(uint64_t i = 0; i < n; i++) {
         for(uint64_t j = 0; j < n; j++) {
@@ -203,15 +205,15 @@ void su::condensed_form_to_buf_T(double* cf, uint32_t n, TReal* buf2d) {
 
 
 // make sure it is instantiated
-template void su::condensed_form_to_buf_T<double>(double* cf, uint32_t n, double* buf2d);
-template void su::condensed_form_to_buf_T<float>(double* cf, uint32_t n, float* buf2d);
+template void su::condensed_form_to_matrix_T<double>(double* cf, uint32_t n, double* buf2d);
+template void su::condensed_form_to_matrix_T<float>(double* cf, uint32_t n, float* buf2d);
 
-void su::condensed_form_to_buf(double* cf, uint32_t n, double* buf2d) {
-  su::condensed_form_to_buf_T<double>(cf,n,buf2d);
+void su::condensed_form_to_matrix(double* cf, uint32_t n, double* buf2d) {
+  su::condensed_form_to_mtrix_T<double>(cf,n,buf2d);
 }
 
-void su::condensed_form_to_buf_fp32(double* cf, uint32_t n, float* buf2d) {
-  su::condensed_form_to_buf_T<float>(cf,n,buf2d);
+void su::condensed_form_to_matrix_fp32(double* cf, uint32_t n, float* buf2d) {
+  su::condensed_form_to_matrix_T<float>(cf,n,buf2d);
 }
 
 /*
@@ -229,9 +231,10 @@ void su::condensed_form_to_buf_fp32(double* cf, uint32_t n, float* buf2d) {
  * [ A A A A A A ]
  */
 
-// write in a format suitable for writing to disk
+// write in a 2D matrix 
+// also suitable for writing to disk
 template<class TReal>
-void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
+void su::stripes_to_matrix_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2d, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
@@ -328,15 +331,15 @@ void su::stripes_to_buf_T(std::vector<double*> &stripes, uint32_t n, TReal* buf2
 }
 
 // Make sure it gets instantiated
-template void su::stripes_to_buf_T<double>(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
-template void su::stripes_to_buf_T<float>(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
+template void su::stripes_to_matrix_T<double>(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop);
+template void su::stripes_to_matrix_T<float>(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop);
 
-void su::stripes_to_buf(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop) {
-   return su::stripes_to_buf_T<double>(stripes, n, buf2d, start, stop);
+void su::stripes_to_matrix(std::vector<double*> &stripes, uint32_t n, double* buf2d, unsigned int start, unsigned int stop) {
+   return su::stripes_to_matrix_T<double>(stripes, n, buf2d, start, stop);
 }
 
-void su::stripes_to_buf_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop) {
-  return su::stripes_to_buf_T<float>(stripes, n, buf2d, start, stop);
+void su::stripes_to_matrix_fp32(std::vector<double*> &stripes, uint32_t n, float* buf2d, unsigned int start, unsigned int stop) {
+  return su::stripes_to_matrix_T<float>(stripes, n, buf2d, start, stop);
 }
 
 
