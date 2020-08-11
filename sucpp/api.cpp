@@ -926,7 +926,7 @@ MergeStatus merge_partial_to_matrix_T(const partial_mat_t* const * partial_mats,
 
     initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, n_samples);
 
-    su::stripes_to_matrix_T(stripes.data(), n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
+    su::stripes_to_matrix_T<TReal>(MemoryStripes(stripes), n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
 
     return merge_okay;
 }

@@ -234,7 +234,7 @@ void su::condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uin
 // write in a 2D matrix 
 // also suitable for writing to disk
 template<class TReal>
-void su::stripes_to_matrix_T(const double  * __restrict__ const * __restrict__ stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d) {
+void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
@@ -262,7 +262,8 @@ void su::stripes_to_matrix_T(const double  * __restrict__ const * __restrict__ s
 
              uint64_t j = i+1;
              for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
-               TReal val = stripes[stripe][i];
+               const double *mystripe = stripes.get_stripe(stripe);
+               TReal val = mystripe[i];
                buf2d[i*n_samples+j] = val;
              }
 
@@ -270,7 +271,8 @@ void su::stripes_to_matrix_T(const double  * __restrict__ const * __restrict__ s
                stripe=n_samples-n_stripes-1;
                for(; j < jMax; j++) {
                  --stripe;
-                 TReal val = stripes[stripe][j];
+                 const double *mystripe = stripes.get_stripe(stripe);
+                 TReal val = mystripe[j];
                  buf2d[i*n_samples+j] = val;
                }
              }
@@ -298,7 +300,8 @@ void su::stripes_to_matrix_T(const double  * __restrict__ const * __restrict__ s
                stripe=n_stripes;
              }
              for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
-                TReal val = stripes[stripe][i];
+                const double *mystripe = stripes.get_stripe(stripe);
+                TReal val = mystripe[i];
                 buf2d[i*n_samples+j] = val;
              }
 
@@ -307,10 +310,11 @@ void su::stripes_to_matrix_T(const double  * __restrict__ const * __restrict__ s
                if (j<jOut) {
                  stripe -= (jOut-j); // note: should not be able to overshoot
                  j=jOut;
-               } 
+               }
                for(; j < jMax; j++) {
                  --stripe;
-                 TReal val = stripes[stripe][j];
+                 const double * mystripe = stripes.get_stripe(stripe);
+                 TReal val = mystripe[j];
                  buf2d[i*n_samples+j] = val;
                }
              }
@@ -329,14 +333,14 @@ void su::stripes_to_matrix_T(const double  * __restrict__ const * __restrict__ s
 }
 
 // Make sure it gets instantiated
-template void su::stripes_to_matrix_T<double>(const double  * __restrict__ const * __restrict__ stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d);
-template void su::stripes_to_matrix_T<float>(const double  * __restrict__ const * __restrict__stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d);
+template void su::stripes_to_matrix_T<double>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d);
+template void su::stripes_to_matrix_T<float>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d);
 
-void su::stripes_to_matrix(const double  * __restrict__ const * __restrict__ stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d) {
+void su::stripes_to_matrix(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d) {
    return su::stripes_to_matrix_T<double>(stripes, n_samples, n_stripes, buf2d);
 }
 
-void su::stripes_to_matrix_fp32(const double  * __restrict__ const * __restrict__ stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d) {
+void su::stripes_to_matrix_fp32(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d) {
   return su::stripes_to_matrix_T<float>(stripes, n_samples, n_stripes, buf2d);
 }
 
