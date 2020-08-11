@@ -117,26 +117,93 @@ void test_read_write_partial_mat() {
     io_status err = write_partial("/tmp/ssu_io.dat", pm);
     ASSERT(err == write_okay);
 
-    partial_mat_t *obs = NULL;
-    err = read_partial("/tmp/ssu_io.dat", &obs);
+    {
+      partial_mat_t *obs = NULL;
+      err = read_partial("/tmp/ssu_io.dat", &obs);
     
-    ASSERT(err == read_okay);
-    ASSERT(obs->n_samples == 6);
-    ASSERT(obs->stripe_start == 0);
-    ASSERT(obs->stripe_stop == 3);
-    ASSERT(obs->stripe_total == 3);
-    ASSERT(strcmp(obs->sample_ids[0], "A") == 0);
-    ASSERT(strcmp(obs->sample_ids[1], "B") == 0);
-    ASSERT(strcmp(obs->sample_ids[2], "Cx") == 0);
-    ASSERT(strcmp(obs->sample_ids[3], "D") == 0);
-    ASSERT(strcmp(obs->sample_ids[4], "E") == 0);
-    ASSERT(strcmp(obs->sample_ids[5], "F") == 0);
+      ASSERT(err == read_okay);
+      ASSERT(obs->n_samples == 6);
+      ASSERT(obs->stripe_start == 0);
+      ASSERT(obs->stripe_stop == 3);
+      ASSERT(obs->stripe_total == 3);
+      ASSERT(strcmp(obs->sample_ids[0], "A") == 0);
+      ASSERT(strcmp(obs->sample_ids[1], "B") == 0);
+      ASSERT(strcmp(obs->sample_ids[2], "Cx") == 0);
+      ASSERT(strcmp(obs->sample_ids[3], "D") == 0);
+      ASSERT(strcmp(obs->sample_ids[4], "E") == 0);
+      ASSERT(strcmp(obs->sample_ids[5], "F") == 0);
 
-    for(int i = 0; i < 3; i++) {
+      for(int i = 0; i < 3; i++) {
         for(int j = 0; j < 6; j++) {
             ASSERT(obs->stripes[i][j] == ((i * 6) + j + 1));
         }
+      }
+
+      destroy_partial_mat(&obs);
     }
+
+    {
+      partial_dyn_mat_t *obs = NULL;
+      err = read_partial_header("/tmp/ssu_io.dat", &obs);
+   
+      ASSERT(err == read_okay);
+      ASSERT(obs->n_samples == 6);
+      ASSERT(obs->stripe_start == 0);
+      ASSERT(obs->stripe_stop == 3);
+      ASSERT(obs->stripe_total == 3);
+      ASSERT(strcmp(obs->sample_ids[0], "A") == 0);
+      ASSERT(strcmp(obs->sample_ids[1], "B") == 0);
+      ASSERT(strcmp(obs->sample_ids[2], "Cx") == 0);
+      ASSERT(strcmp(obs->sample_ids[3], "D") == 0);
+      ASSERT(strcmp(obs->sample_ids[4], "E") == 0);
+      ASSERT(strcmp(obs->sample_ids[5], "F") == 0);
+
+      for(int i = 0; i < 3; i++) {
+        ASSERT(obs->stripes[i]==NULL);
+      }
+
+      err = read_partial_one_stripe(obs,1);
+      ASSERT(err == read_okay);
+
+      ASSERT(obs->stripes[0]==NULL);
+      ASSERT(obs->stripes[1]!=NULL);
+      ASSERT(obs->stripes[2]==NULL);
+
+      {
+        const int i = 1;
+        for(int j = 0; j < 6; j++) {
+            ASSERT(obs->stripes[i][j] == ((i * 6) + j + 1));
+        }
+      }
+
+      err = read_partial_one_stripe(obs,0);
+      ASSERT(err == read_okay);
+
+      ASSERT(obs->stripes[0]!=NULL);
+      ASSERT(obs->stripes[1]!=NULL);
+      ASSERT(obs->stripes[2]==NULL);
+
+      {
+        const int i = 0;
+        for(int j = 0; j < 6; j++) {
+            ASSERT(obs->stripes[i][j] == ((i * 6) + j + 1));
+        }
+      }
+    
+      err = read_partial_one_stripe(obs,2);
+      ASSERT(err == read_okay);
+
+
+      for(int i = 0; i < 3; i++) {
+        ASSERT(obs->stripes[i]!=NULL);
+        for(int j = 0; j < 6; j++) {
+            ASSERT(obs->stripes[i][j] == ((i * 6) + j + 1));
+        }
+      }
+
+      destroy_partial_dyn_mat(&obs);
+    }
+
     SUITE_END();
 }
 

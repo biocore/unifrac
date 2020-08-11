@@ -235,6 +235,29 @@ void destroy_partial_mat(partial_mat_t** result) {
     free(*result);
 }
 
+void destroy_partial_dyn_mat(partial_dyn_mat_t** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        if((*result)->sample_ids[i] != NULL)
+            free((*result)->sample_ids[i]);
+    };
+    if((*result)->sample_ids != NULL)
+        free((*result)->sample_ids);
+
+    unsigned int n_stripes = (*result)->stripe_stop - (*result)->stripe_start;
+    for(unsigned int i = 0; i < n_stripes; i++)
+        if((*result)->stripes[i] != NULL)
+            free((*result)->stripes[i]);
+    if((*result)->stripes != NULL)
+        free((*result)->stripes);
+    if((*result)->offsets != NULL)
+        free((*result)->offsets);
+    if((*result)->filename != NULL)
+        free((*result)->filename);
+
+    free(*result);
+}
+
+
 void set_tasks(std::vector<su::task_parameters> &tasks,
                double alpha,
                unsigned int n_samples,
@@ -833,13 +856,69 @@ inline IOStatus read_partial_data_fd(int fd, TPMat &result) {
       free(cmp_buf);
     }
 
-    /* sanity check the footer */
-    uint32_t header[1];
-    header[0] = 0;
-    cnt = read(fd,header,sizeof(uint32_t));
-    if (cnt != (sizeof(uint32_t))) {return magic_incompatible;}
+    return read_okay;
+}
 
-    if ( header[0] != PARTIAL_MAGIC_V2) {return magic_incompatible;}
+template<class TPMat>
+inline IOStatus read_partial_one_stripe_fd(int fd, TPMat &result, uint32_t stripe_idx) {
+    int cnt=-1;
+
+    const uint32_t n_samples = result.n_samples;
+
+    /* load stripes */
+    {
+      int max_compressed = LZ4_compressBound(sizeof(double) * n_samples);
+      char * const cmp_buf = (char *)malloc(max_compressed+sizeof(uint32_t));
+      if (cmp_buf==NULL) { return bad_header;} // no better error code
+
+      uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf;
+
+      uint32_t curr_idx = stripe_idx;
+      while (result.offsets[curr_idx]==0) --curr_idx; // must start reading from the first known offset
+
+      for (;curr_idx<stripe_idx; curr_idx++) { // now get all the intermediate indexes
+        if (lseek(fd, result.offsets[curr_idx], SEEK_SET)!=result.offsets[curr_idx]) {
+           free(cmp_buf); return bad_header;
+        }
+
+        cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
+        if (cnt != sizeof(uint32_t) ) {free(cmp_buf); return magic_incompatible;}
+
+        uint32_t cmp_size = *cmp_buf_size_p;
+        uint32_t read_size = cmp_size;
+
+        result.offsets[curr_idx+1] = result.offsets[curr_idx] + sizeof(uint32_t) + read_size;
+      }
+
+      // =======================
+      // ready to read my stripe
+
+      if (lseek(fd, result.offsets[stripe_idx], SEEK_SET)!=result.offsets[stripe_idx]) {
+         free(cmp_buf); return bad_header;
+      }
+
+      cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
+      if (cnt != sizeof(uint32_t) ) {free(cmp_buf); return magic_incompatible;}
+
+      {
+        uint32_t cmp_size = *cmp_buf_size_p;
+
+        uint32_t read_size = cmp_size;
+
+        cnt = read(fd,cmp_buf , read_size );
+        if (cnt != read_size) {free(cmp_buf); return magic_incompatible;}
+
+        result.stripes[stripe_idx] = (double *) malloc(sizeof(double) * n_samples);
+        if(result.stripes[stripe_idx] == NULL) {
+            fprintf(stderr, "failed\n");
+            exit(1);
+        }
+        cnt = LZ4_decompress_safe(cmp_buf, (char *) result.stripes[stripe_idx],cmp_size,sizeof(double) * n_samples);
+        if (cnt != ( sizeof(double) * n_samples ) ) {free(cmp_buf); return magic_incompatible;}
+      }
+
+      free(cmp_buf);
+    }
 
     return read_okay;
 }
@@ -850,19 +929,74 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
     /* initialize the partial result structure */
     partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
-    {
-      IOStatus sts = read_partial_header_fd<partial_mat_t>(fd, *result);
-      if (sts!=read_okay) {free(result); close(fd); return sts;}
+
+    IOStatus sts = magic_incompatible;
+
+    sts = read_partial_header_fd<partial_mat_t>(fd, *result);
+    if (sts==read_okay)
+       sts = read_partial_data_fd<partial_mat_t>(fd, *result);
+
+    if (sts==read_okay) {
+      IOStatus sts = read_okay;
+      /* sanity check the footer */
+      uint32_t header[1];
+      header[0] = 0;
+      int cnt = read(fd,header,sizeof(uint32_t));
+      if (cnt != (sizeof(uint32_t))) {sts= magic_incompatible;}
+    
+      if (sts==read_okay) {
+        if ( header[0] != PARTIAL_MAGIC_V2) {sts= magic_incompatible;}
+      }
     }
-    {
-      IOStatus sts = read_partial_data_fd<partial_mat_t>(fd, *result);
-      if (sts!=read_okay) {free(result); close(fd); return sts;}
-    }
+
     close(fd);
+
+    if (sts==read_okay) {
+      (*result_out) = result;
+    } else {
+      free(result);
+      (*result_out) = NULL;
+    }
+    return sts;
+}
+
+IOStatus read_partial_header(const char* input_filename, partial_dyn_mat_t** result_out) {
+    int fd = open(input_filename, O_RDONLY );
+    if (fd==-1) return open_error;
+
+    /* initialize the partial result structure */
+    partial_dyn_mat_t* result = (partial_dyn_mat_t*)malloc(sizeof(partial_dyn_mat));
+    {
+      IOStatus sts = read_partial_header_fd<partial_dyn_mat_t>(fd, *result);
+      if (sts!=read_okay) {free(result); close(fd); return sts;}
+    }
+
+    // save the offset of the first stripe
+    const uint32_t n_stripes = result->stripe_stop-result->stripe_start;
+    result->stripes = (double**) calloc(n_stripes,sizeof(double*));
+    result->offsets = (uint64_t*) calloc(n_stripes,sizeof(uint64_t));
+    result->offsets[0] = lseek(fd,0,SEEK_CUR);;
+    
+    close(fd);
+
+    result->filename= strdup(input_filename);
 
     (*result_out) = result;
     return read_okay;
 }
+
+IOStatus read_partial_one_stripe(partial_dyn_mat_t* result, uint32_t stripe_idx) {
+    if (result->stripes[stripe_idx]!=0) return read_okay; // will not re-read
+
+    int fd = open(result->filename, O_RDONLY );
+    if (fd==-1) return open_error;
+
+    IOStatus sts = read_partial_one_stripe_fd<partial_dyn_mat_t>(fd, *result, stripe_idx);
+
+    close(fd);
+    return sts;
+}
+
 
 MergeStatus check_partial(const partial_mat_t* const * partial_mats, int n_partials) {
     if(n_partials <= 0) {
