@@ -757,6 +757,52 @@ void test_unifrac_stripes_to_condensed_form_odd2() {
     SUITE_END();
 }
 
+class ValidatedMemoryStripes : public su::MemoryStripes {
+        private:
+           const uint32_t n_stripes;
+           mutable std::vector<uint8_t> stripe_status; // 0 new, 1 allocated, 2 deallocated, 3 reallocated, 6 deallocate after rellocation
+        public:
+           ValidatedMemoryStripes(uint32_t _n_stripes, std::vector<double*> &_stripes) 
+           : su::MemoryStripes(_stripes) 
+           , n_stripes(_n_stripes)
+           , stripe_status(n_stripes)
+           {
+             for (uint32_t i=0; i<n_stripes; i++) stripe_status[i] = 0;
+           }
+
+           virtual const double *get_stripe(uint32_t stripe) const {
+              stripe_status[stripe]|=1; 
+              return su::MemoryStripes::get_stripe(stripe);
+           }
+           virtual void release_stripe(uint32_t stripe) const { 
+              if (stripe_status[stripe]<2) {
+                 stripe_status[stripe]=2;
+              } else {
+                 stripe_status[stripe]=6;
+              }
+           }
+
+           bool allInitialized() const {
+             bool out = true;
+             for (uint32_t i=0; i<n_stripes; i++) out &= (stripe_status[i] != 0);
+             return out;
+           }
+
+           bool allDealocated() const {
+             bool out = true;
+             for (uint32_t i=0; i<n_stripes; i++) out &= ((stripe_status[i]&2) == 2);
+             return out;
+           }
+
+           bool anyRealocated() const {
+             bool out = false;
+             for (uint32_t i=0; i<n_stripes; i++) out |= (stripe_status[i] >2);
+             return out;
+           }
+
+
+};
+
 
 void test_unifrac_stripes_to_matrix_even() {
     SUITE_START("test stripes_to_matrix even samples");
@@ -783,11 +829,51 @@ void test_unifrac_stripes_to_matrix_even() {
                       6, 14, 21, 27, 32, 36, 39,  0, 42, 43,
                       7, 15, 22, 28, 33, 37, 40, 42,  0, 44,
                       8, 16, 23, 29, 34, 38, 41, 43, 44,  0};
-    float *obs = (float*)malloc(sizeof(float) * 100);
-    su::stripes_to_matrix_fp32(su::MemoryStripes(stripes), 10, 5, obs);
-    for(unsigned int i = 0; i < 100; i++) {
+    {
+      float *obs = (float*)malloc(sizeof(float) * 100);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix_fp32(vs, 10, 5, obs);
+      for(unsigned int i = 0; i < 100; i++) {
         ASSERT(exp[i] == obs[i]);
+      }
+
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true); 
+      ASSERT(vs.anyRealocated() == false);
+
+      free(obs);
     }
+
+    { // small tiles
+      float *obs = (float*)malloc(sizeof(float) * 100);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix_fp32(vs, 10, 5, obs, 4);
+      for(unsigned int i = 0; i < 100; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+    
+      free(obs);
+    }
+
+    { // large tiles
+      float *obs = (float*)malloc(sizeof(float) * 100);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix_fp32(vs, 10, 5, obs, 128);
+      for(unsigned int i = 0; i < 100; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+    
+      free(obs);
+    }
+
 
     // test also intermediate, 2-step procedure
     double *obsC = (double*)malloc(sizeof(double) * 45);
@@ -802,7 +888,6 @@ void test_unifrac_stripes_to_matrix_even() {
 
     free(obs2);
     free(obsC);
-    free(obs);
     SUITE_END();
 }
 
@@ -831,11 +916,46 @@ void test_unifrac_stripes_to_matrix_odd() {
                        29, 32, 49, 44, 36, 26, 14,  8,  0,  9, 12,
                        11, 30, 31, 50, 45, 35, 27, 13,  9,  0, 10,
                         0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0};
-    double *obs = (double*)malloc(sizeof(double) * 121);
-    su::stripes_to_matrix(su::MemoryStripes(stripes), 11, 5, obs);
-    for(unsigned int i = 0; i < 121; i++) {
+
+    {
+      double *obs = (double*)malloc(sizeof(double) * 121);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 11, 5, obs);
+      for(unsigned int i = 0; i < 121; i++) {
         ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
     }
+
+    { // small tiling
+      double *obs = (double*)malloc(sizeof(double) * 121);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 11, 5, obs,4);
+      for(unsigned int i = 0; i < 121; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // large tiling
+      double *obs = (double*)malloc(sizeof(double) * 121);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 11, 5, obs,128);
+      for(unsigned int i = 0; i < 121; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
 
     // test also intermediate, 2-step procedure
     double *obsC = (double*)malloc(sizeof(double) * 55);
@@ -850,7 +970,6 @@ void test_unifrac_stripes_to_matrix_odd() {
 
     free(obs2);
     free(obsC);
-    free(obs);
     SUITE_END();
 }
 
@@ -878,10 +997,43 @@ void test_unifrac_stripes_to_matrix_odd2() {
                       11, 26, 29, 33, 23, 13,  7,  0,  8,
                        9, 10, 27, 28, 32, 24, 12,  8,  0};
 
-    double *obs = (double*)malloc(sizeof(double) * 81);
-    su::stripes_to_matrix(su::MemoryStripes(stripes), 9, 5, obs);
-    for(unsigned int i = 0; i < 81; i++) {
+    {
+      double *obs = (double*)malloc(sizeof(double) * 81);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 9, 5, obs);
+      for(unsigned int i = 0; i < 81; i++) {
         ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // small tile
+      double *obs = (double*)malloc(sizeof(double) * 81);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 9, 5, obs,4);
+      for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // large tile
+      double *obs = (double*)malloc(sizeof(double) * 81);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 9, 5, obs,128);
+      for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
     }
 
     // test also intermediate, 2-step procedure
@@ -897,7 +1049,6 @@ void test_unifrac_stripes_to_matrix_odd2() {
 
     free(obs2);
     free(obsC);
-    free(obs);
     SUITE_END();
 }
 

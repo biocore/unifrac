@@ -231,21 +231,87 @@ void su::condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uin
  * [ A A A A A A ]
  */
 
+
+// helper function that will allocate and de-allocate automatically
+// assumes stripe not used again after the last element is read
+inline double get_stripe_val_to_end(const ManagedStripes &stripes, std::vector<uint32_t> &stripe_accessed, const uint32_t n_samples, const uint32_t stripe, const uint32_t el)
+{
+    const double *mystripe = stripes.get_stripe(stripe);
+    double val = mystripe[el];
+   
+    //printf("gs %i %i\n",int(stripe), int(el)); 
+
+    stripe_accessed[stripe]++;
+    if (stripe_accessed[stripe]==n_samples) stripes.release_stripe(stripe); // we will not use this stripe anymore
+
+    return val;
+}
+
+// Helper class
+// Will cache pointers and automatically release stripes when all elements are used
+class OnceManagedStripes {
+   private:
+    const uint32_t n_samples;
+    const uint32_t n_stripes;
+    const ManagedStripes &stripes;
+    std::vector<const double *> stripe_ptr;
+    std::vector<uint32_t> stripe_accessed;
+
+    const double *get_stripe(const uint32_t stripe) {
+      if (stripe_ptr[stripe]==0) stripe_ptr[stripe]=stripes.get_stripe(stripe);
+      return stripe_ptr[stripe];
+    }
+
+    void release_stripe(const uint32_t stripe) {
+       stripes.release_stripe(stripe);
+       stripe_ptr[stripe]=0;
+    }
+
+   public:
+    OnceManagedStripes(const ManagedStripes &_stripes, const uint32_t _n_samples, const uint32_t _n_stripes)
+    : n_samples(_n_samples), n_stripes(_n_stripes)
+    , stripes(_stripes)
+    , stripe_ptr(n_stripes)
+    , stripe_accessed(n_stripes)
+    {}
+    
+    ~OnceManagedStripes()
+    {
+      for(uint32_t i = 0; i < n_stripes; i++) {
+        if (stripe_ptr[i]!=0) {
+           release_stripe(i); 
+        }
+      }
+    }
+
+    double get_val(const uint32_t stripe, const uint32_t el)
+    {
+      if (stripe_ptr[stripe]==0) stripe_ptr[stripe]=stripes.get_stripe(stripe); 
+      const double *mystripe = stripe_ptr[stripe];
+      double val = mystripe[el];
+
+      //printf("gs %i %i\n",int(stripe), int(el));
+
+      stripe_accessed[stripe]++;
+      if (stripe_accessed[stripe]==n_samples) release_stripe(stripe); // we will not use this stripe anymore
+
+      return val;
+    }
+
+
+};
+
 // write in a 2D matrix 
 // also suitable for writing to disk
 template<class TReal>
-void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d) {
+void su::stripes_to_matrix_T(const ManagedStripes &_stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d, uint32_t tile_size) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
-    // tile for  for better memory access pattern 
-#ifdef MICRO_TILE
-    // micro tiles are mostly useful for testing
-    const uint32_t TILE = 4;
-#else
-    // larger tiles better for performance
-    const uint32_t TILE = 128/sizeof(TReal);
-#endif
+    // tile for  for better memory access pattern
+    const uint32_t TILE = (tile_size>0) ? tile_size : (128/sizeof(TReal));
+
+    OnceManagedStripes stripes(_stripes, n_samples, n_stripes);
 
     for(uint32_t o = 0; o < n_samples; o+=TILE) { // off diagonal
       for(uint32_t d = 0; d < (n_samples-o); d+=TILE) { // diagonal
@@ -266,8 +332,7 @@ void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_sam
 
              uint64_t j = i+1;
              for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
-               const double *mystripe = stripes.get_stripe(stripe);
-               TReal val = mystripe[i];
+               TReal val = stripes.get_val(stripe, i);
                buf2d[i*n_samples+j] = val;
              }
 
@@ -275,8 +340,7 @@ void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_sam
                stripe=n_samples-n_stripes-1;
                for(; j < jMax; j++) {
                  --stripe;
-                 const double *mystripe = stripes.get_stripe(stripe);
-                 TReal val = mystripe[j];
+                 TReal val = stripes.get_val(stripe, j);
                  buf2d[i*n_samples+j] = val;
                }
              }
@@ -304,8 +368,7 @@ void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_sam
                stripe=n_stripes;
              }
              for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
-                const double *mystripe = stripes.get_stripe(stripe);
-                TReal val = mystripe[i];
+                TReal val = stripes.get_val(stripe, i);
                 buf2d[i*n_samples+j] = val;
              }
 
@@ -317,8 +380,7 @@ void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_sam
                }
                for(; j < jMax; j++) {
                  --stripe;
-                 const double * mystripe = stripes.get_stripe(stripe);
-                 TReal val = mystripe[j];
+                 TReal val = stripes.get_val(stripe, j);
                  buf2d[i*n_samples+j] = val;
                }
              }
@@ -337,15 +399,15 @@ void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_sam
 }
 
 // Make sure it gets instantiated
-template void su::stripes_to_matrix_T<double>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d);
-template void su::stripes_to_matrix_T<float>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d);
+template void su::stripes_to_matrix_T<double>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d, uint32_t tile_size);
+template void su::stripes_to_matrix_T<float>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d, uint32_t tile_size);
 
-void su::stripes_to_matrix(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d) {
-   return su::stripes_to_matrix_T<double>(stripes, n_samples, n_stripes, buf2d);
+void su::stripes_to_matrix(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d, uint32_t tile_size) {
+   return su::stripes_to_matrix_T<double>(stripes, n_samples, n_stripes, buf2d, tile_size);
 }
 
-void su::stripes_to_matrix_fp32(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d) {
-  return su::stripes_to_matrix_T<float>(stripes, n_samples, n_stripes, buf2d);
+void su::stripes_to_matrix_fp32(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d, uint32_t tile_size) {
+  return su::stripes_to_matrix_T<float>(stripes, n_samples, n_stripes, buf2d, tile_size);
 }
 
 

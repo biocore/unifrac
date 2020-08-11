@@ -45,7 +45,7 @@
         public:
            virtual ~ManagedStripes() {}
            virtual const double *get_stripe(uint32_t stripe) const = 0;
-           virtual void release_stripe(uint32_t stripe) = 0;
+           virtual void release_stripe(uint32_t stripe) const = 0;
         };
 
         class MemoryStripes : public ManagedStripes {
@@ -59,15 +59,16 @@
            MemoryStripes(std::vector<const double*> &_stripes) : stripes(_stripes.data()) {}
 
            virtual const double *get_stripe(uint32_t stripe) const {return stripes[stripe];}
-           virtual void release_stripe(uint32_t stripe) {};
+           virtual void release_stripe(uint32_t stripe) const {};
         };
 
 
         void stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* cf, unsigned int start, unsigned int stop);
 
-        template<class TReal> void stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d);
-        void stripes_to_matrix(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d);
-        void stripes_to_matrix_fp32(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d);
+        // tile_size==0 means memory optimized
+        template<class TReal> void stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d, uint32_t tile_size=0);
+        void stripes_to_matrix(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d, uint32_t tile_size=0);
+        void stripes_to_matrix_fp32(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d, uint32_t tile_size=0);
 
 
         template<class TReal> void condensed_form_to_matrix_T(const double*  __restrict__ cf, const uint32_t n, TReal*  __restrict__ buf2d);
