@@ -247,8 +247,12 @@ void su::stripes_to_matrix_T(const ManagedStripes &stripes, const uint32_t n_sam
     const uint32_t TILE = 128/sizeof(TReal);
 #endif
 
-    for(uint32_t iOut = 0; iOut < n_samples; iOut+=TILE) {
-      for(uint32_t jOut = 0; jOut < n_samples; jOut+=TILE) {
+    for(uint32_t o = 0; o < n_samples; o+=TILE) { // off diagonal
+      for(uint32_t d = 0; d < (n_samples-o); d+=TILE) { // diagonal
+
+         uint32_t iOut = d;
+         uint32_t jOut = d+o;
+
          uint32_t iMax = std::min(iOut+TILE,n_samples);
          uint32_t jMax = std::min(jOut+TILE,n_samples);
 
