@@ -724,17 +724,15 @@ IOStatus _is_partial_file(const char* input_filename) {
     return read_okay;
 }
 
-IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
-    int fd = open(input_filename, O_RDONLY );
-    if (fd==-1) return open_error;
-
+template<class TPMat>
+inline IOStatus read_partial_header_fd(int fd, TPMat &result) {
     int cnt=-1;
 
     uint32_t header[8];
     cnt = read(fd,header,8*sizeof(uint32_t));
-    if (cnt != (8*sizeof(uint32_t))) {close(fd); return magic_incompatible;}
+    if (cnt != (8*sizeof(uint32_t))) {return magic_incompatible;}
 
-    if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
+    if ( header[0] != PARTIAL_MAGIC_V2) {return magic_incompatible;}
 
     const uint32_t n_samples = header[1];
     const uint32_t n_stripes = header[2];
@@ -744,19 +742,18 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
     /* sanity check header */
     if(n_samples <= 0 || n_stripes <= 0 || stripe_total <= 0 || is_upper_triangle < 0)
-         {close(fd); return bad_header;}
+         {return bad_header;}
     if(stripe_total >= n_samples || n_stripes > stripe_total || stripe_start >= stripe_total || stripe_start + n_stripes > stripe_total)
-         {close(fd); return bad_header;}
+         {return bad_header;}
 
     /* initialize the partial result structure */
-    partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
-    result->n_samples = n_samples;
-    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
-    result->stripes = (double**)malloc(sizeof(double*) * (n_stripes));
-    result->stripe_start = stripe_start;
-    result->stripe_stop = stripe_start + n_stripes;
-    result->is_upper_triangle = is_upper_triangle;
-    result->stripe_total = stripe_total;
+    result.n_samples = n_samples;
+    result.sample_ids = (char**)malloc(sizeof(char*) * n_samples);
+    result.stripes = (double**)malloc(sizeof(double*) * (n_stripes));
+    result.stripe_start = stripe_start;
+    result.stripe_stop = stripe_start + n_stripes;
+    result.is_upper_triangle = is_upper_triangle;
+    result.stripe_total = stripe_total;
 
     /* load samples */
     {
@@ -765,40 +762,53 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
       /* sanity check header */
       if (sample_id_length<=0 || sample_id_length_compressed <=0)
-         {close(fd); return bad_header;}
+         { return bad_header;}
 
       char * const cmp_buf = (char *)malloc(sample_id_length_compressed);
+      if (cmp_buf==NULL) { return bad_header;} // no better error code
       cnt = read(fd,cmp_buf,sample_id_length_compressed);
-      if (cnt != sample_id_length_compressed) {close(fd); return magic_incompatible;}
+      if (cnt != sample_id_length_compressed) {free(cmp_buf); return magic_incompatible;}
 
       char *samples_buf = (char *)malloc(sample_id_length);
+      if (samples_buf==NULL) { free(cmp_buf); return bad_header;} // no better error code
 
       cnt = LZ4_decompress_safe(cmp_buf,samples_buf,sample_id_length_compressed,sample_id_length);
-      if (cnt!=sample_id_length) {close(fd); return magic_incompatible;}
+      if (cnt!=sample_id_length) {free(samples_buf); free(cmp_buf); return magic_incompatible;}
 
       const char *samples_ptr = samples_buf;
 
       for(int i = 0; i < n_samples; i++) {
         uint32_t sample_length = strlen(samples_ptr);
-        if ((samples_ptr+sample_length+1)>(samples_buf+sample_id_length)) {close(fd); return magic_incompatible;}
+        if ((samples_ptr+sample_length+1)>(samples_buf+sample_id_length)) {free(samples_buf); free(cmp_buf); return magic_incompatible;}
 
-        result->sample_ids[i] = (char*)malloc(sample_length + 1);
-        memcpy(result->sample_ids[i],samples_ptr,sample_length + 1);
+        result.sample_ids[i] = (char*)malloc(sample_length + 1);
+        memcpy(result.sample_ids[i],samples_ptr,sample_length + 1);
         samples_ptr += sample_length + 1;
       }
       free(samples_buf);
       free(cmp_buf);
     }
 
+    return read_okay;
+}
+
+template<class TPMat>
+inline IOStatus read_partial_data_fd(int fd, TPMat &result) {
+    int cnt=-1;
+
+    const uint32_t n_samples = result.n_samples;
+    const uint32_t n_stripes = result.stripe_stop-result.stripe_start;
+
     /* load stripes */
     {
-      int max_compressed = LZ4_compressBound(sizeof(double) * result->n_samples);
+      int max_compressed = LZ4_compressBound(sizeof(double) * n_samples);
       char * const cmp_buf = (char *)malloc(max_compressed+sizeof(uint32_t));
+      if (cmp_buf==NULL) { return bad_header;} // no better error code
 
       uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf;
 
       cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
-      if (cnt != sizeof(uint32_t) ) {close(fd); return magic_incompatible;}
+      if (cnt != sizeof(uint32_t) ) {free(cmp_buf); return magic_incompatible;}
 
       for(int i = 0; i < n_stripes; i++) {
         uint32_t cmp_size = *cmp_buf_size_p;
@@ -807,15 +817,15 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
         if ( (i+1)<n_stripes ) read_size += sizeof(uint32_t); // last one does not have the cmp_size
 
         cnt = read(fd,cmp_buf , read_size );
-        if (cnt != read_size) {close(fd); return magic_incompatible;}
+        if (cnt != read_size) {free(cmp_buf); return magic_incompatible;}
 
-        result->stripes[i] = (double *) malloc(sizeof(double) * n_samples);
-        if(result->stripes[i] == NULL) {
+        result.stripes[i] = (double *) malloc(sizeof(double) * n_samples);
+        if(result.stripes[i] == NULL) {
             fprintf(stderr, "failed\n");
             exit(1);
         }
-        cnt = LZ4_decompress_safe(cmp_buf, (char *) result->stripes[i],cmp_size,sizeof(double) * n_samples);
-        if (cnt != ( sizeof(double) * n_samples ) ) {close(fd); return magic_incompatible;}
+        cnt = LZ4_decompress_safe(cmp_buf, (char *) result.stripes[i],cmp_size,sizeof(double) * n_samples);
+        if (cnt != ( sizeof(double) * n_samples ) ) {free(cmp_buf); return magic_incompatible;}
 
         cmp_buf_size_p = (uint32_t *)(cmp_buf+cmp_size);
       }
@@ -824,12 +834,30 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
     }
 
     /* sanity check the footer */
+    uint32_t header[1];
     header[0] = 0;
     cnt = read(fd,header,sizeof(uint32_t));
-    if (cnt != (sizeof(uint32_t))) {close(fd); return magic_incompatible;}
+    if (cnt != (sizeof(uint32_t))) {return magic_incompatible;}
 
-    if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
+    if ( header[0] != PARTIAL_MAGIC_V2) {return magic_incompatible;}
 
+    return read_okay;
+}
+
+IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
+    int fd = open(input_filename, O_RDONLY );
+    if (fd==-1) return open_error;
+
+    /* initialize the partial result structure */
+    partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
+    {
+      IOStatus sts = read_partial_header_fd<partial_mat_t>(fd, *result);
+      if (sts!=read_okay) {free(result); close(fd); return sts;}
+    }
+    {
+      IOStatus sts = read_partial_data_fd<partial_mat_t>(fd, *result);
+      if (sts!=read_okay) {free(result); close(fd); return sts;}
+    }
     close(fd);
 
     (*result_out) = result;
