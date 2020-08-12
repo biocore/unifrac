@@ -3,6 +3,7 @@
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
+#include <unistd.h>
 
 /*
  * test harness adapted from 
@@ -268,6 +269,8 @@ void test_read_write_partial_mat() {
       destroy_partial_dyn_mat(&obs);
     }
 
+    unlink("/tmp/ssu_io.dat");
+
     SUITE_END();
 }
 
@@ -290,10 +293,10 @@ void test_merge_partial_mat() {
     ASSERT(obs->cf_size == exp->cf_size);
     ASSERT(obs->n_samples == exp->n_samples);
     ASSERT(obs->is_upper_triangle == exp->is_upper_triangle);
-    for(int i = 0; i < obs->cf_size; i++) {
+    for(unsigned int i = 0; i < obs->cf_size; i++) {
         ASSERT(obs->condensed_form[i] == exp->condensed_form[i]);
     }
-    for(int i = 0; i < obs->n_samples; i++)
+    for(unsigned int i = 0; i < obs->n_samples; i++)
         ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
   
     // out of order test
@@ -307,10 +310,10 @@ void test_merge_partial_mat() {
     ASSERT(obs->cf_size == exp->cf_size);
     ASSERT(obs->n_samples == exp->n_samples);
     ASSERT(obs->is_upper_triangle == exp->is_upper_triangle);
-    for(int i = 0; i < obs->cf_size; i++) {
+    for(unsigned int i = 0; i < obs->cf_size; i++) {
         ASSERT(obs->condensed_form[i] == exp->condensed_form[i]);
     }
-    for(int i = 0; i < obs->n_samples; i++)
+    for(unsigned int i = 0; i < obs->n_samples; i++)
         ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
  
     // error checking
@@ -383,10 +386,10 @@ void test_merge_partial_dyn_mat() {
     merge_status err = merge_partial_to_matrix(pms, 2, &obs);
     ASSERT(err == merge_okay);
     ASSERT(obs->n_samples == exp->n_samples);
-    for(int i = 0; i < (obs->n_samples*obs->n_samples); i++) {
+    for(unsigned int i = 0; i < (obs->n_samples*obs->n_samples); i++) {
         ASSERT(obs->matrix[i] == exp->matrix[i]);
     }
-    for(int i = 0; i < obs->n_samples; i++) {
+    for(unsigned int i = 0; i < obs->n_samples; i++) {
         ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
     }
     // out of order test
@@ -406,10 +409,10 @@ void test_merge_partial_dyn_mat() {
     err = merge_partial_to_matrix_fp32(pms, 2, &obs2);
     ASSERT(err == merge_okay);
     ASSERT(obs2->n_samples == exp2->n_samples);
-    for(int i = 0; i < (obs2->n_samples*obs2->n_samples); i++) {
+    for(unsigned int i = 0; i < (obs2->n_samples*obs2->n_samples); i++) {
         ASSERT(obs2->matrix[i] == exp2->matrix[i]);
     }
-    for(int i = 0; i < obs2->n_samples; i++)
+    for(unsigned int i = 0; i < obs2->n_samples; i++)
         ASSERT(strcmp(obs2->sample_ids[i], exp2->sample_ids[i]) == 0);
 
  
@@ -475,6 +478,87 @@ void test_merge_partial_dyn_mat() {
     SUITE_END();
 }
 
+void test_merge_partial_io() {
+    SUITE_START("test merge partial_io");
+
+    // the easy test
+    partial_mat_t* s1 = make_test_pm(1);
+    partial_mat_t* s2 = make_test_pm(2);
+
+    io_status ierr;
+
+    ierr = write_partial("/tmp/ssu_io_1.dat", s1);
+    ASSERT(ierr == write_okay);
+ 
+    ierr = write_partial("/tmp/ssu_io_2.dat", s2);
+    ASSERT(ierr == write_okay);
+
+    partial_dyn_mat_t* pm1 = NULL;
+    partial_dyn_mat_t* pm2 = NULL;
+
+    ierr = read_partial_header("/tmp/ssu_io_1.dat", &pm1);
+    ASSERT(ierr == read_okay);
+
+    ierr = read_partial_header("/tmp/ssu_io_2.dat", &pm2);
+    ASSERT(ierr == read_okay);
+
+    mat_full_fp64_t* exp = mat_full_three_rep<mat_full_fp64_t,double>();
+
+    partial_dyn_mat_t* pms[2];
+    pms[0] = pm1;
+    pms[1] = pm2;
+
+    mat_full_fp64_t* obs = NULL;
+    merge_status err = merge_partial_to_matrix(pms, 2, &obs);
+    ASSERT(err == merge_okay);
+    ASSERT(obs->n_samples == exp->n_samples);
+    for(unsigned int i = 0; i < (obs->n_samples*obs->n_samples); i++) {
+        ASSERT(obs->matrix[i] == exp->matrix[i]);
+    }
+    for(unsigned int i = 0; i < obs->n_samples; i++) {
+        ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
+    }
+    ASSERT(pm1->stripes[0]==NULL);
+    ASSERT(pm1->stripes[1]==NULL);
+    ASSERT(pm2->stripes[0]==NULL);
+
+
+    // out of order test
+    partial_dyn_mat_t* pm1b = NULL;
+    partial_dyn_mat_t* pm2b = NULL;
+
+    ierr = read_partial_header("/tmp/ssu_io_1.dat", &pm1b);
+    ASSERT(ierr == read_okay);
+    
+    ierr = read_partial_header("/tmp/ssu_io_2.dat", &pm2b);
+    ASSERT(ierr == read_okay);
+
+    pms[0] = pm2b;
+    pms[1] = pm1b;
+
+    mat_full_fp32_t* exp2 = mat_full_three_rep<mat_full_fp32_t,float>();
+    mat_full_fp32_t *obs2 = NULL;
+    err = merge_partial_to_matrix_fp32(pms, 2, &obs2);
+    ASSERT(err == merge_okay);
+    ASSERT(obs2->n_samples == exp2->n_samples);
+    for(unsigned int i = 0; i < (obs2->n_samples*obs2->n_samples); i++) {
+        ASSERT(obs2->matrix[i] == exp2->matrix[i]);
+    }
+    for(unsigned int i = 0; i < obs2->n_samples; i++)
+        ASSERT(strcmp(obs2->sample_ids[i], exp2->sample_ids[i]) == 0);
+
+
+    ASSERT(pm2b->stripes[0]==NULL);
+    ASSERT(pm1b->stripes[0]==NULL);
+    ASSERT(pm1b->stripes[1]==NULL);
+
+    unlink("/tmp/ssu_io_1.dat");
+    unlink("/tmp/ssu_io_2.dat");
+
+    SUITE_END();
+}
+
+
 int main(int argc, char** argv) {
     /* one_off and partial are executed as integration tests */    
 
@@ -483,6 +567,7 @@ int main(int argc, char** argv) {
     test_read_write_partial_mat();
     test_merge_partial_mat();
     test_merge_partial_dyn_mat();
+    test_merge_partial_io();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);
