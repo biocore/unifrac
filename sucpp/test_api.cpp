@@ -399,6 +399,10 @@ void test_merge_partial_dyn_mat() {
     ASSERT(pm1->stripes[0]==NULL);
     ASSERT(pm1->stripes[1]==NULL);
     ASSERT(pm2->stripes[0]==NULL);
+    destroy_partial_dyn_mat(&pm1);
+    destroy_partial_dyn_mat(&pm2);
+
+
     pm1 = make_test_pdm(1);
     pm2 = make_test_pdm(2);
 
@@ -475,7 +479,12 @@ void test_merge_partial_dyn_mat() {
     err = merge_partial_to_matrix(pms_err, 3, &obs);
     ASSERT(err == square_mismatch);
     */
-    
+   
+    destroy_mat_full_fp64(&obs);
+    destroy_partial_dyn_mat(&pm1);
+    destroy_partial_dyn_mat(&pm2);
+    destroy_partial_dyn_mat(&pm3);
+
     SUITE_END();
 }
 
@@ -523,6 +532,9 @@ void test_merge_partial_io() {
     ASSERT(pm1->stripes[1]==NULL);
     ASSERT(pm2->stripes[0]==NULL);
 
+    destroy_mat_full_fp64(&obs);
+    destroy_partial_dyn_mat(&pm1);
+    destroy_partial_dyn_mat(&pm2);
 
     // out of order test
     partial_dyn_mat_t* pm1b = NULL;
@@ -553,12 +565,72 @@ void test_merge_partial_io() {
     ASSERT(pm1b->stripes[0]==NULL);
     ASSERT(pm1b->stripes[1]==NULL);
 
+    destroy_mat_full_fp32(&obs2);
+    destroy_partial_dyn_mat(&pm1b);
+    destroy_partial_dyn_mat(&pm2b);
+
     unlink("/tmp/ssu_io_1.dat");
     unlink("/tmp/ssu_io_2.dat");
 
     SUITE_END();
 }
 
+void test_merge_partial_mmap() {
+    SUITE_START("test merge partial_mmap");
+
+    // the easy test
+    partial_mat_t* s1 = make_test_pm(1);
+    partial_mat_t* s2 = make_test_pm(2);
+
+    io_status ierr;
+
+    ierr = write_partial("/tmp/ssu_io_1.dat", s1);
+    ASSERT(ierr == write_okay);
+
+    ierr = write_partial("/tmp/ssu_io_2.dat", s2);
+    ASSERT(ierr == write_okay);
+
+    partial_dyn_mat_t* pm1 = NULL;
+    partial_dyn_mat_t* pm2 = NULL;
+
+    ierr = read_partial_header("/tmp/ssu_io_1.dat", &pm1);
+    ASSERT(ierr == read_okay);
+
+    ierr = read_partial_header("/tmp/ssu_io_2.dat", &pm2);
+    ASSERT(ierr == read_okay);
+
+    mat_full_fp64_t* exp = mat_full_three_rep<mat_full_fp64_t,double>();
+
+    partial_dyn_mat_t* pms[2];
+    pms[0] = pm1;
+    pms[1] = pm2;
+
+    mat_full_fp32_t* obs = NULL;
+    merge_status err = merge_partial_to_mmap_matrix_fp32(pms, 2, "/tmp", &obs);
+    ASSERT(err == merge_okay);
+    ASSERT(obs->n_samples == exp->n_samples);
+    for(unsigned int i = 0; i < (obs->n_samples*obs->n_samples); i++) {
+        ASSERT(obs->matrix[i] == exp->matrix[i]);
+    }
+    for(unsigned int i = 0; i < obs->n_samples; i++) {
+        ASSERT(strcmp(obs->sample_ids[i], exp->sample_ids[i]) == 0);
+    }
+    ASSERT(pm1->stripes[0]==NULL);
+    ASSERT(pm1->stripes[1]==NULL);
+    ASSERT(pm2->stripes[0]==NULL);
+
+    destroy_mat_full_fp32(&obs);
+    destroy_partial_dyn_mat(&pm1);
+    destroy_partial_dyn_mat(&pm2);
+    destroy_partial_mat(&s1);
+    destroy_partial_mat(&s2);
+
+    unlink("/tmp/ssu_io_1.dat");
+    unlink("/tmp/ssu_io_2.dat");
+
+
+    SUITE_END();
+}
 
 int main(int argc, char** argv) {
     /* one_off and partial are executed as integration tests */    
@@ -569,6 +641,7 @@ int main(int argc, char** argv) {
     test_merge_partial_mat();
     test_merge_partial_dyn_mat();
     test_merge_partial_io();
+    test_merge_partial_mmap();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);

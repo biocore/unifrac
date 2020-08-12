@@ -9,8 +9,12 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <lz4.h>
 
+
+#define MMAP_FD_MASK 0x0fff
+#define MMAP_FLAG    0x1000
 
 #define CHECK_FILE(filename, err) if(!is_file_exists(filename)) { \
                                       return err;                 \
@@ -136,15 +140,32 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
 }
 
 template<class TReal, class TMat>
-void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids, unsigned int n_samples) {
+void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids, unsigned int n_samples, 
+                                   const char *mmap_dir /* if NULL, use malloc */) {
     result = (TMat*)malloc(sizeof(mat));
     result->n_samples = n_samples;
 
     uint64_t n_samples_64 = result->n_samples; // force 64bit to avoit overflow problems
 
     result->sample_ids = (char**)malloc(sizeof(char*) * n_samples_64);
-    result->matrix = (TReal*)malloc(sizeof(TReal) * n_samples_64 * n_samples_64);
     result->flags=0;
+
+    uint64_t msize = sizeof(TReal) * n_samples_64 * n_samples_64;
+    if (mmap_dir==NULL) {
+      result->matrix = (TReal*)malloc(msize);
+    } else {
+      std::string mmap_template(mmap_dir);
+      mmap_template+="/su_mmap_XXXXXX";
+      int fd=mkostemp((char *) mmap_template.c_str(), O_RDWR | O_CREAT | O_TRUNC |O_NOATIME ); 
+      if (fd<0) {
+         result->matrix = NULL;
+         // leave error handling to the caller
+      } else {
+        ftruncate(fd,msize);
+        result->matrix = (TReal*)mmap(NULL, msize,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_NORESERVE, fd, 0);
+        result->flags=(uint32_t(fd) & MMAP_FD_MASK) | MMAP_FLAG;
+      }
+   }
 
     for(unsigned int i = 0; i < n_samples; i++) {
         result->sample_ids[i] = strdup(sample_ids[i]);
@@ -196,25 +217,34 @@ void destroy_mat(mat_t** result) {
     free(*result);
 }
 
-template<class TMat>
-void destroy_mat_full_T(TMat** result) {
+template<class TMat, class TReal>
+inline void destroy_mat_full_T(TMat** result) {
     for(uint32_t i = 0; i < (*result)->n_samples; i++) {
         free((*result)->sample_ids[i]);   
     };                                        
     free((*result)->sample_ids);          
     if (((*result)->matrix)!=NULL) {          
-      free((*result)->matrix);            
+      if (((*result)->flags & MMAP_FLAG) == 0)  {
+         free((*result)->matrix);            
+      } else {
+         uint64_t n_samples = (*result)->n_samples;
+         munmap((*result)->matrix, sizeof(TReal)*n_samples*n_samples);
+
+         int fd = (*result)->flags & MMAP_FD_MASK;
+         close(fd);
+      }
+      (*result)->matrix=NULL;
     }                                         
     free(*result);                        
 }
 
 
 void destroy_mat_full_fp64(mat_full_fp64_t** result) {
-    destroy_mat_full_T(result);
+    destroy_mat_full_T<mat_full_fp64_t,double>(result);
 }
 
 void destroy_mat_full_fp32(mat_full_fp32_t** result) {
-    destroy_mat_full_T(result);
+    destroy_mat_full_T<mat_full_fp32_t,float>(result);
 }
 
 void destroy_partial_mat(partial_mat_t** result) {
@@ -1065,6 +1095,10 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
     }
 
     initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
+    if ((*result)==NULL) return incomplete_stripe_set;
+    if ((*result)->condensed_form==NULL) return incomplete_stripe_set;
+    if ((*result)->sample_ids==NULL) return incomplete_stripe_set;
+
     su::stripes_to_condensed_form(stripes, n_samples, (*result)->condensed_form, 0, partial_mats[0]->stripe_total);
 
     destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
@@ -1120,11 +1154,17 @@ class PartialStripes : public su::ManagedStripes {
 };
 
 template<class TReal, class TMat>
-MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_partials, TMat** result) {
+MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_partials, 
+                                      const char *mmap_dir, /* if NULL, use malloc */
+                                      TMat** result /* out */ ) {
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 
-    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, partial_mats[0]->n_samples);
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, partial_mats[0]->n_samples,mmap_dir);
+
+    if ((*result)==NULL) return incomplete_stripe_set;
+    if ((*result)->matrix==NULL) return incomplete_stripe_set;
+    if ((*result)->sample_ids==NULL) return incomplete_stripe_set;
 
     PartialStripes ps(n_partials,partial_mats);
     su::stripes_to_matrix_T<TReal>(ps, partial_mats[0]->n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
@@ -1133,10 +1173,19 @@ MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_p
 }
 
 MergeStatus merge_partial_to_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp64_t** result) {
-  return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, result);
+  return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, NULL, result);
 }
 
 MergeStatus merge_partial_to_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp32_t** result) {
-  return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, result);
+  return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, NULL, result);
 }
+
+MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp64_t** result) {
+  return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, NULL, result);
+}
+
+MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result) {
+  return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, NULL, result);
+}
+
 

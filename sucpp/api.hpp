@@ -476,6 +476,39 @@ MergeStatus merge_partial_to_matrix(partial_dyn_mat_t* * partial_mats, int n_par
 MergeStatus merge_partial_to_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp32_t** result);
 
 
+/* Merge partial results
+ *
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
+ * n_partials <int> number of partial mats
+ * mmap_dir <const char *> Where to host the mmap file
+ * result <mat_full_fp64_t**> the full matrix, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp64_t** result);
+
+/* Merge partial results
+ *
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
+ * n_partials <int> number of partial mats
+ * mmap_dir <const char *> Where to host the mmap file
+ * result <mat_full_fp32_t**> the full matrix, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result);
+
+
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
 void set_tasks(std::vector<su::task_parameters> &tasks,
