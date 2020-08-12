@@ -386,7 +386,7 @@ void test_bptree_postorder() {
     uint32_t exp[] = {2, 4, 7, 6, 1, 11, 15, 17, 14, 13, 0};
     uint32_t obs[tree.nparens / 2];
 
-    for(int i = 0; i < (tree.nparens / 2); i++)
+    for(unsigned int i = 0; i < (tree.nparens / 2); i++)
         obs[i] = tree.postorderselect(i);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
@@ -404,7 +404,7 @@ void test_bptree_preorder() {
     uint32_t exp[] = {0, 1, 2, 4, 6, 7, 11, 13, 14, 15, 17};
     uint32_t obs[tree.nparens / 2];
 
-    for(int i = 0; i < (tree.nparens / 2); i++)
+    for(unsigned int i = 0; i < (tree.nparens / 2); i++)
         obs[i] = tree.preorderselect(i);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
@@ -424,7 +424,7 @@ void test_bptree_parent() {
     // all the -2 and +1 garbage is to avoid testing the root.
     uint32_t obs[tree.nparens - 2];
 
-    for(int i = 0; i < (tree.nparens) - 2; i++)
+    for(int i = 0; i < (int(tree.nparens) - 2); i++)
         obs[i] = tree.parent(i+1);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens - 2);
@@ -516,7 +516,7 @@ void test_bptree_leftchild() {
     std::vector<bool> structure = tree.get_structure();
 
     uint32_t exp_pos = 0;
-    for(int i = 0; i < tree.nparens; i++) {
+    for(unsigned int i = 0; i < tree.nparens; i++) {
         if(structure[i])
             ASSERT(tree.leftchild(i) == exp[exp_pos++]);
     }
@@ -531,7 +531,7 @@ void test_bptree_rightchild() {
     std::vector<bool> structure = tree.get_structure();
 
     uint32_t exp_pos = 0;
-    for(int i = 0; i < tree.nparens; i++) {
+    for(unsigned int i = 0; i < tree.nparens; i++) {
         if(structure[i])
             ASSERT(tree.rightchild(i) == exp[exp_pos++]);
     }
@@ -546,7 +546,7 @@ void test_bptree_rightsibling() {
     std::vector<bool> structure = tree.get_structure();
 
     uint32_t exp_pos = 0;
-    for(int i = 0; i < tree.nparens; i++) {
+    for(unsigned int i = 0; i < tree.nparens; i++) {
         if(structure[i])
             ASSERT(tree.rightsibling(i) == exp[exp_pos++]);
     }
