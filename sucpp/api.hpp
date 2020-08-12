@@ -445,7 +445,7 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
 
 /* Merge partial results
  *
- * partial_mats <partial_mat_t**> an array of partial_mat_t*
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
  * n_partials <int> number of partial mats
  * result <mat_full_fp64_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
@@ -456,11 +456,11 @@ EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, u
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-MergeStatus merge_partial_to_matrix(const partial_mat_t*  const * partial_mats, int n_partials, mat_full_fp64_t** result);
+MergeStatus merge_partial_to_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp64_t** result);
 
 /* Merge partial results
  *
- * partial_mats <partial_mat_t**> an array of partial_mat_t*
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
  * n_partials <int> number of partial mats
  * result <mat_full_fp32_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
@@ -471,7 +471,7 @@ MergeStatus merge_partial_to_matrix(const partial_mat_t*  const * partial_mats, 
  * sample_id_consistency : samples described by stripes are inconsistent
  * square_mismatch       : inconsistency on denotation of square matrix
  */
-MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_full_fp32_t** result);
+MergeStatus merge_partial_to_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp32_t** result);
 
 
 #ifdef __cplusplus

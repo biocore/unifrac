@@ -139,7 +139,7 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
 } 
 
 int mode_merge_partial_fp32(const char * output_filename, Format format_val,
-                            size_t partials_size, const partial_mat_t* const * partial_mats) {
+                            size_t partials_size, partial_dyn_mat_t* * partial_mats) {
     mat_full_fp32_t *result = NULL;
 
     MergeStatus status = merge_partial_to_matrix_fp32(partial_mats, partials_size, &result);
@@ -170,7 +170,7 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
 }
 
 int mode_merge_partial_fp64(const char * output_filename, Format format_val,
-                            size_t partials_size, const partial_mat_t* const * partial_mats) {
+                            size_t partials_size, partial_dyn_mat_t* * partial_mats) {
     mat_full_fp64_t *result = NULL;
 
     MergeStatus status = merge_partial_to_matrix(partial_mats, partials_size, &result);
@@ -220,9 +220,9 @@ int mode_merge_partial(const std::string &output_filename, Format format_val,
     }
     
     std::vector<std::string> partials = glob(partial_pattern);
-    partial_mat_t** partial_mats = (partial_mat_t**)malloc(sizeof(partial_mat_t*) * partials.size());
+    partial_dyn_mat_t** partial_mats = (partial_dyn_mat_t**)malloc(sizeof(partial_dyn_mat_t*) * partials.size());
     for(size_t i = 0; i < partials.size(); i++) {
-        IOStatus io_err = read_partial(partials[i].c_str(), &partial_mats[i]);
+        IOStatus io_err = read_partial_header(partials[i].c_str(), &partial_mats[i]);
         if(io_err != read_okay) {
             std::ostringstream msg;
             msg << "Unable to parse file (" << partials[i] << "); err " << io_err;
@@ -241,7 +241,7 @@ int mode_merge_partial(const std::string &output_filename, Format format_val,
     }
 
     for(size_t i = 0; i < partials.size(); i++) {
-      destroy_partial_mat(&partial_mats[i]);
+      destroy_partial_dyn_mat(&partial_mats[i]);
     }
 
     return status;

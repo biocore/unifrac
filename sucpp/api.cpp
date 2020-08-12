@@ -998,7 +998,8 @@ IOStatus read_partial_one_stripe(partial_dyn_mat_t* result, uint32_t stripe_idx)
 }
 
 
-MergeStatus check_partial(const partial_mat_t* const * partial_mats, int n_partials) {
+template<class TPMat>
+MergeStatus check_partial(const TPMat* const * partial_mats, int n_partials) {
     if(n_partials <= 0) {
         fprintf(stderr, "Zero or less partials.\n");
         exit(EXIT_FAILURE);
@@ -1070,34 +1071,71 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
     return merge_okay;
 }
 
+// Will keep only the strictly necessary stripes in memory... reading just in time
+class PartialStripes : public su::ManagedStripes {
+        private:
+           const uint32_t n_partials;
+           mutable partial_dyn_mat_t* * partial_mats; // link only, not owned
+
+           static bool in_range(const partial_dyn_mat_t &partial_mat, uint32_t stripe) {
+             return (stripe>=partial_mat.stripe_start) && (stripe<partial_mat.stripe_stop);
+           }
+
+           uint32_t find_partial_idx(uint32_t stripe) const {
+              for (uint32_t i=0; i<n_partials; i++) {
+                if (in_range(*(partial_mats[i]),stripe)) return i;
+              }
+              return 0; // should never get here
+           }
+        public:
+           PartialStripes(uint32_t _n_partials, partial_dyn_mat_t* * _partial_mats)
+           : n_partials(_n_partials)
+           , partial_mats(_partial_mats)
+           {}
+
+           virtual const double *get_stripe(uint32_t stripe) const {
+              uint32_t pidx = find_partial_idx(stripe);
+              partial_dyn_mat_t * const partial_mat = partial_mats[pidx];
+              uint32_t sidx = stripe-partial_mat->stripe_start;
+
+              if (partial_mat->stripes[sidx]==NULL) {
+                  read_partial_one_stripe(partial_mat,sidx);
+                  // ignore any errors, not clear what to do
+                  // will just return NULL
+              }
+
+              return partial_mat->stripes[sidx];
+           }
+           virtual void release_stripe(uint32_t stripe) const {
+              uint32_t pidx = find_partial_idx(stripe);
+              partial_dyn_mat_t * const partial_mat = partial_mats[pidx];
+              uint32_t sidx = stripe-partial_mat->stripe_start;
+
+              if (partial_mat->stripes[sidx]!=NULL) {
+                 free(partial_mat->stripes[sidx]);
+                 partial_mat->stripes[sidx]=NULL;
+              }
+           }
+};
+
 template<class TReal, class TMat>
-MergeStatus merge_partial_to_matrix_T(const partial_mat_t* const * partial_mats, int n_partials, TMat** result) {
+MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_partials, TMat** result) {
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 
-    uint64_t n_samples = partial_mats[0]->n_samples;
-    std::vector<const double*> stripes(partial_mats[0]->stripe_total);
-    std::vector<const double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
-    for(int i = 0; i < n_partials; i++) {
-        int n_stripes = partial_mats[i]->stripe_stop - partial_mats[i]->stripe_start;
-        for(int j = 0; j < n_stripes; j++) {
-            // as this is potentially a large amount of memory, don't copy, just keep a pointer to it
-            *&(stripes[j + partial_mats[i]->stripe_start]) = partial_mats[i]->stripes[j];
-        }
-    }
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, partial_mats[0]->n_samples);
 
-    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, n_samples);
-
-    su::stripes_to_matrix_T<TReal>(MemoryStripes(stripes), n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
+    PartialStripes ps(n_partials,partial_mats);
+    su::stripes_to_matrix_T<TReal>(ps, partial_mats[0]->n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
 
     return merge_okay;
 }
 
-MergeStatus merge_partial_to_matrix(const partial_mat_t* const * partial_mats, int n_partials, mat_full_fp64_t** result) {
+MergeStatus merge_partial_to_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp64_t** result) {
   return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, result);
 }
 
-MergeStatus merge_partial_to_matrix_fp32(const partial_mat_t* const * partial_mats, int n_partials, mat_full_fp32_t** result) {
+MergeStatus merge_partial_to_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp32_t** result) {
   return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, result);
 }
 
