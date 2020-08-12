@@ -424,6 +424,12 @@ void test_merge_partial_dyn_mat() {
     ASSERT(pm2->stripes[0]==NULL);
     ASSERT(pm1->stripes[0]==NULL);
     ASSERT(pm1->stripes[1]==NULL);
+    destroy_partial_dyn_mat(&pm1);
+    destroy_partial_dyn_mat(&pm2);
+
+
+    pm1 = make_test_pdm(1);
+    pm2 = make_test_pdm(2);
 
 
     // error checking
@@ -481,9 +487,7 @@ void test_merge_partial_dyn_mat() {
     */
    
     destroy_mat_full_fp64(&obs);
-    destroy_partial_dyn_mat(&pm1);
-    destroy_partial_dyn_mat(&pm2);
-    destroy_partial_dyn_mat(&pm3);
+    // note, we cannot cleanly destroy the partial_dyn_mat_t structures that have been hacked by hand
 
     SUITE_END();
 }
