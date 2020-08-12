@@ -232,21 +232,6 @@ void su::condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uin
  */
 
 
-// helper function that will allocate and de-allocate automatically
-// assumes stripe not used again after the last element is read
-inline double get_stripe_val_to_end(const ManagedStripes &stripes, std::vector<uint32_t> &stripe_accessed, const uint32_t n_samples, const uint32_t stripe, const uint32_t el)
-{
-    const double *mystripe = stripes.get_stripe(stripe);
-    double val = mystripe[el];
-   
-    //printf("gs %i %i\n",int(stripe), int(el)); 
-
-    stripe_accessed[stripe]++;
-    if (stripe_accessed[stripe]==n_samples) stripes.release_stripe(stripe); // we will not use this stripe anymore
-
-    return val;
-}
-
 // Helper class
 // Will cache pointers and automatically release stripes when all elements are used
 class OnceManagedStripes {
@@ -290,8 +275,6 @@ class OnceManagedStripes {
       const double *mystripe = stripe_ptr[stripe];
       double val = mystripe[el];
 
-      //printf("gs %i %i\n",int(stripe), int(el));
-
       stripe_accessed[stripe]++;
       if (stripe_accessed[stripe]==n_samples) release_stripe(stripe); // we will not use this stripe anymore
 
@@ -305,15 +288,22 @@ class OnceManagedStripes {
 // also suitable for writing to disk
 template<class TReal>
 void su::stripes_to_matrix_T(const ManagedStripes &_stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d, uint32_t tile_size) {
-    // n must be >= 2, but that should be enforced upstream as that would imply
+    // n_samples must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
     // tile for  for better memory access pattern
     const uint32_t TILE = (tile_size>0) ? tile_size : (128/sizeof(TReal));
+    const uint32_t n_samples_tup = (n_samples+(TILE-1))/TILE; // round up
 
     OnceManagedStripes stripes(_stripes, n_samples, n_stripes);
 
-    for(uint32_t o = 0; o < n_samples; o+=TILE) { // off diagonal
+    
+    for(uint32_t oi = 0; oi < n_samples_tup; oi++) { // off diagonal
+      // alternate between inner and outer off-diagonal, due to wrap around in stripes
+      const uint32_t o = ((oi%2)==0) ? \
+                           (oi/2)*TILE :                  /* close to diagonal */ \
+                           (n_samples_tup-(oi/2)-1)*TILE; /* far from diagonal */
+ 
       for(uint32_t d = 0; d < (n_samples-o); d+=TILE) { // diagonal
 
          uint32_t iOut = d;
