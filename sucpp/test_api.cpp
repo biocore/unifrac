@@ -48,8 +48,9 @@ void SUITE_END() {
 //    SUITE_END();
 //}
 //
-partial_mat_t* make_test_pm(int case) {
-    partial_mat_t* pm = (partial_mat_t*)malloc(sizeof(partial_mat_t));
+
+template<class TMat, class TReal>
+void fill_test_pm(TMat* pm, int case_id) {
     pm->n_samples = 6;
     pm->sample_ids = (char**)malloc(sizeof(char*) * 6);
     pm->sample_ids[0] = (char*)malloc(sizeof(char) * 2);
@@ -65,64 +66,48 @@ partial_mat_t* make_test_pm(int case) {
     pm->sample_ids[5] = (char*)malloc(sizeof(char) * 2);
     pm->sample_ids[5][0] = 'F'; pm->sample_ids[5][1] = '\0';
 
-    if (case==3) {
-      pm->stripe_start = 6;
-      pm->stripe_stop = 9;
-      pm->stripe_total = 9;
-      pm->is_upper_triangle = true;
-      pm->stripes = (double**)malloc(sizeof(double*) * 3);
-      pm->stripes[0] = (double*)malloc(sizeof(double) * 6);
+    if (case_id==0) {
+      pm->stripe_start = 0;
+      pm->stripe_stop = 3;
+      pm->stripe_total = 3;
+      pm->stripes = (TReal**)malloc(sizeof(TReal*) * 3);
+      pm->stripes[0] = (TReal*)malloc(sizeof(TReal) * 6);
       pm->stripes[0][0] = 1; pm->stripes[0][1] = 2; pm->stripes[0][2] = 3; pm->stripes[0][3] = 4; pm->stripes[0][4] = 5; pm->stripes[0][5] = 6;
-      pm->stripes[1] = (double*)malloc(sizeof(double) * 6);
+      pm->stripes[1] = (TReal*)malloc(sizeof(TReal) * 6);
       pm->stripes[1][0] = 7; pm->stripes[1][1] = 8; pm->stripes[1][2] = 9; pm->stripes[1][3] = 10; pm->stripes[1][4] = 11; pm->stripes[1][5] = 12;
-      pm->stripes[2] = (double*)malloc(sizeof(double) * 6);
+      pm->stripes[2] = (TReal*)malloc(sizeof(TReal) * 6);
       pm->stripes[2][0] = 13; pm->stripes[2][1] = 14; pm->stripes[2][2] = 15; pm->stripes[2][3] = 16; pm->stripes[2][4] = 17; pm->stripes[2][5] = 18;
-    } else if (case==1) {
+    } else if (case_id==1) {
       pm->stripe_start = 0;
       pm->stripe_stop = 2;
       pm->stripe_total = 3;
-      pm->is_upper_triangle = true;
-      pm->stripes = (double**)malloc(sizeof(double*) * 2);
-      pm->stripes[0] = (double*)malloc(sizeof(double) * 6);
-      pm->stripes[0][0] = 1; pm1->stripes[0][1] = 2; pm1->stripes[0][2] = 3; pm1->stripes[0][3] = 4; pm1->stripes[0][4] = 5; pm1->stripes[0][5] = 6;
-      pm->stripes[1] = (double*)malloc(sizeof(double) * 6);
-      pm->stripes[1][0] = 7; pm1->stripes[1][1] = 8; pm1->stripes[1][2] = 9; pm1->stripes[1][3] = 10; pm1->stripes[1][4] = 11; pm1->stripes[1][5] = 12;
+      pm->stripes = (TReal**)malloc(sizeof(TReal*) * 2);
+      pm->stripes[0] = (TReal*)malloc(sizeof(TReal) * 6);
+      pm->stripes[0][0] = 1; pm->stripes[0][1] = 2; pm->stripes[0][2] = 3; pm->stripes[0][3] = 4; pm->stripes[0][4] = 5; pm->stripes[0][5] = 6;
+      pm->stripes[1] = (TReal*)malloc(sizeof(TReal) * 6);
+      pm->stripes[1][0] = 7; pm->stripes[1][1] = 8; pm->stripes[1][2] = 9; pm->stripes[1][3] = 10; pm->stripes[1][4] = 11; pm->stripes[1][5] = 12;
     } else { // assume 2
       pm->stripe_start = 2;
       pm->stripe_stop = 3;
       pm->stripe_total = 3;
-      pm->is_upper_triangle = true;
-      pm->stripes = (double**)malloc(sizeof(double*) * 1);
-      pm->stripes[0] = (double*)malloc(sizeof(double) * 6);
-      pm->stripes[0][0] = 16; pm2->stripes[0][1] = 17; pm2->stripes[0][2] = 18; pm2->stripes[0][3] = 16; pm2->stripes[0][4] = 17; pm2->stripes[0][5] = 18;
+      pm->stripes = (TReal**)malloc(sizeof(TReal*) * 1);
+      pm->stripes[0] = (TReal*)malloc(sizeof(TReal) * 6);
+      pm->stripes[0][0] = 16; pm->stripes[0][1] = 17; pm->stripes[0][2] = 18; pm->stripes[0][3] = 16; pm->stripes[0][4] = 17; pm->stripes[0][5] = 18;
     }
+    pm->is_upper_triangle = true;
+}
+
+partial_mat_t* make_test_pm(int case_id) {
+    partial_mat_t* pm = (partial_mat_t*)malloc(sizeof(partial_mat_t));
+
+    fill_test_pm<partial_mat_t,double>(pm,case_id);
     return pm;
 }
 
-partial_dyn_mat_t* make_test_pdm() {
+partial_dyn_mat_t* make_test_pdm(int case_id) {
     partial_dyn_mat_t* pm = (partial_dyn_mat_t*)malloc(sizeof(partial_dyn_mat_t));
-    pm->n_samples = 6;
-    pm->sample_ids = (char**)malloc(sizeof(char*) * 6);
-    pm->sample_ids[0] = (char*)malloc(sizeof(char) * 2);
-    pm->sample_ids[0][0] = 'A'; pm->sample_ids[0][1] = '\0';
-    pm->sample_ids[1] = (char*)malloc(sizeof(char) * 2);
-    pm->sample_ids[1][0] = 'B'; pm->sample_ids[1][1] = '\0';
-    pm->sample_ids[2] = (char*)malloc(sizeof(char) * 3);
-    pm->sample_ids[2][0] = 'C'; pm->sample_ids[2][1] = 'x'; pm->sample_ids[2][2] = '\0';
-    pm->sample_ids[3] = (char*)malloc(sizeof(char) * 2);
-    pm->sample_ids[3][0] = 'D'; pm->sample_ids[3][1] = '\0';
-    pm->sample_ids[4] = (char*)malloc(sizeof(char) * 2);
-    pm->sample_ids[4][0] = 'E'; pm->sample_ids[4][1] = '\0';
-    pm->sample_ids[5] = (char*)malloc(sizeof(char) * 2);
-    pm->sample_ids[5][0] = 'F'; pm->sample_ids[5][1] = '\0';
-    pm->stripes = (double**)malloc(sizeof(double*) * 3);
-    pm->stripes[0] = (double*)malloc(sizeof(double) * 6);
-    pm->stripes[0][0] = 1; pm->stripes[0][1] = 2; pm->stripes[0][2] = 3; pm->stripes[0][3] = 4; pm->stripes[0][4] = 5; pm->stripes[0][5] = 6;
-    pm->stripes[1] = (double*)malloc(sizeof(double) * 6);
-    pm->stripes[1][0] = 7; pm->stripes[1][1] = 8; pm->stripes[1][2] = 9; pm->stripes[1][3] = 10; pm->stripes[1][4] = 11; pm->stripes[1][5] = 12;
-    pm->stripes[2] = (double*)malloc(sizeof(double) * 6);
-    pm->stripes[2][0] = 13; pm->stripes[2][1] = 14; pm->stripes[2][2] = 15; pm->stripes[2][3] = 16; pm->stripes[2][4] = 17; pm->stripes[2][5] = 18;
-    pm->offsets = (uint64_t*)calloc(4,sizeof(uint64_t));
+    fill_test_pm<partial_dyn_mat_t,double>(pm,case_id);
+    pm->offsets = (uint64_t*)calloc(pm->stripe_stop-pm->stripe_start,sizeof(uint64_t));
     pm->filename = strdup("dummy");
 
     return pm;
@@ -191,11 +176,7 @@ TMat* mat_full_three_rep() {
 void test_read_write_partial_mat() {
     SUITE_START("test read/write partial_mat_t");
 
-    partial_mat_t* pm = make_test_pm();
-    pm->stripe_start = 0;
-    pm->stripe_stop = 3;
-    pm->stripe_total = 3;
-    pm->is_upper_triangle = true;
+    partial_mat_t* pm = make_test_pm(0);
     
     io_status err = write_partial("/tmp/ssu_io.dat", pm);
     ASSERT(err == write_okay);
@@ -343,7 +324,10 @@ void test_merge_partial_mat() {
     pm2->stripe_total = 9;
     pm2->is_upper_triangle = true;
     
-    partial_mat_t* pm3 = make_test_pm(3);;
+    partial_mat_t* pm3 = make_test_pm(0);
+    pm3->stripe_start = 6;
+    pm3->stripe_stop = 9;
+    pm3->stripe_total = 9;
 
     partial_mat_t* pms_err[3];
 
@@ -386,57 +370,8 @@ void test_merge_partial_dyn_mat() {
     SUITE_START("test merge partial_dyn_mat_t");
 
     // the easy test
-    partial_dyn_mat_t* pm1 = (partial_dyn_mat_t*)malloc(sizeof(partial_dyn_mat_t));
-    pm1->n_samples = 6;
-    pm1->sample_ids = (char**)malloc(sizeof(char*) * 6);
-    pm1->sample_ids[0] = (char*)malloc(sizeof(char) * 2);
-    pm1->sample_ids[0][0] = 'A'; pm1->sample_ids[0][1] = '\0';
-    pm1->sample_ids[1] = (char*)malloc(sizeof(char) * 2);
-    pm1->sample_ids[1][0] = 'B'; pm1->sample_ids[1][1] = '\0';
-    pm1->sample_ids[2] = (char*)malloc(sizeof(char) * 3);
-    pm1->sample_ids[2][0] = 'C'; pm1->sample_ids[2][1] = 'x'; pm1->sample_ids[2][2] = '\0';
-    pm1->sample_ids[3] = (char*)malloc(sizeof(char) * 2);
-    pm1->sample_ids[3][0] = 'D'; pm1->sample_ids[3][1] = '\0';
-    pm1->sample_ids[4] = (char*)malloc(sizeof(char) * 2);
-    pm1->sample_ids[4][0] = 'E'; pm1->sample_ids[4][1] = '\0';
-    pm1->sample_ids[5] = (char*)malloc(sizeof(char) * 2);
-    pm1->sample_ids[5][0] = 'F'; pm1->sample_ids[5][1] = '\0';
-    pm1->stripes = (double**)malloc(sizeof(double*) * 2);
-    pm1->stripes[0] = (double*)malloc(sizeof(double) * 6);
-    pm1->stripes[0][0] = 1; pm1->stripes[0][1] = 2; pm1->stripes[0][2] = 3; pm1->stripes[0][3] = 4; pm1->stripes[0][4] = 5; pm1->stripes[0][5] = 6;
-    pm1->stripes[1] = (double*)malloc(sizeof(double) * 6);
-    pm1->stripes[1][0] = 7; pm1->stripes[1][1] = 8; pm1->stripes[1][2] = 9; pm1->stripes[1][3] = 10; pm1->stripes[1][4] = 11; pm1->stripes[1][5] = 12;
-    pm1->stripe_start = 0;
-    pm1->stripe_stop = 2;
-    pm1->stripe_total = 3;
-    pm1->is_upper_triangle = true;
-    pm1->offsets = (uint64_t*)calloc(2,sizeof(uint64_t));
-    pm1->filename=strdup("dummy1");    
-
-    partial_dyn_mat_t* pm2 = (partial_dyn_mat_t*)malloc(sizeof(partial_dyn_mat_t));
-    pm2->n_samples = 6;
-    pm2->sample_ids = (char**)malloc(sizeof(char*) * 6);
-    pm2->sample_ids[0] = (char*)malloc(sizeof(char) * 2);
-    pm2->sample_ids[0][0] = 'A'; pm2->sample_ids[0][1] = '\0';
-    pm2->sample_ids[1] = (char*)malloc(sizeof(char) * 2);
-    pm2->sample_ids[1][0] = 'B'; pm2->sample_ids[1][1] = '\0';
-    pm2->sample_ids[2] = (char*)malloc(sizeof(char) * 3);
-    pm2->sample_ids[2][0] = 'C'; pm2->sample_ids[2][1] = 'x'; pm2->sample_ids[2][2] = '\0';
-    pm2->sample_ids[3] = (char*)malloc(sizeof(char) * 2);
-    pm2->sample_ids[3][0] = 'D'; pm2->sample_ids[3][1] = '\0';
-    pm2->sample_ids[4] = (char*)malloc(sizeof(char) * 2);
-    pm2->sample_ids[4][0] = 'E'; pm2->sample_ids[4][1] = '\0';
-    pm2->sample_ids[5] = (char*)malloc(sizeof(char) * 2);
-    pm2->sample_ids[5][0] = 'F'; pm2->sample_ids[5][1] = '\0';
-    pm2->stripes = (double**)malloc(sizeof(double*) * 1);
-    pm2->stripes[0] = (double*)malloc(sizeof(double) * 6);
-    pm2->stripes[0][0] = 16; pm2->stripes[0][1] = 17; pm2->stripes[0][2] = 18; pm2->stripes[0][3] = 16; pm2->stripes[0][4] = 17; pm2->stripes[0][5] = 18;
-    pm2->stripe_start = 2;
-    pm2->stripe_stop = 3;
-    pm2->stripe_total = 3;
-    pm2->is_upper_triangle = true;
-    pm2->offsets = (uint64_t*)calloc(1,sizeof(uint64_t));
-    pm2->filename=strdup("dummy2");
+    partial_dyn_mat_t* pm1 = make_test_pdm(1);
+    partial_dyn_mat_t* pm2 = make_test_pdm(2);
 
     mat_full_fp64_t* exp = mat_full_three_rep<mat_full_fp64_t,double>();
 
@@ -459,15 +394,9 @@ void test_merge_partial_dyn_mat() {
     // recreate deallocated stripes
     ASSERT(pm1->stripes[0]==NULL);
     ASSERT(pm1->stripes[1]==NULL);
-    pm1->stripes[0] = (double*)malloc(sizeof(double) * 6);
-    pm1->stripes[0][0] = 1; pm1->stripes[0][1] = 2; pm1->stripes[0][2] = 3; pm1->stripes[0][3] = 4; pm1->stripes[0][4] = 5; pm1->stripes[0][5] = 6;
-    pm1->stripes[1] = (double*)malloc(sizeof(double) * 6);
-    pm1->stripes[1][0] = 7; pm1->stripes[1][1] = 8; pm1->stripes[1][2] = 9; pm1->stripes[1][3] = 10; pm1->stripes[1][4] = 11; pm1->stripes[1][5] = 12;
-
     ASSERT(pm2->stripes[0]==NULL);
-    pm2->stripes = (double**)malloc(sizeof(double*) * 1);
-    pm2->stripes[0] = (double*)malloc(sizeof(double) * 6);
-    pm2->stripes[0][0] = 16; pm2->stripes[0][1] = 17; pm2->stripes[0][2] = 18; pm2->stripes[0][3] = 16; pm2->stripes[0][4] = 17; pm2->stripes[0][5] = 18;
+    pm1 = make_test_pdm(1);
+    pm2 = make_test_pdm(2);
 
     pms[0] = pm2;
     pms[1] = pm1;
@@ -500,11 +429,10 @@ void test_merge_partial_dyn_mat() {
     pm2->stripe_total = 9;
     pm2->is_upper_triangle = true;
     
-    partial_dyn_mat_t* pm3 = make_test_pdm();
+    partial_dyn_mat_t* pm3 = make_test_pdm(0);
     pm3->stripe_start = 6;
     pm3->stripe_stop = 9;
     pm3->stripe_total = 9;
-    pm3->is_upper_triangle = true;
 
     partial_dyn_mat_t* pms_err[3];
 
