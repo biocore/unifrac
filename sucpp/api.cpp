@@ -144,6 +144,7 @@ void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids
 
     result->sample_ids = (char**)malloc(sizeof(char*) * n_samples_64);
     result->matrix = (TReal*)malloc(sizeof(TReal) * n_samples_64 * n_samples_64);
+    result->flags=0;
 
     for(unsigned int i = 0; i < n_samples; i++) {
         result->sample_ids[i] = strdup(sample_ids[i]);
@@ -195,26 +196,25 @@ void destroy_mat(mat_t** result) {
     free(*result);
 }
 
+template<class TMat>
+void destroy_mat_full_T(TMat** result) {
+    for(uint32_t i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);   
+    };                                        
+    free((*result)->sample_ids);          
+    if (((*result)->matrix)!=NULL) {          
+      free((*result)->matrix);            
+    }                                         
+    free(*result);                        
+}
+
+
 void destroy_mat_full_fp64(mat_full_fp64_t** result) {
-    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
-        free((*result)->sample_ids[i]);
-    };
-    free((*result)->sample_ids);
-    if (((*result)->matrix)!=NULL) {
-      free((*result)->matrix);
-    }
-    free(*result);
+    destroy_mat_full_T(result);
 }
 
 void destroy_mat_full_fp32(mat_full_fp32_t** result) {
-    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
-        free((*result)->sample_ids[i]);
-    };
-    free((*result)->sample_ids);
-    if (((*result)->matrix)!=NULL) {
-      free((*result)->matrix);
-    }
-    free(*result);
+    destroy_mat_full_T(result);
 }
 
 void destroy_partial_mat(partial_mat_t** result) {
@@ -586,6 +586,7 @@ IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_
      mat_full.n_samples = result->n_samples;
 
      const uint64_t n_samples = result->n_samples;
+     mat_full.flags = 0;
      mat_full.matrix = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
      if (mat_full.matrix==NULL) {
        return open_error; // we don't have a better error code

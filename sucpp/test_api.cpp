@@ -148,6 +148,7 @@ template<class TMat, class TReal>
 TMat* mat_full_three_rep() {
     TMat* res = (TMat*)malloc(sizeof(TMat));
     res->n_samples = 6;
+    res->flags=0;
     res->matrix = (TReal*)malloc(sizeof(TReal) * 36);
     TReal * m=res->matrix ;
     m[ 0] =  0; m[ 1] =  1; m[ 2] =  7; m[ 3] = 16; m[ 4] = 11; m[ 5] =  6;

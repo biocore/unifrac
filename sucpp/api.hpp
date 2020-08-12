@@ -43,7 +43,8 @@ typedef struct mat {
  * sample_ids <char**> the sample IDs of length n_samples.
  */
 typedef struct mat_full_fp64 {
-    unsigned int n_samples;
+    uint32_t n_samples;
+    uint32_t flags; //opaque, 0 for default behavior
     double* matrix;
     char** sample_ids;
 } mat_full_fp64_t;
@@ -55,7 +56,8 @@ typedef struct mat_full_fp64 {
  * sample_ids <char**> the sample IDs of length n_samples.
  */
 typedef struct mat_full_fp32 {
-    unsigned int n_samples;
+    uint32_t n_samples;
+    uint32_t flags; //opaque, 0 for default behavior
     float* matrix;
     char** sample_ids;
 } mat_full_fp32_t;
