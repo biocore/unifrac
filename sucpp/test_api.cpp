@@ -613,6 +613,7 @@ void test_merge_partial_mmap() {
     merge_status err = merge_partial_to_mmap_matrix_fp32(pms, 2, "/tmp", &obs);
     ASSERT(err == merge_okay);
     ASSERT(obs->n_samples == exp->n_samples);
+    ASSERT(obs->flags != 0);
     for(unsigned int i = 0; i < (obs->n_samples*obs->n_samples); i++) {
         ASSERT(obs->matrix[i] == exp->matrix[i]);
     }
@@ -626,6 +627,24 @@ void test_merge_partial_mmap() {
     destroy_mat_full_fp32(&obs);
     destroy_partial_dyn_mat(&pm1);
     destroy_partial_dyn_mat(&pm2);
+
+    // test failure due to FS problems
+
+    ierr = read_partial_header("/tmp/ssu_io_1.dat", &pm1);
+    ASSERT(ierr == read_okay);
+
+    ierr = read_partial_header("/tmp/ssu_io_2.dat", &pm2);
+    ASSERT(ierr == read_okay);
+
+    pms[0] = pm1;
+    pms[1] = pm2;
+
+
+    err = merge_partial_to_mmap_matrix_fp32(pms, 2, "/santa/goes/skiing", &obs);
+    ASSERT(err != merge_okay);
+    destroy_partial_dyn_mat(&pm1);
+    destroy_partial_dyn_mat(&pm2);
+
     destroy_partial_mat(&s1);
     destroy_partial_mat(&s2);
 
