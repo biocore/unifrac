@@ -1167,7 +1167,10 @@ MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_p
     if ((*result)->sample_ids==NULL) return incomplete_stripe_set;
 
     PartialStripes ps(n_partials,partial_mats);
-    su::stripes_to_matrix_T<TReal>(ps, partial_mats[0]->n_samples, partial_mats[0]->stripe_total, (*result)->matrix);
+    const uint32_t tile_size = (mmap_dir==NULL) ? \
+                                  (128/sizeof(TReal)) : /* keep it small for memory access, to fit in chip cache */ \
+                                  (4096/sizeof(TReal)); /* make it larger for mmap, as the limiting factor is swapping */
+    su::stripes_to_matrix_T<TReal>(ps, partial_mats[0]->n_samples, partial_mats[0]->stripe_total, (*result)->matrix, tile_size);
 
     return merge_okay;
 }
