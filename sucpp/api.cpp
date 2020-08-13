@@ -16,6 +16,12 @@
 #define MMAP_FD_MASK 0x0fff
 #define MMAP_FLAG    0x1000
 
+/* O_NOATIME is defined at fcntl.h when supported */
+#ifndef O_NOATIME
+#define O_NOATIME 0
+#endif
+
+
 #define CHECK_FILE(filename, err) if(!is_file_exists(filename)) { \
                                       return err;                 \
                                   }
