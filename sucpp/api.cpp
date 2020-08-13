@@ -162,7 +162,7 @@ void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids
     } else {
       std::string mmap_template(mmap_dir);
       mmap_template+="/su_mmap_XXXXXX";
-      int fd=mkostemp((char *) mmap_template.c_str(), O_RDWR | O_CREAT | O_TRUNC |O_NOATIME ); 
+      int fd=mkostemp((char *) mmap_template.c_str(), O_NOATIME ); 
       if (fd<0) {
          result->matrix = NULL;
          // leave error handling to the caller
