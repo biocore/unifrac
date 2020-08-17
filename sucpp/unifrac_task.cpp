@@ -2,6 +2,8 @@
 #include <cstdlib>
 
 
+
+
 template<class TFloat>
 void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, const TFloat * __restrict__ lengths) {
     const unsigned int start_idx = this->task_p->start;
@@ -375,7 +377,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const uint64_t n_samples_r = this->dm_stripes.n_samples_r;
 
     // openacc only works well with local variables
-    const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
+    const uint8_t * const __restrict__ embedded_proportions = this->embedded_proportions;
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
@@ -405,14 +407,14 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
             for (unsigned int emb=0; emb<filled_embs; emb++) {
                 const uint64_t offset = n_samples_r * emb;
 
-                int32_t u1 = embedded_proportions[offset + k]  > 0;
-                int32_t v1 = embedded_proportions[offset + l1] > 0;
-                int32_t x1 = u1 ^ v1;
-                int32_t o1 = u1 | v1;
+                uint8_t u1 = embedded_proportions[offset + k];
+                uint8_t v1 = embedded_proportions[offset + l1];
+                uint8_t x1 = u1 ^ v1;
+                uint8_t o1 = u1 | v1;
                 TFloat length = lengths[emb];
 
-                my_stripe     += x1 * length;
-                my_stripe_total     += o1 * length;
+                if (x1) my_stripe       += length;
+                if (o1) my_stripe_total += length;
             }
 
             dm_stripe[k]     = my_stripe;
@@ -432,9 +434,9 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
     const uint64_t n_samples_r = this->dm_stripes.n_samples_r;
 
     // openacc only works well with local variables
-    const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
-    const TFloat * const __restrict__ embedded_counts = this->embedded_counts;
-    const TFloat * const __restrict__ sample_total_counts = this->sample_total_counts;
+    const uint8_t * const __restrict__ embedded_proportions = this->embedded_proportions;
+    const TFloat  * const __restrict__ embedded_counts = this->embedded_counts;
+    const TFloat  * const __restrict__ sample_total_counts = this->sample_total_counts;
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
@@ -470,12 +472,14 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
                 TFloat vaw = sqrt(mi * (m - mi));
 
                 if(vaw > 0) {
-                  int32_t u = embedded_proportions[offset + k] > 0;
-                  int32_t v = embedded_proportions[offset + l1] > 0;
+                  uint8_t u1 = embedded_proportions[offset + k];
+                  uint8_t v1 = embedded_proportions[offset + l1];
+                  uint8_t x1 = u1 ^ v1;
+                  uint8_t o1 = u1 | v1;
                   TFloat length = lengths[emb];
 
-                  my_stripe += ((u ^ v) * length) / vaw;
-                  my_stripe_total += ((u | v) * length) / vaw;
+                  if (x1) my_stripe += length / vaw;
+                  if (o1) my_stripe_total += length / vaw;
                 }
             }
 

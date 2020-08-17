@@ -197,38 +197,6 @@ void progressbar(float progress) {
 }
 
 template<class TFloat>
-void embed_proportions(TFloat* __restrict__ out, const double* __restrict__ in, unsigned int emb, uint32_t n_samples) {
-   const uint64_t n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
-   const uint64_t offset = emb * n_samples_r;
-
-   for(unsigned int i = 0; i < n_samples; i++) {
-       out[offset + i] = in[i];
-   }
-
-   // avoid NaNs
-   for(unsigned int i = n_samples; i < n_samples_r; i++) {
-       out[offset + i] = 1.0;
-   }
-}
-
-template<class TFloat>
-void initialize_embedded(TFloat*& prop, unsigned int num, const su::task_parameters* task_p) {
-    const unsigned int n_samples = task_p->n_samples;
-    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
-    uint64_t bsize = n_samples_r * num;
-
-    TFloat* buf = NULL;
-    int err = posix_memalign((void **)&buf, 4096, sizeof(TFloat) * bsize);
-    if(buf == NULL || err != 0) {
-        fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(TFloat) * bsize, err, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-#pragma acc enter data create(buf[:bsize])
-   prop=buf;
-}
-
-template<class TFloat>
 void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, biom &table) {
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
@@ -341,12 +309,10 @@ void unifracTT(biom &table,
 
     uint32_t node;
     double *node_proportions;
-    TFloat *embedded_proportions;
 
-    initialize_embedded<TFloat>(embedded_proportions, max_emb, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
-    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,max_emb,task_p);
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),max_emb,task_p);
 
     TFloat *lengths = NULL;
     err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
@@ -368,7 +334,7 @@ void unifracTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions<TFloat>(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
+        taskObj._embed_proportions(node_proportions, filled_emb);
         filled_emb++;
         /*
          * The values in the example vectors correspond to index positions of an
@@ -417,7 +383,8 @@ void unifracTT(biom &table,
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+          taskObj.sync_embedded_proportions(filled_emb);
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
 
@@ -430,7 +397,8 @@ void unifracTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+          taskObj.sync_embedded_proportions(filled_emb);
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
     }
@@ -455,9 +423,7 @@ void unifracTT(biom &table,
     }
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples_r*max_emb])
     free(lengths);
-    free(embedded_proportions);
 }
 
 void su::unifrac(biom &table,
@@ -531,16 +497,12 @@ void unifrac_vawTT(biom &table,
     uint32_t node;
     double *node_proportions;
     double *node_counts;
-    TFloat *embedded_proportions;
-    TFloat *embedded_counts;
     TFloat *sample_total_counts;
 
-    initialize_embedded<TFloat>(embedded_proportions, max_emb, task_p);
-    initialize_embedded<TFloat>(embedded_counts, max_emb, task_p);
     initialize_sample_counts<TFloat>(sample_total_counts, task_p, table);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
-    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), embedded_proportions, embedded_counts, sample_total_counts, max_emb, task_p);
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), sample_total_counts, max_emb, task_p);
 
     TFloat *lengths = NULL;
     err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
@@ -565,13 +527,13 @@ void unifrac_vawTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions<TFloat>(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
-        embed_proportions<TFloat>(embedded_counts, node_counts, filled_emb, task_p->n_samples);
+        taskObj._embed(node_proportions, node_counts, filled_emb);
         filled_emb++;
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],embedded_counts[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+          taskObj.sync_embedded(filled_emb);
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
 
@@ -584,7 +546,8 @@ void unifrac_vawTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],embedded_counts[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+          taskObj.sync_embedded(filled_emb);
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
     }
@@ -609,10 +572,8 @@ void unifrac_vawTT(biom &table,
 
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples_r*max_emb],embedded_counts[:n_samples_r*max_emb],sample_total_counts[:n_samples_r])
+#pragma acc exit data delete(sample_total_counts[:n_samples_r])
     free(lengths);
-    free(embedded_proportions);
-    free(embedded_counts);
     free(sample_total_counts);
 }
 
