@@ -349,7 +349,7 @@ namespace su {
        void sync_embedded_counts(unsigned int filled_embs)
        {
 #ifdef _OPENACC
-          const uint64_t  n_samples_r = dm_stripes.n_samples_r;
+          const uint64_t  n_samples_r = this->dm_stripes.n_samples_r;
           uint64_t bsize = n_samples_r * filled_embs;
 #pragma acc update device(embedded_counts[:bsize])
 #endif
