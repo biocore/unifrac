@@ -413,8 +413,8 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
                 uint8_t o1 = u1 | v1;
                 TFloat length = lengths[emb];
 
-                if (x1) my_stripe       += length;
-                if (o1) my_stripe_total += length;
+                my_stripe       += x1 * length;
+                my_stripe_total += o1 * length;
             }
 
             dm_stripe[k]     = my_stripe;
@@ -477,9 +477,10 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
                   uint8_t x1 = u1 ^ v1;
                   uint8_t o1 = u1 | v1;
                   TFloat length = lengths[emb];
+                  TFloat lv1 = length / vaw;
 
-                  if (x1) my_stripe += length / vaw;
-                  if (o1) my_stripe_total += length / vaw;
+                  my_stripe += x1*lv1;
+                  my_stripe_total += o1*lv1;
                 }
             }
 
