@@ -1,3 +1,4 @@
+#include <algorithm> 
 #include "unifrac_task.hpp"
 #include <cstdlib>
 
@@ -52,6 +53,9 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
 
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -110,6 +114,9 @@ void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_em
 
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -169,6 +176,8 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
       }
     }
 
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -234,6 +243,9 @@ void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs
 
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -297,6 +309,9 @@ void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TF
 
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -367,6 +382,9 @@ void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const
         }
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -454,6 +472,9 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 
 template<class TFloat>
@@ -534,5 +555,8 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
 
       }
     }
+
+   // next iteration will use the alternative space
+   std::swap(this->embedded_proportions,this->embedded_proportions_alt);
 }
 

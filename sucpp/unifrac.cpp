@@ -382,9 +382,12 @@ void unifracTT(biom &table,
          */
 
         if (filled_emb==max_emb) {
+          taskObj.sync_embedded_proportions(filled_emb);
+#ifdef _OPENACC
+          // lengths may be still in use in async mode, wait
 #pragma acc wait
 #pragma acc update device(lengths[:filled_emb])
-          taskObj.sync_embedded_proportions(filled_emb);
+#endif
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
 
@@ -396,9 +399,12 @@ void unifracTT(biom &table,
     }
 
     if (filled_emb>0) {
+          taskObj.sync_embedded_proportions(filled_emb);
+#ifdef _OPENACC
+          // lengths may be still in use in async mode, wait
 #pragma acc wait
 #pragma acc update device(lengths[:filled_emb])
-          taskObj.sync_embedded_proportions(filled_emb);
+#endif
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
     }
