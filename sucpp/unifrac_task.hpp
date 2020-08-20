@@ -124,7 +124,7 @@ namespace su {
         {
 #ifdef _OPENACC
           const uint64_t  n_samples_r = dm_stripes.n_samples_r;
-          uint64_t bsize = n_samples_r * max_embs;
+          const uint64_t bsize = n_samples_r * get_emb_els(max_embs);
 #pragma acc exit data delete(embedded_proportions[:bsize])
 #endif    
           free(embedded_proportions);
@@ -134,13 +134,15 @@ namespace su {
         {
 #ifdef _OPENACC
           const uint64_t  n_samples_r = dm_stripes.n_samples_r;
-          uint64_t bsize = n_samples_r * filled_embs;
+          const uint64_t bsize = n_samples_r * get_emb_els(filled_embs);
 #pragma acc update device(embedded_proportions[:bsize])
 #endif
         }
 
-        static TEmb *initialize_embedded(const uint64_t  n_samples_r, uint64_t max_embs) {
-          uint64_t bsize = n_samples_r * max_embs;
+        static unsigned int get_emb_els(unsigned int max_embs);
+
+        static TEmb *initialize_embedded(const uint64_t  n_samples_r, unsigned int max_embs) {
+          uint64_t bsize = n_samples_r * get_emb_els(max_embs);
 
           TEmb* buf = NULL;
           int err = posix_memalign((void **)&buf, 4096, sizeof(TEmb) * bsize);
@@ -152,6 +154,14 @@ namespace su {
 #pragma acc enter data create(buf[:bsize])
           return buf;
         }
+
+        void embed_proportions(const double* __restrict__ in, unsigned int emb);
+
+        
+
+        //
+        // ===== Internal, do not use directly =======
+        //
 
         template<class TOut> void embed_proportions_straight(TOut* __restrict__ out, const double* __restrict__ in, unsigned int emb)
         {
@@ -168,23 +178,53 @@ namespace su {
             out[offset + i] = 1.0;
           }
         }
+
+        //packed bool
+        // assumes we are processing emb in increasing order, starting from 0
         template<class TOut> void embed_proportions_bool(TOut* __restrict__ out, const double* __restrict__ in, unsigned int emb)
         {
+          const unsigned int n_packed = sizeof(TOut)*8;
           const unsigned int n_samples  = dm_stripes.n_samples;
           const uint64_t n_samples_r  = dm_stripes.n_samples_r;
-          const uint64_t offset = emb * n_samples_r;
+          unsigned int emb_block = emb/n_packed;
+          unsigned int emb_bit = emb%n_packed;
+          const uint64_t offset = emb_block * n_samples_r;
 
-          for(unsigned int i = 0; i < n_samples; i++) {
-            out[offset + i] = (in[i] > 0);
-          }
+          if  (emb_bit==0) {
+            // assign for emb_bit==0, so it clears the other bits
+            // assumes we processing emb in increasing order, starting from 0
+            for(unsigned int i = 0; i < n_samples; i++) {            
+              out[offset + i] = (in[i] > 0);
+            }
 
-          // avoid NaNs
-          for(unsigned int i = n_samples; i < n_samples_r; i++) {
-            out[offset + i] = 0;
+            // avoid NaNs
+            for(unsigned int i = n_samples; i < n_samples_r; i++) {
+              out[offset + i] = 0;
+            }
+          } else {
+            // just update my bit
+            for(unsigned int i = 0; i < n_samples; i++) {
+              out[offset + i] |= ((in[i] > 0) << emb_bit);
+            }
+
+            // the rest of the els are already OK
           }
         }
-
     };
+
+    // straight embeded_proportions
+    template<> inline void UnifracTaskBase<double,double>::embed_proportions(const double* __restrict__ in, unsigned int emb) {embed_proportions_straight(embedded_proportions,in,emb);}
+    template<> inline void UnifracTaskBase<double,float>::embed_proportions(const double* __restrict__ in, unsigned int emb) {embed_proportions_straight(embedded_proportions,in,emb);}
+    template<> inline void UnifracTaskBase<float,float>::embed_proportions(const double* __restrict__ in, unsigned int emb) {embed_proportions_straight(embedded_proportions,in,emb);}
+    template<> inline  unsigned int UnifracTaskBase<double,double>::get_emb_els(unsigned int max_embs) {return max_embs;}
+    template<> inline  unsigned int UnifracTaskBase<double,float>::get_emb_els(unsigned int max_embs) {return max_embs;}
+    template<> inline  unsigned int UnifracTaskBase<float,float>::get_emb_els(unsigned int max_embs) {return max_embs;}
+
+    //packed bool embeded_proportions
+    template<> inline void UnifracTaskBase<double,uint32_t>::embed_proportions(const double* __restrict__ in, unsigned int emb) {embed_proportions_bool(embedded_proportions,in,emb);}
+    template<> inline void UnifracTaskBase<float,uint32_t>::embed_proportions(const double* __restrict__ in, unsigned int emb) {embed_proportions_bool(embedded_proportions,in,emb);}
+    template<> inline  unsigned int UnifracTaskBase<double,uint32_t>::get_emb_els(unsigned int max_embs) {return (max_embs+31)/32;}
+    template<> inline  unsigned int UnifracTaskBase<float,uint32_t>::get_emb_els(unsigned int max_embs) {return (max_embs+31)/32;}
 
     /* void su::unifrac tasks
      *
@@ -234,7 +274,6 @@ namespace su {
 
        virtual ~UnifracTask() {}
 
-       virtual void embed_proportions(const double* __restrict__ in, unsigned int emb) = 0;
        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
     };
 
@@ -245,10 +284,8 @@ namespace su {
         UnifracUnnormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
-        virtual void embed_proportions(const double* __restrict__ in, unsigned int emb) { _embed_proportions(in,emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed_proportions(const double* __restrict__ in, unsigned int emb) { this->embed_proportions_straight(this->embedded_proportions,in,emb);}
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
@@ -257,22 +294,18 @@ namespace su {
         UnifracNormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
-        virtual void embed_proportions(const double* __restrict__ in, unsigned int emb) { _embed_proportions(in,emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed_proportions(const double* __restrict__ in, unsigned int emb) { this->embed_proportions_straight(this->embedded_proportions,in,emb);}
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
-    class UnifracUnweightedTask : public UnifracTask<TFloat,uint8_t> {
+    class UnifracUnweightedTask : public UnifracTask<TFloat,uint32_t> {
       public:
         UnifracUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
-        : UnifracTask<TFloat, uint8_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
+        : UnifracTask<TFloat, uint32_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
-        virtual void embed_proportions(const double* __restrict__ in, unsigned int emb) { _embed_proportions(in,emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed_proportions(const double* __restrict__ in, unsigned int emb) { this->embed_proportions_bool(this->embedded_proportions,in,emb);}
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
@@ -281,10 +314,8 @@ namespace su {
         UnifracGeneralizedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
-        virtual void embed_proportions(const double* __restrict__ in, unsigned int emb) { _embed_proportions(in,emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed_proportions(const double* __restrict__ in, unsigned int emb) { this->embed_proportions_straight(this->embedded_proportions,in,emb);}
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
 
@@ -350,14 +381,17 @@ namespace su {
        {
 #ifdef _OPENACC
           const uint64_t  n_samples_r = this->dm_stripes.n_samples_r;
-          uint64_t bsize = n_samples_r * filled_embs;
+          const uint64_t bsize = n_samples_r * filled_embs;
 #pragma acc update device(embedded_counts[:bsize])
 #endif
        }
 
        void sync_embedded(unsigned int filled_embs) { this->sync_embedded_proportions(filled_embs); this->sync_embedded_counts(filled_embs);}
 
-       virtual void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) = 0;
+        void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {
+          this->embed_proportions(in_proportions,emb);
+          this->embed_proportions_straight(this->embedded_counts,in_counts,emb);
+        }
 
        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
     };
@@ -370,13 +404,7 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {_embed(in_proportions, in_counts, emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
-
-        void _embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {
-          this->embed_proportions_straight(this->embedded_proportions,in_proportions,emb);
-          this->embed_proportions_straight(this->embedded_counts,in_counts,emb);
-        }
 
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
@@ -388,30 +416,20 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {_embed(in_proportions, in_counts, emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {
-          this->embed_proportions_straight(this->embedded_proportions,in_proportions,emb);
-          this->embed_proportions_straight(this->embedded_counts,in_counts,emb);
-        }
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
-    class UnifracVawUnweightedTask : public UnifracVawTask<TFloat,uint8_t> {
+    class UnifracVawUnweightedTask : public UnifracVawTask<TFloat,uint32_t> {
       public:
         UnifracVawUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, 
                     const TFloat * _sample_total_counts, 
                     unsigned int _max_embs, const su::task_parameters* _task_p)
-        : UnifracVawTask<TFloat,uint8_t>(_dm_stripes,_dm_stripes_total,_sample_total_counts,_max_embs,_task_p) {}
+        : UnifracVawTask<TFloat,uint32_t>(_dm_stripes,_dm_stripes_total,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {_embed(in_proportions, in_counts, emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {
-          this->embed_proportions_bool(this->embedded_proportions,in_proportions,emb);
-          this->embed_proportions_straight(this->embedded_counts,in_counts,emb);
-        }
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
@@ -422,13 +440,8 @@ namespace su {
                     unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracVawTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_sample_total_counts,_max_embs,_task_p) {}
 
-        virtual void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {_embed(in_proportions, in_counts, emb);}
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
-        void _embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) {
-          this->embed_proportions_straight(this->embedded_proportions,in_proportions,emb);
-          this->embed_proportions_straight(this->embedded_counts,in_counts,emb);
-        }
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
 

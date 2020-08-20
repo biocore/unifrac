@@ -334,7 +334,7 @@ void unifracTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        taskObj._embed_proportions(node_proportions, filled_emb);
+        taskObj.embed_proportions(node_proportions, filled_emb);
         filled_emb++;
         /*
          * The values in the example vectors correspond to index positions of an
@@ -527,7 +527,7 @@ void unifrac_vawTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        taskObj._embed(node_proportions, node_counts, filled_emb);
+        taskObj.embed(node_proportions, node_counts, filled_emb);
         filled_emb++;
 
         if (filled_emb==max_emb) {
