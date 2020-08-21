@@ -384,7 +384,8 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const unsigned int step_size = this->step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
-    const unsigned int filled_embs_els = (filled_embs+31)/32; // round up
+    const unsigned int filled_embs_els = filled_embs/32;
+    const unsigned int filled_embs_rem = filled_embs%32; 
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
@@ -418,13 +419,31 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 
 #pragma acc loop seq
                 for (unsigned int ei=0; ei<32; ei++) { 
-                   unsigned int emb=emb_el*32+ei;
-                   if (emb<filled_embs) {
+                     unsigned int emb=emb_el*32+ei;
                      TFloat length = lengths[emb];
 
                      my_stripe       += ((x1 >> ei) & 1) * length;
                      my_stripe_total += ((o1 >> ei) & 1) * length;
-                   }
+                }
+            }
+            if (filled_embs_rem>0) {
+                unsigned int emb_el=filled_embs_els;
+                const uint64_t offset = n_samples_r * emb_el;
+
+                uint32_t u1 = embedded_proportions[offset + k];
+                uint32_t v1 = embedded_proportions[offset + l1];
+                uint32_t x1 = u1 ^ v1;
+                uint32_t o1 = u1 | v1;
+
+                // embedded_proportions is packed
+
+#pragma acc loop seq
+                for (unsigned int ei=0; ei<filled_embs_rem; ei++) { 
+                     unsigned int emb=emb_el*32+ei;
+                     TFloat length = lengths[emb];
+
+                     my_stripe       += ((x1 >> ei) & 1) * length;
+                     my_stripe_total += ((o1 >> ei) & 1) * length;
                 }
             }
 
