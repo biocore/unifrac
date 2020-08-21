@@ -109,15 +109,21 @@ namespace su {
 
         const unsigned int max_embs;
         TEmb * embedded_proportions;
+#ifdef _OPENACC
        protected:
+        // alternate buffer only needed in async environments, like openacc
         TEmb * embedded_proportions_alt; // used as temp
        public:
+#endif
 
         UnifracTaskBase(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : dm_stripes(_dm_stripes,_task_p), dm_stripes_total(_dm_stripes_total,_task_p), task_p(_task_p)
         , max_embs(_max_embs)
         , embedded_proportions(initialize_embedded(dm_stripes.n_samples_r,_max_embs))
-        , embedded_proportions_alt(initialize_embedded(dm_stripes.n_samples_r,_max_embs)) {}
+#ifdef _OPENACC
+        , embedded_proportions_alt(initialize_embedded(dm_stripes.n_samples_r,_max_embs)) 
+#endif
+        {}
 
         /* remove
         // Note: not const, since they share a mutable state
@@ -132,8 +138,8 @@ namespace su {
           const uint64_t bsize = n_samples_r * get_emb_els(max_embs);
 #pragma acc exit data delete(embedded_proportions_alt[:bsize])
 #pragma acc exit data delete(embedded_proportions[:bsize])
-#endif    
           free(embedded_proportions_alt);
+#endif
           free(embedded_proportions);
         }
 
