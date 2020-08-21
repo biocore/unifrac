@@ -169,6 +169,7 @@ namespace su {
           const uint64_t n_samples_r  = dm_stripes.n_samples_r;
           const uint64_t offset = emb * n_samples_r;
 
+#pragma omp parallel for schedule(static)
           for(unsigned int i = 0; i < n_samples; i++) {
             out[offset + i] = in[i];
           }
@@ -193,6 +194,7 @@ namespace su {
           if  (emb_bit==0) {
             // assign for emb_bit==0, so it clears the other bits
             // assumes we processing emb in increasing order, starting from 0
+#pragma omp parallel for schedule(static)
             for(unsigned int i = 0; i < n_samples; i++) {            
               out[offset + i] = (in[i] > 0);
             }
@@ -203,6 +205,7 @@ namespace su {
             }
           } else {
             // just update my bit
+#pragma omp parallel for schedule(static)
             for(unsigned int i = 0; i < n_samples; i++) {
               out[offset + i] |= ((in[i] > 0) << emb_bit);
             }

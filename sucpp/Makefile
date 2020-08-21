@@ -38,7 +38,7 @@ EXEFLAGS =
 
 ifndef NOGPU
 	ifneq (,$(findstring pgi,$(COMPILER)))
-		CPPFLAGS += -acc
+		CPPFLAGS += -acc -mp
 	        ifeq ($(PERFORMING_CONDA_BUILD),True)
 	            CPPFLAGS += -ta=tesla:ccall
 		else
@@ -74,13 +74,13 @@ endif
 
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
-test: tree.o test_su.cpp biom.o unifrac.o api.o
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o api.o -llz4 -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o api.o -llz4 -lpthread
+test: tree.o test_su.cpp biom.o unifrac.o api.o test_su.o test_api.o
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.o -o test_su tree.o biom.o unifrac.o api.o -llz4 -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.o -o test_api tree.o biom.o unifrac.o api.o -llz4 -lpthread
 
-main: tree.o biom.o unifrac.o cmd.o api.o
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -llz4 -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -llz4 -lpthread
+main: tree.o biom.o unifrac.o cmd.o api.o su.o faithpd.o
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) su.o -o ssu tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -llz4 -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.o -o faithpd tree.o biom.o unifrac.o cmd.o api.o -lhdf5_cpp -llz4 -lpthread
 	cp ssu ${PREFIX}/bin/
 	cp faithpd ${PREFIX}/bin/
 
@@ -108,6 +108,9 @@ capi_test: api
 	export LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 %.o: %.cpp %.hpp
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+%.o: %.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:

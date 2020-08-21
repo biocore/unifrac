@@ -305,7 +305,7 @@ void unifracTT(biom &table,
 
     PropStack propstack(table.n_samples);
 
-    const unsigned int max_emb = 128;
+    const unsigned int max_emb = 128*32; // hack
 
     uint32_t node;
     double *node_proportions;
@@ -623,10 +623,11 @@ void su::set_proportions(double* props,
                          bool normalize) {
     if(tree.isleaf(node)) {
        table.get_obs_data(tree.names[node], props);
-       for(unsigned int i = 0; i < table.n_samples; i++) {
-           props[i] = props[i];
-           if(normalize)
-               props[i] /= table.sample_counts[i];
+       if (normalize) {
+#pragma omp parallel for schedule(static)
+        for(unsigned int i = 0; i < table.n_samples; i++) {
+           props[i] /= table.sample_counts[i];
+        }
        }
 
     } else {
@@ -634,6 +635,7 @@ void su::set_proportions(double* props,
         unsigned int right = tree.rightchild(node);
         double *vec;
 
+#pragma omp parallel for schedule(static)
         for(unsigned int i = 0; i < table.n_samples; i++)
             props[i] = 0;
 
@@ -641,6 +643,7 @@ void su::set_proportions(double* props,
             vec = ps.get(current);  // pull from prop map
             ps.push(current);  // remove from prop map, place back on stack
 
+#pragma omp parallel for schedule(static)
             for(unsigned int i = 0; i < table.n_samples; i++)
                 props[i] = props[i] + vec[i];
 
