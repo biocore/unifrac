@@ -305,7 +305,7 @@ void unifracTT(biom &table,
 
     PropStack propstack(table.n_samples);
 
-    const unsigned int max_emb = 128*32; // hack
+    const unsigned int max_emb =  TaskT::RECOMMENDED_MAX_EMBS;
 
     uint32_t node;
     double *node_proportions;
@@ -498,7 +498,7 @@ void unifrac_vawTT(biom &table,
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
 
-    const unsigned int max_emb = 128;
+    const unsigned int max_emb = TaskT::RECOMMENDED_MAX_EMBS;
 
     uint32_t node;
     double *node_proportions;

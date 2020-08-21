@@ -291,12 +291,19 @@ namespace su {
        virtual ~UnifracTask() {}
 
        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
+
+      protected:
+       static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128;
+       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = RECOMMENDED_MAX_EMBS_STRAIGHT*32;
+
     };
 
 
     template<class TFloat>
     class UnifracUnnormalizedWeightedTask : public UnifracTask<TFloat,TFloat> {
       public:
+        static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,TFloat>::RECOMMENDED_MAX_EMBS_STRAIGHT;
+
         UnifracUnnormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
@@ -307,6 +314,8 @@ namespace su {
     template<class TFloat>
     class UnifracNormalizedWeightedTask : public UnifracTask<TFloat,TFloat> {
       public:
+        static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,TFloat>::RECOMMENDED_MAX_EMBS_STRAIGHT;
+
         UnifracNormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
@@ -317,6 +326,8 @@ namespace su {
     template<class TFloat>
     class UnifracUnweightedTask : public UnifracTask<TFloat,uint32_t> {
       public:
+        static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,uint32_t>::RECOMMENDED_MAX_EMBS_BOOL;
+
         UnifracUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat, uint32_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
@@ -327,6 +338,8 @@ namespace su {
     template<class TFloat>
     class UnifracGeneralizedTask : public UnifracTask<TFloat,TFloat> {
       public:
+        static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,TFloat>::RECOMMENDED_MAX_EMBS_STRAIGHT;
+
         UnifracGeneralizedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
 
@@ -375,6 +388,8 @@ namespace su {
       public:
         TFloat * const embedded_counts;
         const TFloat * const sample_total_counts;
+
+        static const unsigned int RECOMMENDED_MAX_EMBS = 128;
 
         UnifracVawTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, 
                     const TFloat * _sample_total_counts,
