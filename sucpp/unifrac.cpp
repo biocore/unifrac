@@ -285,9 +285,11 @@ void unifracTT(biom &table,
                std::vector<double*> &dm_stripes_total,
                const su::task_parameters* task_p) {
     int err;
+#ifndef defined(_OPENACC) || defined(_OPENMP)
+    // no processor affinity whenusing openacc or openmp
+#else
     // processor affinity
-#ifndef _OPENACC
-    // processor affinity, when not using openacc
+    // processor affinity, when not using openacc or openmp
     err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
@@ -479,8 +481,9 @@ void unifrac_vawTT(biom &table,
                           std::vector<double*> &dm_stripes_total,
                           const su::task_parameters* task_p) {
     int err;
-#ifndef _OPENACC
-    // processor affinity, when not using openacc
+#ifndef defined(_OPENACC) || defined(_OPENMP)
+    // no processor affinity whenusing openacc or openmp
+#else
     err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
@@ -696,8 +699,8 @@ void su::process_stripes(biom &table,
     report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     pthread_mutex_init(&printf_mutex, NULL);
 
-#ifdef _OPENACC
-    // cannot use threading with openacc
+#if defined(_OPENACC) || defined(_OPENMP)
+    // cannot use threading with openacc or openmp
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             su::unifrac_vaw(

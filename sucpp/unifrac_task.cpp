@@ -418,7 +418,11 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const unsigned int filled_embs_rem = filled_embs%32; 
 
     // point of thread
+#ifdef _OPENACC
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#else
+#pragma omp parallel for schedule(dynamic,1)
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
