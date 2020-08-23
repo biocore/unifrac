@@ -294,7 +294,7 @@ namespace su {
 
       protected:
        static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128;
-       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = RECOMMENDED_MAX_EMBS_STRAIGHT*32;
+       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = RECOMMENDED_MAX_EMBS_STRAIGHT;
 
     };
 
@@ -328,12 +328,30 @@ namespace su {
       public:
         static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,uint32_t>::RECOMMENDED_MAX_EMBS_BOOL;
 
+        // Note: _max_emb MUST be multiple of 32
         UnifracUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
-        : UnifracTask<TFloat, uint32_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
+        : UnifracTask<TFloat, uint32_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) 
+        {
+          const unsigned int bsize = _max_embs*0x400/32;
+          sums = NULL;
+          posix_memalign((void **)&sums, 4096, sizeof(TFloat) * bsize);
+#pragma acc enter data create(sums[:bsize])
+        }
+
+        virtual ~UnifracUnweightedTask()
+        {
+#ifdef _OPENACC
+           const unsigned int bsize = this->max_embs*0x400/32;
+#pragma acc exit data delete(sums[:bsize])
+#endif
+          free(sums);
+        }
 
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
+      private:
+        TFloat *sums; // temp buffer
     };
     template<class TFloat>
     class UnifracGeneralizedTask : public UnifracTask<TFloat,TFloat> {

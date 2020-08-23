@@ -411,15 +411,59 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
+    TFloat * const __restrict__ sums = this->sums;
+
     const unsigned int step_size = this->step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     const unsigned int filled_embs_els = filled_embs/32;
     const unsigned int filled_embs_rem = filled_embs%32; 
 
+    const unsigned int filled_embs_els_round = (filled_embs+31)/32;
+
+
+    // pre-compute sums, since they are likely to be accessed many times
+#pragma acc parallel loop collapse(2) gang present(lengths,sums) async
+    for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
+       for (unsigned int sub4=0; sub4<4; sub4++) {
+          const unsigned int emb4 = emb_el*4+sub4;
+          TFloat * __restrict__ psum = &(sums[emb4<<8]);
+          const TFloat * __restrict__ pl   = &(lengths[emb4*8]);
+
+#pragma acc loop vector
+          // compute all the combinations for this block
+          for (unsigned int b8_i=0; b8_i<0x100; b8_i++) {
+             psum[b8_i] = (((b8_i >> 0) & 1) * pl[0]) + (((b8_i >> 1) & 1) * pl[1]) + 
+                          (((b8_i >> 2) & 1) * pl[2]) + (((b8_i >> 3) & 1) * pl[3]) +
+                          (((b8_i >> 4) & 1) * pl[4]) + (((b8_i >> 5) & 1) * pl[5]) +
+                          (((b8_i >> 6) & 1) * pl[6]) + (((b8_i >> 7) & 1) * pl[7]);
+          }
+       }
+    }
+    if (filled_embs_rem>0) { // add also the overflow elements
+       const unsigned int emb_el=filled_embs_els;
+#pragma acc parallel loop gang present(lengths,sums) async
+       for (unsigned int sub4=0; sub4<4; sub4++) {
+          // we are summing we have enough buffer in sums
+          const unsigned int emb4 = emb_el*4+sub4;
+          TFloat * __restrict__ psum = &(sums[emb4<<8]);
+
+#pragma acc loop vector
+          // compute all the combinations for this block, set to 0 any past the limit
+          for (unsigned int b8_i=0; b8_i<0x100; b8_i++) {
+             TFloat val= 0;
+             for (unsigned int li=(emb4*8); li<filled_embs; li++) {
+               val += ((b8_i >>  (li-(emb4*8))) & 1) * lengths[li];
+             }
+             psum[b8_i] = val;
+          }
+        }
+    }
+
     // point of thread
 #ifdef _OPENACC
-#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#pragma acc wait
+#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,sums) async
 #else
 #pragma omp parallel for schedule(dynamic,1)
 #endif
@@ -441,44 +485,25 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
             TFloat my_stripe_total = dm_stripe_total[k];
 
 #pragma acc loop seq
-            for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
+            for (unsigned int emb_el=0; emb_el<filled_embs_els_round; emb_el++) {
                 const uint64_t offset = n_samples_r * emb_el;
+                const TFloat * __restrict__ psum = &(sums[emb_el*0x400]);
 
                 uint32_t u1 = embedded_proportions[offset + k];
                 uint32_t v1 = embedded_proportions[offset + l1];
                 uint32_t x1 = u1 ^ v1;
                 uint32_t o1 = u1 | v1;
 
-                // embedded_proportions is packed
+                // use the pre-computed sums
 
-#pragma acc loop seq
-                for (unsigned int ei=0; ei<32; ei++) { 
-                     unsigned int emb=emb_el*32+ei;
-                     TFloat length = lengths[emb];
-
-                     my_stripe       += ((x1 >> ei) & 1) * length;
-                     my_stripe_total += ((o1 >> ei) & 1) * length;
-                }
-            }
-            if (filled_embs_rem>0) {
-                unsigned int emb_el=filled_embs_els;
-                const uint64_t offset = n_samples_r * emb_el;
-
-                uint32_t u1 = embedded_proportions[offset + k];
-                uint32_t v1 = embedded_proportions[offset + l1];
-                uint32_t x1 = u1 ^ v1;
-                uint32_t o1 = u1 | v1;
-
-                // embedded_proportions is packed
-
-#pragma acc loop seq
-                for (unsigned int ei=0; ei<filled_embs_rem; ei++) { 
-                     unsigned int emb=emb_el*32+ei;
-                     TFloat length = lengths[emb];
-
-                     my_stripe       += ((x1 >> ei) & 1) * length;
-                     my_stripe_total += ((o1 >> ei) & 1) * length;
-                }
+                my_stripe       += psum[              (x1 & 0xff)] + 
+                                   psum[0x100+((x1 >>  8) & 0xff)] +
+                                   psum[0x200+((x1 >> 16) & 0xff)] +
+                                   psum[0x300+((x1 >> 24)       )];
+                my_stripe_total += psum[              (o1 & 0xff)] +
+                                   psum[0x100+((o1 >>  8) & 0xff)] +
+                                   psum[0x200+((o1 >> 16) & 0xff)] +
+                                   psum[0x300+((o1 >> 24)       )];
             }
 
             dm_stripe[k]     = my_stripe;
