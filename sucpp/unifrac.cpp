@@ -285,7 +285,7 @@ void unifracTT(biom &table,
                std::vector<double*> &dm_stripes_total,
                const su::task_parameters* task_p) {
     int err;
-#ifndef defined(_OPENACC) || defined(_OPENMP)
+#if defined(_OPENACC) || defined(_OPENMP)
     // no processor affinity whenusing openacc or openmp
 #else
     // processor affinity
@@ -481,7 +481,7 @@ void unifrac_vawTT(biom &table,
                           std::vector<double*> &dm_stripes_total,
                           const su::task_parameters* task_p) {
     int err;
-#ifndef defined(_OPENACC) || defined(_OPENMP)
+#if defined(_OPENACC) || defined(_OPENMP)
     // no processor affinity whenusing openacc or openmp
 #else
     err = bind_to_core(task_p->tid);
