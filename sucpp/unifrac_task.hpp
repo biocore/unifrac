@@ -294,7 +294,8 @@ namespace su {
 
       protected:
        static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128;
-       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = RECOMMENDED_MAX_EMBS_STRAIGHT;
+       // 512 == 16k in fp32, just about perfect for L1 cache
+       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512;
 
     };
 
