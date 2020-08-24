@@ -423,7 +423,11 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 
 
     // pre-compute sums, since they are likely to be accessed many times
+#ifdef _OPENACC
 #pragma acc parallel loop collapse(2) gang present(lengths,sums) async
+#else
+#pragma omp parallel for collapse(2) schedule(static,1)
+#endif
     for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
        for (unsigned int sub4=0; sub4<4; sub4++) {
           const unsigned int emb4 = emb_el*4+sub4;
@@ -442,7 +446,11 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     }
     if (filled_embs_rem>0) { // add also the overflow elements
        const unsigned int emb_el=filled_embs_els;
+#ifdef _OPENACC
 #pragma acc parallel loop gang present(lengths,sums) async
+#else
+#pragma omp parallel for schedule(static,1)
+#endif
        for (unsigned int sub4=0; sub4<4; sub4++) {
           // we are summing we have enough buffer in sums
           const unsigned int emb4 = emb_el*4+sub4;
@@ -465,7 +473,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #pragma acc wait
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,sums) async
 #else
-#pragma omp parallel for schedule(dynamic,1)
+#pragma omp parallel for schedule(static,16)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
