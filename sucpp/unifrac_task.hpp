@@ -295,7 +295,12 @@ namespace su {
       protected:
        static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128;
        // 512 == 16k in fp32, just about perfect for L1 cache
+#ifdef _OPENACC
        static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512;
+#else
+       // CPUs seem to prefer a slight over-comittment
+       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512*4*4/sizeof(TFloat);
+#endif
 
     };
 
