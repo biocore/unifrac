@@ -122,11 +122,11 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracNormalizedWeightedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#pragma acc parallel loop collapse(3) vector_length(32*64) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
  	for(unsigned int ik = 0; ik < step_size ; ik++) {
