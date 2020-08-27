@@ -143,9 +143,12 @@ namespace su {
   #ifndef SMALLGPU
         // default to larger step, which makes a big difference for bigger GPUs like V100
         static const unsigned int step_size = 32;
+        // keep the vector size just big enough to keep the used emb array inside the 32k buffer
+        static const unsigned int acc_vector_size = 32*64*4/sizeof(TFloat);
   #else
         // smaller GPUs prefer a slightly smaller step
         static const unsigned int step_size = 16;
+        static const unsigned int acc_vector_size = 32*64*4/sizeof(TFloat);
   #endif
 #else
         // The serial nature of CPU cores prefers a small step
@@ -241,9 +244,13 @@ namespace su {
   #ifndef SMALLGPU
         // default to larger step, which makes a big difference for bigger GPUs like V100
         static const unsigned int step_size = 32;
+        // keep the vector size just big enough to keep the used emb array inside the 32k buffer
+        static const unsigned int acc_vector_size = 32*32*4/sizeof(TFloat);
   #else
         // smaller GPUs prefer a slightly smaller step
         static const unsigned int step_size = 16;
+        // keep the vector size just big enough to keep the used emb array inside the 32k buffer
+        static const unsigned int acc_vector_size = 32*32*4/sizeof(TFloat);
   #endif
 #else
         // The serial nature of CPU cores prefers a small step

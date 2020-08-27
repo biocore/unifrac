@@ -13,11 +13,14 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
     const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracUnnormalizedWeightedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracUnnormalizedWeightedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -65,11 +68,14 @@ void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_em
     const TFloat * const __restrict__ sample_total_counts = this->sample_total_counts;
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracVawUnnormalizedWeightedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracVawUnnormalizedWeightedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -126,7 +132,10 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) vector_length(32*64) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracNormalizedWeightedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
  	for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -183,11 +192,14 @@ void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracVawNormalizedWeightedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracVawNormalizedWeightedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -248,11 +260,14 @@ void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TF
 
     const TFloat g_unifrac_alpha = this->task_p->g_unifrac_alpha;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracGeneralizedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracGeneralizedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -313,12 +328,15 @@ void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracVawGeneralizedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
     // quick hack, to be finished
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracVawGeneralizedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -379,11 +397,14 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracUnweightedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracUnweightedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
@@ -438,11 +459,14 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
-    const unsigned int step_size = this->step_size;
+    const unsigned int step_size = su::UnifracVawUnweightedTask<TFloat>::step_size;
     const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
 
     // point of thread
-#pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#ifdef _OPENACC
+    const unsigned int acc_vector_size = su::UnifracVawUnweightedTask<TFloat>::acc_vector_size;
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
+#endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
         for(unsigned int ik = 0; ik < step_size ; ik++) {
