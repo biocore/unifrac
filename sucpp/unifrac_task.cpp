@@ -14,7 +14,7 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,lengths) async
@@ -66,7 +66,7 @@ void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_em
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,lengths) async
@@ -123,7 +123,7 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
@@ -184,7 +184,7 @@ void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
@@ -249,7 +249,7 @@ void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TF
     const TFloat g_unifrac_alpha = this->task_p->g_unifrac_alpha;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
@@ -314,7 +314,7 @@ void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
     // quick hack, to be finished
 
     // point of thread
@@ -380,7 +380,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
@@ -439,7 +439,7 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = this->step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #pragma acc parallel loop collapse(3) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
