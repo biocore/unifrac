@@ -1012,7 +1012,7 @@ IOStatus read_partial_header(const char* input_filename, partial_dyn_mat_t** res
     const uint32_t n_stripes = result->stripe_stop-result->stripe_start;
     result->stripes = (double**) calloc(n_stripes,sizeof(double*));
     result->offsets = (uint64_t*) calloc(n_stripes,sizeof(uint64_t));
-    result->offsets[0] = lseek(fd,0,SEEK_CUR);;
+    result->offsets[0] = lseek(fd,0,SEEK_CUR);
     
     close(fd);
 
