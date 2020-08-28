@@ -17,7 +17,7 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
     const unsigned int step_size = su::UnifracUnnormalizedWeightedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #ifdef _OPENACC
@@ -77,7 +77,7 @@ void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_em
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
     const unsigned int step_size = su::UnifracVawUnnormalizedWeightedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #ifdef _OPENACC
@@ -142,7 +142,7 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = su::UnifracNormalizedWeightedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #ifdef _OPENACC
@@ -210,7 +210,7 @@ void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = su::UnifracVawNormalizedWeightedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #ifdef _OPENACC
@@ -283,7 +283,7 @@ void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TF
     const TFloat g_unifrac_alpha = this->task_p->g_unifrac_alpha;
 
     const unsigned int step_size = su::UnifracGeneralizedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     // point of thread
 #ifdef _OPENACC
@@ -356,7 +356,7 @@ void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = su::UnifracVawGeneralizedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
     // quick hack, to be finished
 
     // point of thread
@@ -432,7 +432,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     TFloat * const __restrict__ sums = this->sums;
 
     const unsigned int step_size = su::UnifracUnweightedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     const unsigned int filled_embs_els = filled_embs/32;
     const unsigned int filled_embs_rem = filled_embs%32; 
@@ -562,7 +562,7 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
     const unsigned int step_size = su::UnifracVawUnweightedTask<TFloat>::step_size;
-    const unsigned int sample_steps = n_samples+(step_size-1)/step_size; // round up
+    const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
     const unsigned int filled_embs_els = (filled_embs+31)/32; // round up
 
