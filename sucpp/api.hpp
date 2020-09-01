@@ -36,6 +36,34 @@ typedef struct mat {
     char** sample_ids;
 } mat_t;
 
+/* a result matrix, full, fp64
+ *
+ * n_samples <uint> the number of samples.
+ * matrix <double*> the matrix values, n_sample**2 size
+ * sample_ids <char**> the sample IDs of length n_samples.
+ */
+typedef struct mat_full_fp64 {
+    uint32_t n_samples;
+    uint32_t flags; //opaque, 0 for default behavior
+    double* matrix;
+    char** sample_ids;
+} mat_full_fp64_t;
+
+/* a result matrix, full, fp32
+ *
+ * n_samples <uint> the number of samples.
+ * matrix <float*> the matrix values, n_sample**2 size
+ * sample_ids <char**> the sample IDs of length n_samples.
+ */
+typedef struct mat_full_fp32 {
+    uint32_t n_samples;
+    uint32_t flags; //opaque, 0 for default behavior
+    float* matrix;
+    char** sample_ids;
+} mat_full_fp32_t;
+
+
+
 /* a result vector
  *
  * n_samples <uint> the number of samples.
@@ -69,8 +97,38 @@ typedef struct partial_mat {
     bool is_upper_triangle;
 } partial_mat_t;
 
+/* a partial resuly, can be populated dynamically
+ *
+ * n_samples <uint> the number of samples.
+ * sample_ids <char**> the sample IDs of length n_samples.
+ * offsets <uint64_t*> offsets to the stripes in the file; 0 means unknown
+ * stripes <double**> the stripe data of dimension (stripe_stop - stripe_start, n_samples)
+ * stripe_start <uint> the logical starting stripe in the final matrix.
+ * stripe_stop <uint> the logical stopping stripe in the final matrix.
+ * stripe_total <uint> the total number of stripes present in the final matrix.
+ * is_upper_triangle <bool> whether the stripes correspond to the upper triangle of the resulting matrix.
+ *      This is useful for asymmetric unifrac metrics.
+ * filename <char*> Name of the file from which to read
+ */
+typedef struct partial_dyn_mat {
+    uint32_t n_samples;
+    char** sample_ids;
+    uint64_t* offsets;
+    double** stripes;
+    uint32_t stripe_start;
+    uint32_t stripe_stop;
+    uint32_t stripe_total;
+    bool is_upper_triangle;
+    char* filename;
+} partial_dyn_mat_t;
+
+
+
 void destroy_mat(mat_t** result);
+void destroy_mat_full_fp64(mat_full_fp64_t** result);
+void destroy_mat_full_fp32(mat_full_fp32_t** result);
 void destroy_partial_mat(partial_mat_t** result);
+void destroy_partial_dyn_mat(partial_dyn_mat_t** result);
 void destroy_results_vec(r_vec** result);
 
 /* Compute UniFrac
@@ -169,6 +227,63 @@ EXTERN IOStatus write_mat_hdf5_compressed(const char* filename, mat_t* result, u
  */
 EXTERN IOStatus write_mat_hdf5_fp32_compressed(const char* filename, mat_t* result, unsigned int compress_level);
 
+/* Write a matrix object
+ *
+ * filename <const char*> the file to write into
+ * result <mat_full_t*> the results object
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_from_matrix(const char* filename, const mat_full_fp64_t* result);
+
+
+/* Write a matrix object from buffer using hdf5 format
+ *
+ * filename <const char*> the file to write into
+ * result <mat_full_t*> the results object
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, const mat_full_fp64_t* result);
+
+/* Write a matrix object from buffer using hdf5 format, using fp32 precision
+ *
+ * filename <const char*> the file to write into
+ * result <mat_full_fp32_t*> the results object
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_from_matrix_hdf5_fp32(const char* filename, const mat_full_fp32_t* result);
+
+/* Write a matrix object from buffer using hdf5 format
+ *
+ * filename <const char*> the file to write into
+ * result <mat_full_fp64_t*> the results object
+ * compress_level - 0=no compression, 1-9 higher is slower
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_from_matrix_hdf5_compressed(const char* filename, const mat_full_fp64_t* result, unsigned int compress_level);
+
+/* Write a matrix object from buffer using hdf5 format, using fp32 precision
+ *
+ * filename <const char*> the file to write into
+ * result <mat_full_fp32_t*> the results object
+ * compress_level - 0=no compression, 1-9 higher is slower
+ *
+ * The following error codes are returned:
+ *
+ * write_okay : no problems
+ */
+EXTERN IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* filename, const mat_full_fp32_t* result, unsigned int compress_level);
 
 /* Write a series
  *
@@ -266,7 +381,7 @@ EXTERN ComputeStatus partial(const char* biom_filename, const char* tree_filenam
  * ### FOOTER ###
  * <MAGIC>              : char, e.g., SSU-PARTIAL-01, same as starting magic
  */
-EXTERN IOStatus write_partial(const char* filename, partial_mat_t* result);
+EXTERN IOStatus write_partial(const char* filename, const partial_mat_t* result);
 
 /* Read a partial matrix object
  *
@@ -283,9 +398,41 @@ EXTERN IOStatus write_partial(const char* filename, partial_mat_t* result);
  */
 EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
 
+/* Read a partial matrix object header
+ *
+ * filename <const char*> the file to write into
+ * result <partial_dyn_mat_t**> the partial results object, output parameter
+ *
+ * The following error codes are returned:
+ *
+ * read_okay          : no problems
+ * open_error         : could not open the file
+ * magic_incompatible : format magic not found or incompatible
+ * bad_header         : header seems malformed
+ * unexpected_end     : format end not found in expected location
+ */
+EXTERN IOStatus read_partial_header(const char* input_filename, partial_dyn_mat_t** result_out);
+
+/* Read a stripe of a partial matrix
+ *
+ * filename <const char*> the file to write into
+ * result <partial_dyn_mat_t*> the partial results object
+ * stripe_idx <uint> relative stripe number 
+ *
+ * The following error codes are returned:
+ *
+ * read_okay          : no problems
+ * open_error         : could not open the file
+ * magic_incompatible : format magic not found or incompatible
+ * bad_header         : header seems malformed
+ * unexpected_end     : format end not found in expected location
+ */
+EXTERN IOStatus read_partial_one_stripe(partial_dyn_mat_t* result, uint32_t stripe_idx);
+
+
 /* Merge partial results
  *
- * results <partial_mat_t**> an array of partial_mat_t*
+ * results <partial_mat_t**> an array of partial_mat_t*, the buffers will be destroyed in the process
  * n_partials <int> number of partial mats
  * merged <mat_t**> the full matrix, output parameters, this is initialized in the method so using **
  *
@@ -298,6 +445,70 @@ EXTERN IOStatus read_partial(const char* filename, partial_mat_t** result);
  */
 EXTERN MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result);
 
+/* Merge partial results
+ *
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
+ * n_partials <int> number of partial mats
+ * result <mat_full_fp64_t**> the full matrix, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+MergeStatus merge_partial_to_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp64_t** result);
+
+/* Merge partial results
+ *
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
+ * n_partials <int> number of partial mats
+ * result <mat_full_fp32_t**> the full matrix, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *             
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+MergeStatus merge_partial_to_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp32_t** result);
+
+
+/* Merge partial results
+ *
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
+ * n_partials <int> number of partial mats
+ * mmap_dir <const char *> Where to host the mmap file
+ * result <mat_full_fp64_t**> the full matrix, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp64_t** result);
+
+/* Merge partial results
+ *
+ * partial_mats <partial_dyn_mat_t**> an array of partial_dyn_mat_t*
+ * n_partials <int> number of partial mats
+ * mmap_dir <const char *> Where to host the mmap file
+ * result <mat_full_fp32_t**> the full matrix, output parameters, this is initialized in the method so using **
+ *
+ * The following error codes are returned:
+ *
+ * merge_okay            : no problems
+ * incomplete_stripe_set : not all stripes needed to create a full matrix were foun
+ * sample_id_consistency : samples described by stripes are inconsistent
+ * square_mismatch       : inconsistency on denotation of square matrix
+ */
+MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result);
+
+
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
 void set_tasks(std::vector<su::task_parameters> &tasks,
@@ -307,4 +518,5 @@ void set_tasks(std::vector<su::task_parameters> &tasks,
                unsigned int stripe_stop,
                bool bypass_tips,
                unsigned int nthreads);
+
 #endif
