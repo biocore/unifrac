@@ -3,6 +3,9 @@
 #include <vector>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 
 #ifndef __UNIFRAC_TASKS
 #define __UNIFRAC_TASKS 1
