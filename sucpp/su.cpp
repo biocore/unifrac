@@ -41,6 +41,7 @@ void usage() {
     std::cout << "    \t\t    hdf5_fp32 : HFD5 format, using fp32 precision." << std::endl;
     std::cout << "    \t\t    hdf5_fp64 : HFD5 format, using fp64 precision." << std::endl;
     std::cout << "    \t\t    hfd5c|hdf5c_fp32|hdf5c_fp64 : HFD5 format, with deflate ompression." << std::endl;
+    std::cout << "    --diskbuf\t[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe)." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
     std::cout << "    For UniFrac, please see:" << std::endl;
@@ -138,9 +139,76 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
     }
 } 
 
-int mode_merge_partial(std::string output_filename, Format format_val,
-                       std::string partial_pattern,
-                       unsigned int nthreads) {
+int mode_merge_partial_fp32(const char * output_filename, Format format_val,
+                            size_t partials_size, partial_dyn_mat_t* * partial_mats,
+                            const char * mmap_dir) {
+    mat_full_fp32_t *result = NULL;
+
+    MergeStatus status = merge_partial_to_mmap_matrix_fp32(partial_mats, partials_size, mmap_dir, &result);
+
+    if(status != merge_okay) {
+        std::ostringstream msg;
+        msg << "Unable to complete merge; err " << status;
+        err(msg.str());
+        return EXIT_FAILURE;
+    }
+
+    IOStatus iostatus;
+    if (format_val==format_hdf5c_fp32) {
+     iostatus = write_mat_from_matrix_hdf5_fp32_compressed(output_filename, result, 5);
+    } else {           
+     iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result);
+    }   
+    destroy_mat_full_fp32(&result);
+    
+    if(iostatus != write_okay) {
+        std::ostringstream msg; 
+        msg << "Unable to write; err " << iostatus;
+        err(msg.str()); 
+        return EXIT_FAILURE;
+    }   
+        
+    return EXIT_SUCCESS;
+}
+
+int mode_merge_partial_fp64(const char * output_filename, Format format_val,
+                            size_t partials_size, partial_dyn_mat_t* * partial_mats,
+                            const char * mmap_dir) {
+    mat_full_fp64_t *result = NULL;
+
+    MergeStatus status = merge_partial_to_mmap_matrix(partial_mats, partials_size, mmap_dir, &result);
+
+    if(status != merge_okay) {
+        std::ostringstream msg;
+        msg << "Unable to complete merge; err " << status;
+        err(msg.str());
+        return EXIT_FAILURE;
+    }
+
+    IOStatus iostatus;
+    if (format_val==format_hdf5_fp64) {
+     iostatus = write_mat_from_matrix_hdf5(output_filename, result);
+    } else if (format_val==format_hdf5c_fp64) {
+     iostatus = write_mat_from_matrix_hdf5_compressed(output_filename, result, 5);
+    } else {
+     iostatus = write_mat_from_matrix(output_filename, result);
+    }
+    destroy_mat_full_fp64(&result);
+
+    if(iostatus != write_okay) {
+        std::ostringstream msg;
+        msg << "Unable to write; err " << iostatus;
+        err(msg.str());
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+int mode_merge_partial(const std::string &output_filename, Format format_val,
+                       const std::string &partial_pattern,
+                       const std::string &mmap_dir) {
     if(output_filename.empty()) {
         err("output filename missing");
         return EXIT_FAILURE;
@@ -154,12 +222,10 @@ int mode_merge_partial(std::string output_filename, Format format_val,
         return EXIT_FAILURE;
     }
     
-    mat_t *result = NULL;
-    
     std::vector<std::string> partials = glob(partial_pattern);
-    partial_mat_t** partial_mats = (partial_mat_t**)malloc(sizeof(partial_mat_t*) * partials.size());
+    partial_dyn_mat_t** partial_mats = (partial_dyn_mat_t**)malloc(sizeof(partial_dyn_mat_t*) * partials.size());
     for(size_t i = 0; i < partials.size(); i++) {
-        IOStatus io_err = read_partial(partials[i].c_str(), &partial_mats[i]);
+        IOStatus io_err = read_partial_header(partials[i].c_str(), &partial_mats[i]);
         if(io_err != read_okay) {
             std::ostringstream msg;
             msg << "Unable to parse file (" << partials[i] << "); err " << io_err;
@@ -168,37 +234,22 @@ int mode_merge_partial(std::string output_filename, Format format_val,
         }
     }
 
-    MergeStatus status = merge_partial(partial_mats, partials.size(), nthreads, &result);
-    
-    if(status != merge_okay) {
-        std::ostringstream msg;
-        msg << "Unable to complete merge; err " << status;
-        err(msg.str());
-        return EXIT_FAILURE;
-    }
+    const char * mmap_dir_c = mmap_dir.empty() ? NULL : mmap_dir.c_str();
 
-    IOStatus iostatus;
-    if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result);
-    } else if (format_val==format_hdf5_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result);
-    } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_hdf5_compressed(output_filename.c_str(), result, 5);
-    } else if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_hdf5_fp32_compressed(output_filename.c_str(), result, 5);
+    int status;
+    if ((format_val==format_hdf5_fp64) || (format_val==format_hdf5c_fp64)) {
+     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
+    } else if ((format_val==format_hdf5_fp32) || (format_val==format_hdf5c_fp32)) {
+     status = mode_merge_partial_fp32(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
     } else {
-     iostatus = write_mat(output_filename.c_str(), result);
-    }
-    destroy_mat(&result);
-
-    if(iostatus != write_okay) {
-        std::ostringstream msg;
-        msg << "Unable to write; err " << iostatus;
-        err(msg.str());
-        return EXIT_FAILURE;
+     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
     }
 
-    return EXIT_SUCCESS;
+    for(size_t i = 0; i < partials.size(); i++) {
+      destroy_partial_dyn_mat(&partial_mats[i]);
+    }
+
+    return status;
 }
 
 int mode_partial(std::string table_filename, std::string tree_filename, 
@@ -364,6 +415,7 @@ int main(int argc, char **argv){
     const std::string &report_bare = input.getCmdOption("--report-bare");
     const std::string &format_arg = input.getCmdOption("--format");
     const std::string &sformat_arg = input.getCmdOption("-r");
+    const std::string &diskbuf_arg = input.getCmdOption("--diskbuf");
 
     if(nthreads_arg.empty()) {
         nthreads = 1;
@@ -419,7 +471,7 @@ int main(int argc, char **argv){
     else if(mode_arg == "partial")
         return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
-        return mode_merge_partial(output_filename, format_val, partial_pattern, nthreads);
+        return mode_merge_partial(output_filename, format_val, partial_pattern, diskbuf_arg);
     else if(mode_arg == "partial-report")
         return mode_partial_report(table_filename, n_partials, bare);
     else 

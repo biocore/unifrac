@@ -9,7 +9,17 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <lz4.h>
+
+
+#define MMAP_FD_MASK 0x0fff
+#define MMAP_FLAG    0x1000
+
+/* O_NOATIME is defined at fcntl.h when supported */
+#ifndef O_NOATIME
+#define O_NOATIME 0
+#endif
 
 
 #define CHECK_FILE(filename, err) if(!is_file_exists(filename)) { \
@@ -135,6 +145,39 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
     }
 }
 
+template<class TReal, class TMat>
+void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids, unsigned int n_samples, 
+                                   const char *mmap_dir /* if NULL, use malloc */) {
+    result = (TMat*)malloc(sizeof(mat));
+    result->n_samples = n_samples;
+
+    uint64_t n_samples_64 = result->n_samples; // force 64bit to avoit overflow problems
+
+    result->sample_ids = (char**)malloc(sizeof(char*) * n_samples_64);
+    result->flags=0;
+
+    uint64_t msize = sizeof(TReal) * n_samples_64 * n_samples_64;
+    if (mmap_dir==NULL) {
+      result->matrix = (TReal*)malloc(msize);
+    } else {
+      std::string mmap_template(mmap_dir);
+      mmap_template+="/su_mmap_XXXXXX";
+      int fd=mkostemp((char *) mmap_template.c_str(), O_NOATIME ); 
+      if (fd<0) {
+         result->matrix = NULL;
+         // leave error handling to the caller
+      } else {
+        ftruncate(fd,msize);
+        result->matrix = (TReal*)mmap(NULL, msize,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_NORESERVE, fd, 0);
+        result->flags=(uint32_t(fd) & MMAP_FD_MASK) | MMAP_FLAG;
+      }
+   }
+
+    for(unsigned int i = 0; i < n_samples; i++) {
+        result->sample_ids[i] = strdup(sample_ids[i]);
+    }
+}
+
 void initialize_partial_mat(partial_mat_t* &result, biom &table, std::vector<double*> &dm_stripes,
                             unsigned int stripe_start, unsigned int stripe_stop, bool is_upper_triangle) {
     result = (partial_mat_t*)malloc(sizeof(partial_mat));
@@ -174,8 +217,40 @@ void destroy_mat(mat_t** result) {
         free((*result)->sample_ids[i]);
     };
     free((*result)->sample_ids);
-    free((*result)->condensed_form);
+    if (((*result)->condensed_form)!=NULL) {
+      free((*result)->condensed_form);
+    }
     free(*result);
+}
+
+template<class TMat, class TReal>
+inline void destroy_mat_full_T(TMat** result) {
+    for(uint32_t i = 0; i < (*result)->n_samples; i++) {
+        free((*result)->sample_ids[i]);   
+    };                                        
+    free((*result)->sample_ids);          
+    if (((*result)->matrix)!=NULL) {          
+      if (((*result)->flags & MMAP_FLAG) == 0)  {
+         free((*result)->matrix);            
+      } else {
+         uint64_t n_samples = (*result)->n_samples;
+         munmap((*result)->matrix, sizeof(TReal)*n_samples*n_samples);
+
+         int fd = (*result)->flags & MMAP_FD_MASK;
+         close(fd);
+      }
+      (*result)->matrix=NULL;
+    }                                         
+    free(*result);                        
+}
+
+
+void destroy_mat_full_fp64(mat_full_fp64_t** result) {
+    destroy_mat_full_T<mat_full_fp64_t,double>(result);
+}
+
+void destroy_mat_full_fp32(mat_full_fp32_t** result) {
+    destroy_mat_full_T<mat_full_fp32_t,float>(result);
 }
 
 void destroy_partial_mat(partial_mat_t** result) {
@@ -195,6 +270,29 @@ void destroy_partial_mat(partial_mat_t** result) {
 
     free(*result);
 }
+
+void destroy_partial_dyn_mat(partial_dyn_mat_t** result) {
+    for(unsigned int i = 0; i < (*result)->n_samples; i++) {
+        if((*result)->sample_ids[i] != NULL)
+            free((*result)->sample_ids[i]);
+    };
+    if((*result)->sample_ids != NULL)
+        free((*result)->sample_ids);
+
+    unsigned int n_stripes = (*result)->stripe_stop - (*result)->stripe_start;
+    for(unsigned int i = 0; i < n_stripes; i++)
+        if((*result)->stripes[i] != NULL)
+            free((*result)->stripes[i]);
+    if((*result)->stripes != NULL)
+        free((*result)->stripes);
+    if((*result)->offsets != NULL)
+        free((*result)->offsets);
+    if((*result)->filename != NULL)
+        free((*result)->filename);
+
+    free(*result);
+}
+
 
 void set_tasks(std::vector<su::task_parameters> &tasks,
                double alpha,
@@ -371,6 +469,31 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
+IOStatus write_mat_from_matrix(const char* output_filename, const mat_full_fp64_t* result) {
+    const double *buf2d  = result->matrix;
+
+    std::ofstream output;
+    output.open(output_filename);
+
+    double v;
+
+    for(unsigned int i = 0; i < result->n_samples; i++)
+        output << "\t" << result->sample_ids[i];
+    output << std::endl;
+
+    for(unsigned int i = 0; i < result->n_samples; i++) {
+        output << result->sample_ids[i];
+        for(unsigned int j = 0; j < result->n_samples; j++) {
+            v = buf2d[i*result->n_samples+j];
+            output << std::setprecision(16) << "\t" << v;
+        }
+        output << std::endl;
+    }
+    output.close();
+
+    return write_okay;
+}
+
 herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str)
 {
   // this is the convoluted way to store a string
@@ -396,8 +519,8 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 }
 
 // Internal: Make sure TReal and real_id match
-template<class TReal>
-IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
+template<class TMat>
+IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * result, hid_t real_id, unsigned int compress_level) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -449,33 +572,6 @@ IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_
 
    // save the matrix
    {
-     const uint64_t n_samples = result->n_samples;
-     TReal *buf2d = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
-     if (buf2d==NULL) {
-       H5Fclose (output_file_id);
-       return open_error; // we don't have a better error code
-     }
-
-     // but first compute the values to save
-     {
-       const uint64_t comb_N = su::comb_2(n_samples);
-       for(uint64_t i = 0; i < n_samples; i++) {
-        for(uint64_t j = 0; j < n_samples; j++) {
-            TReal v;
-            if(i < j) { // upper triangle
-                const uint64_t comb_N_minus = su::comb_2(n_samples - i);
-                v = result->condensed_form[comb_N - comb_N_minus + (j - i - 1)];
-            } else if (i > j) { // lower triangle
-                const uint64_t comb_N_minus = su::comb_2(n_samples - j);
-                v = result->condensed_form[comb_N - comb_N_minus + (i - j - 1)];
-            } else {
-                v = 0.0;
-            }
-            buf2d[i*n_samples+j] = v;
-        }
-       }
-     }
-
      hsize_t     dims[2];
      dims[0] = result->n_samples;
      dims[1] = result->n_samples;
@@ -501,38 +597,76 @@ IOStatus write_mat_hdf5_D(const char* output_filename, mat_t* result,hid_t real_
      hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",real_id, dataspace_id,
                                    H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
      herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                              buf2d);
+                              result->matrix);
 
      H5Pclose(dcpl_id);
      H5Dclose(dataset_id);
      H5Sclose(dataspace_id);
-     free(buf2d);
 
      // check status after cleanup, for simplicity
      if (status<0) {
        H5Fclose (output_file_id);
        return open_error;
      }
-   } 
+   }
 
    H5Fclose (output_file_id);
    return write_okay;
 }
 
+// Internal: Make sure TReal and real_id match
+template<class TReal, class TMat>
+IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
+     // compute the matrix
+     TMat mat_full;
+     mat_full.n_samples = result->n_samples;
+
+     const uint64_t n_samples = result->n_samples;
+     mat_full.flags = 0;
+     mat_full.matrix = (TReal*) malloc(n_samples*n_samples*sizeof(TReal));
+     if (mat_full.matrix==NULL) {
+       return open_error; // we don't have a better error code
+     }
+
+     mat_full.sample_ids = result->sample_ids; // just link
+
+     condensed_form_to_matrix_T(result->condensed_form, n_samples, mat_full.matrix);
+     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, &mat_full, real_id, compress_level);
+
+     free(mat_full.matrix);
+     return err;
+}
+
 IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,0);
+  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
 }
 
 IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,0);
+  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
 }
 
 IOStatus write_mat_hdf5_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_D<double>(output_filename,result,H5T_IEEE_F64LE,compress_level);
+  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
 }
 
 IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_D<float>(output_filename,result,H5T_IEEE_F32LE,compress_level);
+  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
+}
+
+IOStatus write_mat_from_matrix_hdf5(const char* output_filename, const mat_full_fp64_t* result) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
+}
+
+IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, const mat_full_fp32_t* result) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
+}
+
+IOStatus write_mat_from_matrix_hdf5_compressed(const char* output_filename, const mat_full_fp64_t* result, unsigned int compress_level) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
+}
+
+IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* output_filename, const mat_full_fp32_t* result, unsigned int compress_level) {
+  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
@@ -551,7 +685,7 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
     return write_okay;
 }
 
-IOStatus write_partial(const char* output_filename, partial_mat_t* result) {
+IOStatus write_partial(const char* output_filename, const partial_mat_t* result) {
     int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC,  S_IRUSR |  S_IWUSR );
     if (fd==-1) return open_error;
 
@@ -650,17 +784,15 @@ IOStatus _is_partial_file(const char* input_filename) {
     return read_okay;
 }
 
-IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
-    int fd = open(input_filename, O_RDONLY );
-    if (fd==-1) return open_error;
-
+template<class TPMat>
+inline IOStatus read_partial_header_fd(int fd, TPMat &result) {
     int cnt=-1;
 
     uint32_t header[8];
     cnt = read(fd,header,8*sizeof(uint32_t));
-    if (cnt != (8*sizeof(uint32_t))) {close(fd); return magic_incompatible;}
+    if (cnt != (8*sizeof(uint32_t))) {return magic_incompatible;}
 
-    if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
+    if ( header[0] != PARTIAL_MAGIC_V2) {return magic_incompatible;}
 
     const uint32_t n_samples = header[1];
     const uint32_t n_stripes = header[2];
@@ -670,19 +802,18 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
     /* sanity check header */
     if(n_samples <= 0 || n_stripes <= 0 || stripe_total <= 0 || is_upper_triangle < 0)
-         {close(fd); return bad_header;}
+         {return bad_header;}
     if(stripe_total >= n_samples || n_stripes > stripe_total || stripe_start >= stripe_total || stripe_start + n_stripes > stripe_total)
-         {close(fd); return bad_header;}
+         {return bad_header;}
 
     /* initialize the partial result structure */
-    partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
-    result->n_samples = n_samples;
-    result->sample_ids = (char**)malloc(sizeof(char*) * result->n_samples);
-    result->stripes = (double**)malloc(sizeof(double*) * (n_stripes));
-    result->stripe_start = stripe_start;
-    result->stripe_stop = stripe_start + n_stripes;
-    result->is_upper_triangle = is_upper_triangle;
-    result->stripe_total = stripe_total;
+    result.n_samples = n_samples;
+    result.sample_ids = (char**)malloc(sizeof(char*) * n_samples);
+    result.stripes = (double**)malloc(sizeof(double*) * (n_stripes));
+    result.stripe_start = stripe_start;
+    result.stripe_stop = stripe_start + n_stripes;
+    result.is_upper_triangle = is_upper_triangle;
+    result.stripe_total = stripe_total;
 
     /* load samples */
     {
@@ -691,40 +822,53 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
 
       /* sanity check header */
       if (sample_id_length<=0 || sample_id_length_compressed <=0)
-         {close(fd); return bad_header;}
+         { return bad_header;}
 
       char * const cmp_buf = (char *)malloc(sample_id_length_compressed);
+      if (cmp_buf==NULL) { return bad_header;} // no better error code
       cnt = read(fd,cmp_buf,sample_id_length_compressed);
-      if (cnt != sample_id_length_compressed) {close(fd); return magic_incompatible;}
+      if (cnt != sample_id_length_compressed) {free(cmp_buf); return magic_incompatible;}
 
       char *samples_buf = (char *)malloc(sample_id_length);
+      if (samples_buf==NULL) { free(cmp_buf); return bad_header;} // no better error code
 
       cnt = LZ4_decompress_safe(cmp_buf,samples_buf,sample_id_length_compressed,sample_id_length);
-      if (cnt!=sample_id_length) {close(fd); return magic_incompatible;}
+      if (cnt!=sample_id_length) {free(samples_buf); free(cmp_buf); return magic_incompatible;}
 
       const char *samples_ptr = samples_buf;
 
       for(int i = 0; i < n_samples; i++) {
         uint32_t sample_length = strlen(samples_ptr);
-        if ((samples_ptr+sample_length+1)>(samples_buf+sample_id_length)) {close(fd); return magic_incompatible;}
+        if ((samples_ptr+sample_length+1)>(samples_buf+sample_id_length)) {free(samples_buf); free(cmp_buf); return magic_incompatible;}
 
-        result->sample_ids[i] = (char*)malloc(sample_length + 1);
-        memcpy(result->sample_ids[i],samples_ptr,sample_length + 1);
+        result.sample_ids[i] = (char*)malloc(sample_length + 1);
+        memcpy(result.sample_ids[i],samples_ptr,sample_length + 1);
         samples_ptr += sample_length + 1;
       }
       free(samples_buf);
       free(cmp_buf);
     }
 
+    return read_okay;
+}
+
+template<class TPMat>
+inline IOStatus read_partial_data_fd(int fd, TPMat &result) {
+    int cnt=-1;
+
+    const uint32_t n_samples = result.n_samples;
+    const uint32_t n_stripes = result.stripe_stop-result.stripe_start;
+
     /* load stripes */
     {
-      int max_compressed = LZ4_compressBound(sizeof(double) * result->n_samples);
+      int max_compressed = LZ4_compressBound(sizeof(double) * n_samples);
       char * const cmp_buf = (char *)malloc(max_compressed+sizeof(uint32_t));
+      if (cmp_buf==NULL) { return bad_header;} // no better error code
 
       uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf;
 
       cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
-      if (cnt != sizeof(uint32_t) ) {close(fd); return magic_incompatible;}
+      if (cnt != sizeof(uint32_t) ) {free(cmp_buf); return magic_incompatible;}
 
       for(int i = 0; i < n_stripes; i++) {
         uint32_t cmp_size = *cmp_buf_size_p;
@@ -733,15 +877,15 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
         if ( (i+1)<n_stripes ) read_size += sizeof(uint32_t); // last one does not have the cmp_size
 
         cnt = read(fd,cmp_buf , read_size );
-        if (cnt != read_size) {close(fd); return magic_incompatible;}
+        if (cnt != read_size) {free(cmp_buf); return magic_incompatible;}
 
-        result->stripes[i] = (double *) malloc(sizeof(double) * n_samples);
-        if(result->stripes[i] == NULL) {
+        result.stripes[i] = (double *) malloc(sizeof(double) * n_samples);
+        if(result.stripes[i] == NULL) {
             fprintf(stderr, "failed\n");
             exit(1);
         }
-        cnt = LZ4_decompress_safe(cmp_buf, (char *) result->stripes[i],cmp_size,sizeof(double) * n_samples);
-        if (cnt != ( sizeof(double) * n_samples ) ) {close(fd); return magic_incompatible;}
+        cnt = LZ4_decompress_safe(cmp_buf, (char *) result.stripes[i],cmp_size,sizeof(double) * n_samples);
+        if (cnt != ( sizeof(double) * n_samples ) ) {free(cmp_buf); return magic_incompatible;}
 
         cmp_buf_size_p = (uint32_t *)(cmp_buf+cmp_size);
       }
@@ -749,20 +893,150 @@ IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
       free(cmp_buf);
     }
 
-    /* sanity check the footer */
-    header[0] = 0;
-    cnt = read(fd,header,sizeof(uint32_t));
-    if (cnt != (sizeof(uint32_t))) {close(fd); return magic_incompatible;}
+    return read_okay;
+}
 
-    if ( header[0] != PARTIAL_MAGIC_V2) {close(fd); return magic_incompatible;}
+template<class TPMat>
+inline IOStatus read_partial_one_stripe_fd(int fd, TPMat &result, uint32_t stripe_idx) {
+    int cnt=-1;
+
+    const uint32_t n_samples = result.n_samples;
+
+    /* load stripes */
+    {
+      int max_compressed = LZ4_compressBound(sizeof(double) * n_samples);
+      char * const cmp_buf = (char *)malloc(max_compressed+sizeof(uint32_t));
+      if (cmp_buf==NULL) { return bad_header;} // no better error code
+
+      uint32_t *cmp_buf_size_p = (uint32_t *)cmp_buf;
+
+      uint32_t curr_idx = stripe_idx;
+      while (result.offsets[curr_idx]==0) --curr_idx; // must start reading from the first known offset
+
+      for (;curr_idx<stripe_idx; curr_idx++) { // now get all the intermediate indexes
+        if (lseek(fd, result.offsets[curr_idx], SEEK_SET)!=result.offsets[curr_idx]) {
+           free(cmp_buf); return bad_header;
+        }
+
+        cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
+        if (cnt != sizeof(uint32_t) ) {free(cmp_buf); return magic_incompatible;}
+
+        uint32_t cmp_size = *cmp_buf_size_p;
+        uint32_t read_size = cmp_size;
+
+        result.offsets[curr_idx+1] = result.offsets[curr_idx] + sizeof(uint32_t) + read_size;
+      }
+
+      // =======================
+      // ready to read my stripe
+
+      if (lseek(fd, result.offsets[stripe_idx], SEEK_SET)!=result.offsets[stripe_idx]) {
+         free(cmp_buf); return bad_header;
+      }
+
+      cnt = read(fd,cmp_buf_size_p , sizeof(uint32_t) );
+      if (cnt != sizeof(uint32_t) ) {free(cmp_buf); return magic_incompatible;}
+
+      {
+        uint32_t cmp_size = *cmp_buf_size_p;
+
+        uint32_t read_size = cmp_size;
+
+        cnt = read(fd,cmp_buf , read_size );
+        if (cnt != read_size) {free(cmp_buf); return magic_incompatible;}
+
+        result.stripes[stripe_idx] = (double *) malloc(sizeof(double) * n_samples);
+        if(result.stripes[stripe_idx] == NULL) {
+            fprintf(stderr, "failed\n");
+            exit(1);
+        }
+        cnt = LZ4_decompress_safe(cmp_buf, (char *) result.stripes[stripe_idx],cmp_size,sizeof(double) * n_samples);
+        if (cnt != ( sizeof(double) * n_samples ) ) {free(cmp_buf); return magic_incompatible;}
+      }
+
+      free(cmp_buf);
+    }
+
+    return read_okay;
+}
+
+IOStatus read_partial(const char* input_filename, partial_mat_t** result_out) {
+    int fd = open(input_filename, O_RDONLY );
+    if (fd==-1) return open_error;
+
+    /* initialize the partial result structure */
+    partial_mat_t* result = (partial_mat_t*)malloc(sizeof(partial_mat));
+
+    IOStatus sts = magic_incompatible;
+
+    sts = read_partial_header_fd<partial_mat_t>(fd, *result);
+    if (sts==read_okay)
+       sts = read_partial_data_fd<partial_mat_t>(fd, *result);
+
+    if (sts==read_okay) {
+      IOStatus sts = read_okay;
+      /* sanity check the footer */
+      uint32_t header[1];
+      header[0] = 0;
+      int cnt = read(fd,header,sizeof(uint32_t));
+      if (cnt != (sizeof(uint32_t))) {sts= magic_incompatible;}
+    
+      if (sts==read_okay) {
+        if ( header[0] != PARTIAL_MAGIC_V2) {sts= magic_incompatible;}
+      }
+    }
 
     close(fd);
+
+    if (sts==read_okay) {
+      (*result_out) = result;
+    } else {
+      free(result);
+      (*result_out) = NULL;
+    }
+    return sts;
+}
+
+IOStatus read_partial_header(const char* input_filename, partial_dyn_mat_t** result_out) {
+    int fd = open(input_filename, O_RDONLY );
+    if (fd==-1) return open_error;
+
+    /* initialize the partial result structure */
+    partial_dyn_mat_t* result = (partial_dyn_mat_t*)malloc(sizeof(partial_dyn_mat));
+    {
+      IOStatus sts = read_partial_header_fd<partial_dyn_mat_t>(fd, *result);
+      if (sts!=read_okay) {free(result); close(fd); return sts;}
+    }
+
+    // save the offset of the first stripe
+    const uint32_t n_stripes = result->stripe_stop-result->stripe_start;
+    result->stripes = (double**) calloc(n_stripes,sizeof(double*));
+    result->offsets = (uint64_t*) calloc(n_stripes,sizeof(uint64_t));
+    result->offsets[0] = lseek(fd,0,SEEK_CUR);
+    
+    close(fd);
+
+    result->filename= strdup(input_filename);
 
     (*result_out) = result;
     return read_okay;
 }
 
-MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result) {
+IOStatus read_partial_one_stripe(partial_dyn_mat_t* result, uint32_t stripe_idx) {
+    if (result->stripes[stripe_idx]!=0) return read_okay; // will not re-read
+
+    int fd = open(result->filename, O_RDONLY );
+    if (fd==-1) return open_error;
+
+    IOStatus sts = read_partial_one_stripe_fd<partial_dyn_mat_t>(fd, *result, stripe_idx);
+
+    close(fd);
+    return sts;
+}
+
+
+template<class TPMat>
+MergeStatus check_partial(const TPMat* const * partial_mats, int n_partials) {
     if(n_partials <= 0) {
         fprintf(stderr, "Zero or less partials.\n");
         exit(EXIT_FAILURE);
@@ -808,6 +1082,14 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
         return incomplete_stripe_set;
     }
 
+    return merge_okay;
+}
+
+MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result) {
+    MergeStatus err = check_partial(partial_mats, n_partials);
+    if (err!=merge_okay) return err;
+
+    int n_samples = partial_mats[0]->n_samples;
     std::vector<double*> stripes(partial_mats[0]->stripe_total);
     std::vector<double*> stripes_totals(partial_mats[0]->stripe_total);  // not actually used but destroy_stripes needs this to "exist"
     for(int i = 0; i < n_partials; i++) {
@@ -818,18 +1100,101 @@ MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned
         }
     }
 
-    if(nthreads > stripes.size()) {
-        fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", stripes.size());
-        nthreads = stripes.size();
-    }
-
-    std::vector<su::task_parameters> tasks(nthreads);
-    std::vector<std::thread> threads(nthreads);
-
     initialize_mat_no_biom(*result, partial_mats[0]->sample_ids, n_samples, partial_mats[0]->is_upper_triangle);
+    if ((*result)==NULL) return incomplete_stripe_set;
+    if ((*result)->condensed_form==NULL) return incomplete_stripe_set;
+    if ((*result)->sample_ids==NULL) return incomplete_stripe_set;
+
     su::stripes_to_condensed_form(stripes, n_samples, (*result)->condensed_form, 0, partial_mats[0]->stripe_total);
 
     destroy_stripes(stripes, stripes_totals, n_samples, 0, n_partials);
 
     return merge_okay;
 }
+
+// Will keep only the strictly necessary stripes in memory... reading just in time
+class PartialStripes : public su::ManagedStripes {
+        private:
+           const uint32_t n_partials;
+           mutable partial_dyn_mat_t* * partial_mats; // link only, not owned
+
+           static bool in_range(const partial_dyn_mat_t &partial_mat, uint32_t stripe) {
+             return (stripe>=partial_mat.stripe_start) && (stripe<partial_mat.stripe_stop);
+           }
+
+           uint32_t find_partial_idx(uint32_t stripe) const {
+              for (uint32_t i=0; i<n_partials; i++) {
+                if (in_range(*(partial_mats[i]),stripe)) return i;
+              }
+              return 0; // should never get here
+           }
+        public:
+           PartialStripes(uint32_t _n_partials, partial_dyn_mat_t* * _partial_mats)
+           : n_partials(_n_partials)
+           , partial_mats(_partial_mats)
+           {}
+
+           virtual const double *get_stripe(uint32_t stripe) const {
+              uint32_t pidx = find_partial_idx(stripe);
+              partial_dyn_mat_t * const partial_mat = partial_mats[pidx];
+              uint32_t sidx = stripe-partial_mat->stripe_start;
+
+              if (partial_mat->stripes[sidx]==NULL) {
+                  read_partial_one_stripe(partial_mat,sidx);
+                  // ignore any errors, not clear what to do
+                  // will just return NULL
+              }
+
+              return partial_mat->stripes[sidx];
+           }
+           virtual void release_stripe(uint32_t stripe) const {
+              uint32_t pidx = find_partial_idx(stripe);
+              partial_dyn_mat_t * const partial_mat = partial_mats[pidx];
+              uint32_t sidx = stripe-partial_mat->stripe_start;
+
+              if (partial_mat->stripes[sidx]!=NULL) {
+                 free(partial_mat->stripes[sidx]);
+                 partial_mat->stripes[sidx]=NULL;
+              }
+           }
+};
+
+template<class TReal, class TMat>
+MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_partials, 
+                                      const char *mmap_dir, /* if NULL, use malloc */
+                                      TMat** result /* out */ ) {
+    MergeStatus err = check_partial(partial_mats, n_partials);
+    if (err!=merge_okay) return err;
+
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, partial_mats[0]->n_samples,mmap_dir);
+
+    if ((*result)==NULL) return incomplete_stripe_set;
+    if ((*result)->matrix==NULL) return incomplete_stripe_set;
+    if ((*result)->sample_ids==NULL) return incomplete_stripe_set;
+
+    PartialStripes ps(n_partials,partial_mats);
+    const uint32_t tile_size = (mmap_dir==NULL) ? \
+                                  (128/sizeof(TReal)) : /* keep it small for memory access, to fit in chip cache */ \
+                                  (4096/sizeof(TReal)); /* make it larger for mmap, as the limiting factor is swapping */
+    su::stripes_to_matrix_T<TReal>(ps, partial_mats[0]->n_samples, partial_mats[0]->stripe_total, (*result)->matrix, tile_size);
+
+    return merge_okay;
+}
+
+MergeStatus merge_partial_to_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp64_t** result) {
+  return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, NULL, result);
+}
+
+MergeStatus merge_partial_to_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, mat_full_fp32_t** result) {
+  return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, NULL, result);
+}
+
+MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp64_t** result) {
+  return merge_partial_to_matrix_T<double,mat_full_fp64_t>(partial_mats, n_partials, mmap_dir, result);
+}
+
+MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result) {
+  return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, mmap_dir, result);
+}
+
+

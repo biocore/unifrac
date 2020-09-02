@@ -157,7 +157,7 @@ double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
 }
 
 
-void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* &cf, unsigned int start, unsigned int stop) {
+void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, double* cf, unsigned int start, unsigned int stop) {
     // n must be >= 2, but that should be enforced upstream as that would imply
     // computing unifrac on a single sample.
 
@@ -179,6 +179,227 @@ void su::stripes_to_condensed_form(std::vector<double*> &stripes, uint32_t n, do
         }
     }
 }
+
+
+// write in a 2D matrix 
+// also suitable for writing to disk
+template<class TReal>
+void su::condensed_form_to_matrix_T(const double*  __restrict__ cf, const uint32_t n, TReal*  __restrict__ buf2d) {
+     const uint64_t comb_N = su::comb_2(n);
+     for(uint64_t i = 0; i < n; i++) {
+        for(uint64_t j = 0; j < n; j++) {
+            TReal v;
+            if(i < j) { // upper triangle
+                const uint64_t comb_N_minus = su::comb_2(n - i);
+                v = cf[comb_N - comb_N_minus + (j - i - 1)];
+            } else if (i > j) { // lower triangle
+                const uint64_t comb_N_minus = su::comb_2(n - j);
+                v = cf[comb_N - comb_N_minus + (i - j - 1)];
+            } else {
+                v = 0.0;
+            }
+            buf2d[i*n+j] = v;
+        }
+     }
+}
+
+
+// make sure it is instantiated
+template void su::condensed_form_to_matrix_T<double>(const double*  __restrict__ cf, const uint32_t n, double*  __restrict__ buf2d);
+template void su::condensed_form_to_matrix_T<float>(const double*  __restrict__ cf, const uint32_t n, float*  __restrict__ buf2d);
+
+void su::condensed_form_to_matrix(const double*  __restrict__ cf, const uint32_t n, double*  __restrict__ buf2d) {
+  su::condensed_form_to_matrix_T<double>(cf,n,buf2d);
+}
+
+void su::condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uint32_t n, float*  __restrict__ buf2d) {
+  su::condensed_form_to_matrix_T<float>(cf,n,buf2d);
+}
+
+/*
+ * The stripes end up computing the following positions in the distance
+ * matrix.
+ *
+ * x A B C x x
+ * x x A B C x
+ * x x x A B C
+ * C x x x A B
+ * B C x x x A
+ * A B C x x x
+ *
+ * However, we store those stripes as vectors, ie
+ * [ A A A A A A ]
+ */
+
+
+// Helper class
+// Will cache pointers and automatically release stripes when all elements are used
+class OnceManagedStripes {
+   private:
+    const uint32_t n_samples;
+    const uint32_t n_stripes;
+    const ManagedStripes &stripes;
+    std::vector<const double *> stripe_ptr;
+    std::vector<uint32_t> stripe_accessed;
+
+    const double *get_stripe(const uint32_t stripe) {
+      if (stripe_ptr[stripe]==0) stripe_ptr[stripe]=stripes.get_stripe(stripe);
+      return stripe_ptr[stripe];
+    }
+
+    void release_stripe(const uint32_t stripe) {
+       stripes.release_stripe(stripe);
+       stripe_ptr[stripe]=0;
+    }
+
+   public:
+    OnceManagedStripes(const ManagedStripes &_stripes, const uint32_t _n_samples, const uint32_t _n_stripes)
+    : n_samples(_n_samples), n_stripes(_n_stripes)
+    , stripes(_stripes)
+    , stripe_ptr(n_stripes)
+    , stripe_accessed(n_stripes)
+    {}
+    
+    ~OnceManagedStripes()
+    {
+      for(uint32_t i = 0; i < n_stripes; i++) {
+        if (stripe_ptr[i]!=0) {
+           release_stripe(i); 
+        }
+      }
+    }
+
+    double get_val(const uint32_t stripe, const uint32_t el)
+    {
+      if (stripe_ptr[stripe]==0) stripe_ptr[stripe]=stripes.get_stripe(stripe); 
+      const double *mystripe = stripe_ptr[stripe];
+      double val = mystripe[el];
+
+      stripe_accessed[stripe]++;
+      if (stripe_accessed[stripe]==n_samples) release_stripe(stripe); // we will not use this stripe anymore
+
+      return val;
+    }
+
+
+};
+
+// write in a 2D matrix 
+// also suitable for writing to disk
+template<class TReal>
+void su::stripes_to_matrix_T(const ManagedStripes &_stripes, const uint32_t n_samples, const uint32_t n_stripes, TReal*  __restrict__ buf2d, uint32_t tile_size) {
+    // n_samples must be >= 2, but that should be enforced upstream as that would imply
+    // computing unifrac on a single sample.
+
+    // tile for  for better memory access pattern
+    const uint32_t TILE = (tile_size>0) ? tile_size : (128/sizeof(TReal));
+    const uint32_t n_samples_tup = (n_samples+(TILE-1))/TILE; // round up
+
+    OnceManagedStripes stripes(_stripes, n_samples, n_stripes);
+
+    
+    for(uint32_t oi = 0; oi < n_samples_tup; oi++) { // off diagonal
+      // alternate between inner and outer off-diagonal, due to wrap around in stripes
+      const uint32_t o = ((oi%2)==0) ? \
+                           (oi/2)*TILE :                  /* close to diagonal */ \
+                           (n_samples_tup-(oi/2)-1)*TILE; /* far from diagonal */
+ 
+      for(uint32_t d = 0; d < (n_samples-o); d+=TILE) { // diagonal
+
+         uint32_t iOut = d;
+         uint32_t jOut = d+o;
+
+         uint32_t iMax = std::min(iOut+TILE,n_samples);
+         uint32_t jMax = std::min(jOut+TILE,n_samples);
+
+
+        if (iOut==jOut) { 
+          // on diagonal
+          for(uint64_t i = iOut; i < iMax; i++) {
+             buf2d[i*n_samples+i] = 0.0;
+
+             int64_t stripe=0;
+
+             uint64_t j = i+1;
+             for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
+               TReal val = stripes.get_val(stripe, i);
+               buf2d[i*n_samples+j] = val;
+             }
+
+             if (j<n_samples) { // implies strip==n_stripes, we are really looking at the mirror
+               stripe=n_samples-n_stripes-1;
+               for(; j < jMax; j++) {
+                 --stripe;
+                 TReal val = stripes.get_val(stripe, j);
+                 buf2d[i*n_samples+j] = val;
+               }
+             }
+          }
+
+          // lower triangle
+          for(uint64_t i = iOut+1; i < iMax; i++) {
+            for(uint64_t j = jOut; j < i; j++) {
+              buf2d[i*n_samples+j] = buf2d[j*n_samples+i];
+            }
+          }
+
+        } else if (iOut<jOut) {
+          // off diagonal
+          for(uint64_t i = iOut; i < iMax; i++) {
+             unsigned int stripe=0;
+
+             uint64_t j = i+1;
+             // we are off diagonal, so adjust
+             stripe += (jOut-j);
+             j=jOut;
+             if (stripe>n_stripes) {
+               // ops, we overshoot... roll back
+               j-=(stripe-n_stripes);
+               stripe=n_stripes;
+             }
+             for(; (stripe<n_stripes) && (j<jMax); stripe++, j++) {
+                TReal val = stripes.get_val(stripe, i);
+                buf2d[i*n_samples+j] = val;
+             }
+
+             if (j<jMax) { // implies strip==n_stripes, we are really looking at the mirror
+               stripe=n_samples-n_stripes-1;
+               if (j<jOut) {
+                 stripe -= (jOut-j); // note: should not be able to overshoot
+                 j=jOut;
+               }
+               for(; j < jMax; j++) {
+                 --stripe;
+                 TReal val = stripes.get_val(stripe, j);
+                 buf2d[i*n_samples+j] = val;
+               }
+             }
+          }
+
+          // do the other off-diagonal immediately, so it is still in cache
+          for(uint64_t j = jOut; j < jMax; j++) {
+            for(uint64_t i = iOut; i < iMax; i++) {
+              buf2d[j*n_samples+i] = buf2d[i*n_samples+j];
+            }
+          }
+        }
+ 
+      } //for jOut 
+    } // for iOut
+}
+
+// Make sure it gets instantiated
+template void su::stripes_to_matrix_T<double>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d, uint32_t tile_size);
+template void su::stripes_to_matrix_T<float>(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d, uint32_t tile_size);
+
+void su::stripes_to_matrix(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, double*  __restrict__ buf2d, uint32_t tile_size) {
+   return su::stripes_to_matrix_T<double>(stripes, n_samples, n_stripes, buf2d, tile_size);
+}
+
+void su::stripes_to_matrix_fp32(const ManagedStripes &stripes, const uint32_t n_samples, const uint32_t n_stripes, float*  __restrict__ buf2d, uint32_t tile_size) {
+  return su::stripes_to_matrix_T<float>(stripes, n_samples, n_stripes, buf2d, tile_size);
+}
+
 
 void progressbar(float progress) {
     // from http://stackoverflow.com/a/14539953

@@ -386,7 +386,7 @@ void test_bptree_postorder() {
     uint32_t exp[] = {2, 4, 7, 6, 1, 11, 15, 17, 14, 13, 0};
     uint32_t obs[tree.nparens / 2];
 
-    for(int i = 0; i < (tree.nparens / 2); i++)
+    for(unsigned int i = 0; i < (tree.nparens / 2); i++)
         obs[i] = tree.postorderselect(i);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
@@ -404,7 +404,7 @@ void test_bptree_preorder() {
     uint32_t exp[] = {0, 1, 2, 4, 6, 7, 11, 13, 14, 15, 17};
     uint32_t obs[tree.nparens / 2];
 
-    for(int i = 0; i < (tree.nparens / 2); i++)
+    for(unsigned int i = 0; i < (tree.nparens / 2); i++)
         obs[i] = tree.preorderselect(i);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens / 2);
@@ -424,7 +424,7 @@ void test_bptree_parent() {
     // all the -2 and +1 garbage is to avoid testing the root.
     uint32_t obs[tree.nparens - 2];
 
-    for(int i = 0; i < (tree.nparens) - 2; i++)
+    for(int i = 0; i < (int(tree.nparens) - 2); i++)
         obs[i] = tree.parent(i+1);
 
     std::vector<uint32_t> exp_v = _uint32_array_to_vector(exp, tree.nparens - 2);
@@ -516,7 +516,7 @@ void test_bptree_leftchild() {
     std::vector<bool> structure = tree.get_structure();
 
     uint32_t exp_pos = 0;
-    for(int i = 0; i < tree.nparens; i++) {
+    for(unsigned int i = 0; i < tree.nparens; i++) {
         if(structure[i])
             ASSERT(tree.leftchild(i) == exp[exp_pos++]);
     }
@@ -531,7 +531,7 @@ void test_bptree_rightchild() {
     std::vector<bool> structure = tree.get_structure();
 
     uint32_t exp_pos = 0;
-    for(int i = 0; i < tree.nparens; i++) {
+    for(unsigned int i = 0; i < tree.nparens; i++) {
         if(structure[i])
             ASSERT(tree.rightchild(i) == exp[exp_pos++]);
     }
@@ -546,7 +546,7 @@ void test_bptree_rightsibling() {
     std::vector<bool> structure = tree.get_structure();
 
     uint32_t exp_pos = 0;
-    for(int i = 0; i < tree.nparens; i++) {
+    for(unsigned int i = 0; i < tree.nparens; i++) {
         if(structure[i])
             ASSERT(tree.rightsibling(i) == exp[exp_pos++]);
     }
@@ -611,7 +611,6 @@ void test_unifrac_set_proportions() {
     su::biom table = su::biom("test.biom");
     su::PropStack ps = su::PropStack(table.n_samples);
 
-    double sample_counts[] = {7, 3, 4, 6, 3, 4};
     double *obs = ps.pop(4); // GG_OTU_2
     double exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
     set_proportions(obs, tree, 4, table, ps);
@@ -661,23 +660,31 @@ void test_unifrac_deconvolute_stripes() {
 void test_unifrac_stripes_to_condensed_form_even() {
     SUITE_START("test stripes_to_condensed_form even samples");
     std::vector<double*> stripes;
-    double s1[] = {0, 5, 9, 12, 14, 4};
-    double s2[] = {1, 6, 10, 13, 3, 8};
-    double s3[] = {2, 7, 11, 2, 7, 11};
-    // {0, 0, 1, 2, 3, 4},
-    // {x, 0, 5, 6, 7, 8},
-    // {x, x, 0, 9, 10, 11},
-    // {x, x, x, 0, 12, 13},
-    // {x, x, x, x, 0, 14},
-    // {x, x, x, x, x, 0}
+    double s1[] = {0,  9, 17, 24, 30, 35, 39, 42, 44,  8};
+    double s2[] = {1, 10, 18, 25, 31, 36, 40, 43,  7, 16};
+    double s3[] = {2, 11, 19, 26, 32, 37, 41,  6, 15, 23};
+    double s4[] = {3, 12, 20, 27, 33, 38,  5, 14, 22, 29};
+    double s5[] = {4, 13, 21, 28, 34,  4, 13, 21, 28, 34};
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
 
-    double exp[15] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    double *obs = (double*)malloc(sizeof(double) * 15);
-    su::stripes_to_condensed_form(stripes, 6, obs, 0, 3);
-    for(unsigned int i = 0; i < 15; i++) {
+    double exp[45] = {/* 0, */  0,  1,  2,  3,  4,  5,  6,  7,  8,
+                      /* *,  0, */  9, 10, 11, 12, 13, 14, 15, 16,
+                      /* *,  *,  0, */ 17, 18, 19, 20, 21, 22, 23,
+                      /* *,  *,  *,  0, */ 24, 25, 26, 27, 28, 29,
+                      /* *,  *,  *,  *,  0, */ 30, 31, 32, 33, 34,
+                      /* *,  *,  *,  *,  *,  0, */ 35, 36, 37, 38,
+                      /* *,  *,  *,  *,  *,  *,  0, */ 39, 40, 41,
+                      /* *,  *,  *,  *,  *,  *,  *,  0, */ 42, 43,
+                      /* *,  *,  *,  *,  *,  *,  *,  *,  0, */ 44};
+                      /* *,  *,  *,  *,  *,  *,  *,  *,  *, *,  0 */
+
+    double *obs = (double*)malloc(sizeof(double) * 45);
+    su::stripes_to_condensed_form(stripes, 10, obs, 0, 5);
+    for(unsigned int i = 0; i < 45; i++) {
         ASSERT(exp[i] == obs[i]);
     }
     free(obs);
@@ -687,30 +694,364 @@ void test_unifrac_stripes_to_condensed_form_even() {
 void test_unifrac_stripes_to_condensed_form_odd() {
     SUITE_START("test stripes_to_condensed_form odd samples");
     std::vector<double*> stripes;
-    double s1[] = {1, 2, 3, 4, 5, 6, 0};
-    double s2[] = {12, 11, 10, 9, 8, 7, 1};
-    double s3[] = {13, 14, 15, 16, 17, 18, 2};
-
-    // {0, 1, 12, 13, 17,  7,  0},
-    // {x, 0,  2, 11, 14, 18,  1},
-    // {x, x,  0,  3, 10, 15,  2},
-    // {x, x,  x,  0,  4,  9, 16},
-    // {x, x,  x,  x,  0,  5,  8},
-    // {x, x,  x,  x,  x,  0,  6}
-    // {x, x,  x,  x,  x,  x,  0}
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 0};
+    double s2[] = {20, 19, 18, 17, 16, 15, 14 ,13, 12, 11, 1};
+    double s3[] = {21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 2};
+    double s4[] = {40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 3};
+    double s5[] = {41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 4};
     stripes.push_back(s1);
     stripes.push_back(s2);
     stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
 
-    double exp[21] = {1, 12, 13, 17, 7, 0, 2, 11, 14, 18, 1, 3, 10, 15, 2, 4, 9, 16, 5, 8, 6};
-    double *obs = (double*)malloc(sizeof(double) * 21);
-    su::stripes_to_condensed_form(stripes, 7, obs, 0, 3);
-    for(unsigned int i = 0; i < 21; i++) {
+    double exp[55] = {/* 0, */ 1, 20, 21, 40, 41, 47, 33, 29, 11,  0,
+                      /* 1,  0, */ 2, 19, 22, 39, 42, 48, 32, 30,  1,
+                      /*20,  2,  0, */ 3, 18, 23, 38, 43, 49, 31,  2,
+                      /*21, 19,  3,  0, */ 4, 17, 24, 37, 44, 50,  3,
+                      /*40, 22, 18,  4,  0, */ 5, 16, 25 ,36, 45 , 4,
+                      /*41, 39, 23, 17,  5,  0, */ 6, 15, 26, 35, 46,
+                      /*47, 42, 38, 24, 16,  6,  0, */ 7, 14, 27, 34,
+                      /*33, 48, 43, 37, 25, 15,  7,  0,*/  8, 13, 28,
+                      /*29, 32, 49, 44, 36, 26, 14,  8,  0, */ 9, 12,
+                      /*11, 30, 31, 50, 45, 35, 27, 13,  9,  0,*/ 10};
+                      /* 0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0}; */
+    double *obs = (double*)malloc(sizeof(double) * 55);
+    su::stripes_to_condensed_form(stripes, 11, obs, 0, 5);
+    for(unsigned int i = 0; i < 55; i++) {
         ASSERT(exp[i] == obs[i]);
     }
     free(obs);
     SUITE_END();
 }
+
+void test_unifrac_stripes_to_condensed_form_odd2() {
+    SUITE_START("test stripes_to_condensed_form odd(2) samples");
+    std::vector<double*> stripes;
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9};
+    double s2[] = {18, 17, 16, 15, 14, 13, 12 ,11, 10};
+    double s3[] = {19, 20, 21, 22, 23, 24, 25, 26, 27};
+    double s4[] = {36, 35, 34, 33, 32, 31, 30, 29, 28};
+    double s5[] = {31, 30, 29, 28, 36, 35, 34, 33, 32};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
+
+    double exp[36] = {/* 0, */ 1, 18, 19, 36, 31, 25, 11,  9,
+                      /* 1,  0, */ 2, 17, 20, 35, 30, 26, 10,
+                      /*20,  2,  0, */ 3, 16, 21, 34, 29, 27,
+                      /*21, 19,  3,  0, */ 4, 15, 22, 33, 28,
+                      /*40, 22, 18,  4,  0, */ 5, 14, 23 ,32,
+                      /*41, 39, 23, 17,  5,  0, */ 6, 13, 24,
+                      /*47, 42, 38, 24, 16,  6,  0, */ 7, 12,
+                      /*47, 42, 38, 24, 16,  6,  7, 0, */  8};
+                      /* 0,  1,  2,  3,  4, 46, 34, 8,  8, 0}; */
+    double *obs = (double*)malloc(sizeof(double) * 36);
+    su::stripes_to_condensed_form(stripes, 9, obs, 0, 5);
+    for(unsigned int i = 0; i < 36; i++) {
+        ASSERT(exp[i] == obs[i]);
+    }
+    free(obs);
+    SUITE_END();
+}
+
+class ValidatedMemoryStripes : public su::MemoryStripes {
+        private:
+           const uint32_t n_stripes;
+           mutable std::vector<uint8_t> stripe_status; // 0 new, 1 allocated, 2 deallocated, 3 reallocated, 6 deallocate after rellocation
+        public:
+           ValidatedMemoryStripes(uint32_t _n_stripes, std::vector<double*> &_stripes) 
+           : su::MemoryStripes(_stripes) 
+           , n_stripes(_n_stripes)
+           , stripe_status(n_stripes)
+           {
+             for (uint32_t i=0; i<n_stripes; i++) stripe_status[i] = 0;
+           }
+
+           virtual const double *get_stripe(uint32_t stripe) const {
+              stripe_status[stripe]|=1; 
+              return su::MemoryStripes::get_stripe(stripe);
+           }
+           virtual void release_stripe(uint32_t stripe) const { 
+              if (stripe_status[stripe]<2) {
+                 stripe_status[stripe]=2;
+              } else {
+                 stripe_status[stripe]=6;
+              }
+           }
+
+           bool allInitialized() const {
+             bool out = true;
+             for (uint32_t i=0; i<n_stripes; i++) out &= (stripe_status[i] != 0);
+             return out;
+           }
+
+           bool allDealocated() const {
+             bool out = true;
+             for (uint32_t i=0; i<n_stripes; i++) out &= ((stripe_status[i]&2) == 2);
+             return out;
+           }
+
+           bool anyRealocated() const {
+             bool out = false;
+             for (uint32_t i=0; i<n_stripes; i++) out |= (stripe_status[i] >2);
+             return out;
+           }
+
+
+};
+
+
+void test_unifrac_stripes_to_matrix_even() {
+    SUITE_START("test stripes_to_matrix even samples");
+    std::vector<double*> stripes;
+    double s1[] = {0,  9, 17, 24, 30, 35, 39, 42, 44,  8};
+    double s2[] = {1, 10, 18, 25, 31, 36, 40, 43,  7, 16};
+    double s3[] = {2, 11, 19, 26, 32, 37, 41,  6, 15, 23};
+    double s4[] = {3, 12, 20, 27, 33, 38,  5, 14, 22, 29};
+    double s5[] = {4, 13, 21, 28, 34,  4, 13, 21, 28, 34};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
+
+    // test also double to float conversion
+    float exp[100] = {0,  0,  1,  2,  3,  4,  5,  6,  7,  8, 
+                      0,  0,  9, 10, 11, 12, 13, 14, 15, 16,  
+                      1,  9,  0, 17, 18, 19, 20, 21, 22, 23,
+                      2, 10, 17,  0, 24, 25, 26, 27, 28, 29, 
+                      3, 11, 18, 24,  0, 30, 31, 32, 33, 34,
+                      4, 12, 19, 25, 30,  0, 35, 36, 37, 38,
+                      5, 13, 20, 26, 31, 35,  0, 39, 40, 41,
+                      6, 14, 21, 27, 32, 36, 39,  0, 42, 43,
+                      7, 15, 22, 28, 33, 37, 40, 42,  0, 44,
+                      8, 16, 23, 29, 34, 38, 41, 43, 44,  0};
+    {
+      float *obs = (float*)malloc(sizeof(float) * 100);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix_fp32(vs, 10, 5, obs);
+      for(unsigned int i = 0; i < 100; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true); 
+      ASSERT(vs.anyRealocated() == false);
+
+      free(obs);
+    }
+
+    { // small tiles
+      float *obs = (float*)malloc(sizeof(float) * 100);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix_fp32(vs, 10, 5, obs, 4);
+      for(unsigned int i = 0; i < 100; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+    
+      free(obs);
+    }
+
+    { // large tiles
+      float *obs = (float*)malloc(sizeof(float) * 100);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix_fp32(vs, 10, 5, obs, 128);
+      for(unsigned int i = 0; i < 100; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+    
+      free(obs);
+    }
+
+
+    // test also intermediate, 2-step procedure
+    double *obsC = (double*)malloc(sizeof(double) * 45);
+    su::stripes_to_condensed_form(stripes, 10, obsC, 0, 5);
+
+    float *obs2 = (float*)malloc(sizeof(float) * 100);
+    su::condensed_form_to_matrix_fp32(obsC, 10, obs2);
+
+    for(unsigned int i = 0; i < 100; i++) {
+        ASSERT(exp[i] == obs2[i]);
+    }
+
+    free(obs2);
+    free(obsC);
+    SUITE_END();
+}
+
+void test_unifrac_stripes_to_matrix_odd() {
+    SUITE_START("test stripes_to_matrix odd samples");
+    std::vector<double*> stripes;
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 0};
+    double s2[] = {20, 19, 18, 17, 16, 15, 14 ,13, 12, 11, 1};
+    double s3[] = {21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 2};
+    double s4[] = {40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 3};
+    double s5[] = {41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 4};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
+
+    double exp[121] = { 0,  1, 20, 21, 40, 41, 47, 33, 29, 11,  0, 
+                        1,  0,  2, 19, 22, 39, 42, 48, 32, 30,  1,
+                       20,  2,  0,  3, 18, 23, 38, 43, 49, 31,  2,
+                       21, 19,  3,  0,  4, 17, 24, 37, 44, 50,  3,
+                       40, 22, 18,  4,  0,  5, 16, 25 ,36, 45 , 4, 
+                       41, 39, 23, 17,  5,  0,  6, 15, 26, 35, 46,
+                       47, 42, 38, 24, 16,  6,  0,  7, 14, 27, 34,
+                       33, 48, 43, 37, 25, 15,  7,  0,  8, 13, 28, 
+                       29, 32, 49, 44, 36, 26, 14,  8,  0,  9, 12,
+                       11, 30, 31, 50, 45, 35, 27, 13,  9,  0, 10,
+                        0,  1,  2,  3,  4, 46, 34, 28, 12, 10,  0};
+
+    {
+      double *obs = (double*)malloc(sizeof(double) * 121);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 11, 5, obs);
+      for(unsigned int i = 0; i < 121; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // small tiling
+      double *obs = (double*)malloc(sizeof(double) * 121);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 11, 5, obs,4);
+      for(unsigned int i = 0; i < 121; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // large tiling
+      double *obs = (double*)malloc(sizeof(double) * 121);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 11, 5, obs,128);
+      for(unsigned int i = 0; i < 121; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+
+    // test also intermediate, 2-step procedure
+    double *obsC = (double*)malloc(sizeof(double) * 55);
+    su::stripes_to_condensed_form(stripes, 11, obsC, 0, 5);
+
+    double *obs2 = (double*)malloc(sizeof(double) * 121);
+    su::condensed_form_to_matrix(obsC, 11, obs2);
+    
+    for(unsigned int i = 0; i < 121; i++) {
+        ASSERT(exp[i] == obs2[i]);
+    }
+
+    free(obs2);
+    free(obsC);
+    SUITE_END();
+}
+
+void test_unifrac_stripes_to_matrix_odd2() {
+    SUITE_START("test stripes_to_matrix odd(2) samples");
+    std::vector<double*> stripes;
+    double s1[] = { 1,  2,  3,  4,  5,  6,  7,  8,  9};
+    double s2[] = {18, 17, 16, 15, 14, 13, 12 ,11, 10};
+    double s3[] = {19, 20, 21, 22, 23, 24, 25, 26, 27};
+    double s4[] = {36, 35, 34, 33, 32, 31, 30, 29, 28};
+    double s5[] = {31, 30, 29, 28, 36, 35, 34, 33, 32};
+    stripes.push_back(s1);
+    stripes.push_back(s2);
+    stripes.push_back(s3);
+    stripes.push_back(s4);
+    stripes.push_back(s5);
+
+    double exp[81] = { 0,  1, 18, 19, 36, 31, 25, 11,  9,
+                       1,  0,  2, 17, 20, 35, 30, 26, 10,
+                      18,  2,  0,  3, 16, 21, 34, 29, 27,
+                      19, 17,  3,  0,  4, 15, 22, 33, 28,
+                      36, 20, 16,  4,  0,  5, 14, 23 ,32,
+                      31, 35, 21, 15,  5,  0,  6, 13, 24,
+                      25, 30, 34, 22, 14,  6,  0,  7, 12,
+                      11, 26, 29, 33, 23, 13,  7,  0,  8,
+                       9, 10, 27, 28, 32, 24, 12,  8,  0};
+
+    {
+      double *obs = (double*)malloc(sizeof(double) * 81);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 9, 5, obs);
+      for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // small tile
+      double *obs = (double*)malloc(sizeof(double) * 81);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 9, 5, obs,4);
+      for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    { // large tile
+      double *obs = (double*)malloc(sizeof(double) * 81);
+      ValidatedMemoryStripes vs(5,stripes);
+      su::stripes_to_matrix(vs, 9, 5, obs,128);
+      for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs[i]);
+      }
+      ASSERT(vs.allInitialized() == true);
+      ASSERT(vs.allDealocated() == true);
+      ASSERT(vs.anyRealocated() == false);
+      free(obs);
+    }
+
+    // test also intermediate, 2-step procedure
+    double *obsC = (double*)malloc(sizeof(double) * 36);
+    su::stripes_to_condensed_form(stripes, 9, obsC, 0, 5);
+
+    double *obs2 = (double*)malloc(sizeof(double) * 81);
+    su::condensed_form_to_matrix(obsC, 9, obs2);
+    
+    for(unsigned int i = 0; i < 81; i++) {
+        ASSERT(exp[i] == obs2[i]);
+    }
+
+    free(obs2);
+    free(obsC);
+    SUITE_END();
+}
+
 
 void test_unnormalized_weighted_unifrac() {
     SUITE_START("test unnormalized weighted unifrac");
@@ -978,7 +1319,6 @@ void test_faith_pd_shear(){
 
 void test_unweighted_unifrac() {
     SUITE_START("test unweighted unifrac");
-    double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
@@ -1018,7 +1358,6 @@ void test_unweighted_unifrac() {
 
 void test_unweighted_unifrac_fast() {
     SUITE_START("test unweighted unifrac no tips");
-    double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
@@ -1058,7 +1397,6 @@ void test_unweighted_unifrac_fast() {
 
 void test_normalized_weighted_unifrac() {
     SUITE_START("test normalized weighted unifrac");
-    double **obs;
     std::vector<std::thread> threads(1);
     su::BPTree tree = su::BPTree("(GG_OTU_1:1,(GG_OTU_2:1,GG_OTU_3:1):1,(GG_OTU_5:1,GG_OTU_4:1):1);");
     su::biom table = su::biom("test.biom");
@@ -1368,6 +1706,10 @@ int main(int argc, char** argv) {
     test_unifrac_deconvolute_stripes();
     test_unifrac_stripes_to_condensed_form_even();
     test_unifrac_stripes_to_condensed_form_odd();
+    test_unifrac_stripes_to_condensed_form_odd2();
+    test_unifrac_stripes_to_matrix_even();
+    test_unifrac_stripes_to_matrix_odd();
+    test_unifrac_stripes_to_matrix_odd2();
     test_unweighted_unifrac();
     test_unweighted_unifrac_fast();
     test_unnormalized_weighted_unifrac();
