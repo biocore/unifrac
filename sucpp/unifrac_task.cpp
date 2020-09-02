@@ -440,11 +440,10 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const unsigned int filled_embs_els_round = (filled_embs+31)/32;
 
 
-    // pre-compute sums, since they are likely to be accessed many times
+    // pre-compute sums of length elements, since they are likely to be accessed many times
+    // We will use a 8-bit map, to keep it small enough to keep in L1 cache
 #ifdef _OPENACC
 #pragma acc parallel loop collapse(2) gang present(lengths,sums) async
-#else
-#pragma omp parallel for collapse(2) schedule(static,1)
 #endif
     for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
        for (unsigned int sub4=0; sub4<4; sub4++) {
@@ -453,7 +452,14 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
           const TFloat * __restrict__ pl   = &(lengths[emb4*8]);
 
 #pragma acc loop vector
-          // compute all the combinations for this block
+          // compute all the combinations for this block (8-bits total)
+          // psum[0] = 0.0   // +0*pl[0]+0*pl[1]+0*pl[2]+...
+          // psum[1] = pl[0] // +0*pl[1]+0*pl[2]+...
+          // psum[2] = pl[1] // +0*pl[0]+0*pl[2]+
+          // psum[2] = pl[0] + pl[1]
+          // ...
+          // psum[255] = pl[1] +.. + pl[7] // + 0*pl[0]
+          // psum[255] = pl[0] +pl[1] +.. + pl[7]
           for (unsigned int b8_i=0; b8_i<0x100; b8_i++) {
              psum[b8_i] = (((b8_i >> 0) & 1) * pl[0]) + (((b8_i >> 1) & 1) * pl[1]) + 
                           (((b8_i >> 2) & 1) * pl[2]) + (((b8_i >> 3) & 1) * pl[3]) +
@@ -466,8 +472,6 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
        const unsigned int emb_el=filled_embs_els;
 #ifdef _OPENACC
 #pragma acc parallel loop gang present(lengths,sums) async
-#else
-#pragma omp parallel for schedule(static,1)
 #endif
        for (unsigned int sub4=0; sub4<4; sub4++) {
           // we are summing we have enough buffer in sums
@@ -476,6 +480,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 
 #pragma acc loop vector
           // compute all the combinations for this block, set to 0 any past the limit
+          // as above
           for (unsigned int b8_i=0; b8_i<0x100; b8_i++) {
              TFloat val= 0;
              for (unsigned int li=(emb4*8); li<filled_embs; li++) {
@@ -519,7 +524,10 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
                 uint32_t x1 = u1 ^ v1;
                 uint32_t o1 = u1 | v1;
 
-                // use the pre-computed sums
+                // Use the pre-computed sums
+                // Each range of 8 lengths has already been pre-computed and stored in psum
+                // Since embedded_proportions packed format is in 32-bit format for performance reasons
+                //    we need to add the 4 sums using the four 8-bits for addressing inside psum
 
                 my_stripe       += psum[              (x1 & 0xff)] + 
                                    psum[0x100+((x1 >>  8) & 0xff)] +
