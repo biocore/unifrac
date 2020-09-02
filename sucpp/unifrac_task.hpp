@@ -10,6 +10,9 @@
 namespace su {
 
 
+   // like posix_memalign, but will abort on  error
+   void checked_memalign(void **memptr, size_t alignment, size_t size);
+
 #ifdef _OPENACC
 
   #ifndef SMALLGPU
@@ -158,12 +161,8 @@ namespace su {
           uint64_t bsize = n_samples_r * get_emb_els(max_embs);
 
           TEmb* buf = NULL;
-          int err = posix_memalign((void **)&buf, 4096, sizeof(TEmb) * bsize);
-          if(buf == NULL || err != 0) {
-            fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                    sizeof(TEmb) * bsize, err, __FILE__, __LINE__);
-             exit(EXIT_FAILURE);
-          }
+          checked_memalign((void **)&buf, 4096, sizeof(TEmb) * bsize);
+
 #pragma acc enter data create(buf[:bsize])
           return buf;
         }
