@@ -1,20 +1,8 @@
 #include <algorithm> 
 #include "unifrac_task.hpp"
 #include <cstdlib>
-#include <stdio.h>
-#include <stdlib.h>
 
 
-// Implement it in the cpp portion, to not expose fprintf in a header
-void su::checked_memalign(void **memptr, size_t alignment, size_t size) {
-  int err = posix_memalign(memptr, alignment, size);
-
-  if(memptr == NULL || err != 0) {
-     fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-             size, err, __FILE__, __LINE__);
-     exit(EXIT_FAILURE);
-  }
-}
 
 
 template<class TFloat>
