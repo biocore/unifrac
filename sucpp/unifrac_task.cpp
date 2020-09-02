@@ -491,8 +491,6 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #pragma acc wait
     const unsigned int acc_vector_size = su::UnifracUnweightedTask<TFloat>::acc_vector_size;
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,sums) async
-#else
-#pragma omp parallel for schedule(static,16)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
