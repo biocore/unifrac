@@ -176,6 +176,9 @@ namespace su {
         // ===== Internal, do not use directly =======
         //
 
+
+        // Just copy from one buffer to another
+        // May convert between fp formats in the process (if TOut!=double)
         template<class TOut> void embed_proportions_straight(TOut* __restrict__ out, const double* __restrict__ in, unsigned int emb)
         {
           const unsigned int n_samples  = dm_stripes.n_samples;
@@ -193,15 +196,21 @@ namespace su {
           }
         }
 
-        //packed bool
-        // assumes we are processing emb in increasing order, starting from 0
+        // packed bool
+        // Compute (in[:]>0) on each element, and store only the boolean bit.
+        // The output values are stored in a multi-byte format, one bit per emb index,
+        //    so it will likely take multiple passes to store all the values
+        //
+        // Note: assumes we are processing emb in increasing order, starting from 0
         template<class TOut> void embed_proportions_bool(TOut* __restrict__ out, const double* __restrict__ in, unsigned int emb)
         {
-          const unsigned int n_packed = sizeof(TOut)*8;
+          const unsigned int n_packed = sizeof(TOut)*8;// e.g. 32 for unit32_t
           const unsigned int n_samples  = dm_stripes.n_samples;
           const uint64_t n_samples_r  = dm_stripes.n_samples_r;
-          unsigned int emb_block = emb/n_packed;
-          unsigned int emb_bit = emb%n_packed;
+          // The output values are stored in a multi-byte format, one bit per emb index
+          // Compute the element to store the bit into, as well as whichbit in that element 
+          unsigned int emb_block = emb/n_packed; // beginning of the element  block
+          unsigned int emb_bit = emb%n_packed;   // bit inside the elements
           const uint64_t offset = emb_block * n_samples_r;
 
           if  (emb_bit==0) {
