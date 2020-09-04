@@ -418,38 +418,6 @@ void progressbar(float progress) {
 }
 
 template<class TFloat>
-void embed_proportions(TFloat* __restrict__ out, const double* __restrict__ in, unsigned int emb, uint32_t n_samples) {
-   const uint64_t n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
-   const uint64_t offset = emb * n_samples_r;
-
-   for(unsigned int i = 0; i < n_samples; i++) {
-       out[offset + i] = in[i];
-   }
-
-   // avoid NaNs
-   for(unsigned int i = n_samples; i < n_samples_r; i++) {
-       out[offset + i] = 1.0;
-   }
-}
-
-template<class TFloat>
-void initialize_embedded(TFloat*& prop, unsigned int num, const su::task_parameters* task_p) {
-    const unsigned int n_samples = task_p->n_samples;
-    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
-    uint64_t bsize = n_samples_r * num;
-
-    TFloat* buf = NULL;
-    int err = posix_memalign((void **)&buf, 4096, sizeof(TFloat) * bsize);
-    if(buf == NULL || err != 0) {
-        fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(TFloat) * bsize, err, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-#pragma acc enter data create(buf[:bsize])
-   prop=buf;
-}
-
-template<class TFloat>
 void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, biom &table) {
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
@@ -538,9 +506,11 @@ void unifracTT(biom &table,
                std::vector<double*> &dm_stripes_total,
                const su::task_parameters* task_p) {
     int err;
+#if defined(_OPENACC) || defined(_OPENMP)
+    // no processor affinity whenusing openacc or openmp
+#else
     // processor affinity
-#ifndef _OPENACC
-    // processor affinity, when not using openacc
+    // processor affinity, when not using openacc or openmp
     err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
@@ -558,16 +528,14 @@ void unifracTT(biom &table,
 
     PropStack propstack(table.n_samples);
 
-    const unsigned int max_emb = 128;
+    const unsigned int max_emb =  TaskT::RECOMMENDED_MAX_EMBS;
 
     uint32_t node;
     double *node_proportions;
-    TFloat *embedded_proportions;
 
-    initialize_embedded<TFloat>(embedded_proportions, max_emb, task_p);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
-    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),embedded_proportions,max_emb,task_p);
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),max_emb,task_p);
 
     TFloat *lengths = NULL;
     err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
@@ -589,7 +557,7 @@ void unifracTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions<TFloat>(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
+        taskObj.embed_proportions(node_proportions, filled_emb);
         filled_emb++;
         /*
          * The values in the example vectors correspond to index positions of an
@@ -637,8 +605,12 @@ void unifracTT(biom &table,
          */
 
         if (filled_emb==max_emb) {
+          taskObj.sync_embedded_proportions(filled_emb);
+#ifdef _OPENACC
+          // lengths may be still in use in async mode, wait
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+#endif
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
 
@@ -650,8 +622,12 @@ void unifracTT(biom &table,
     }
 
     if (filled_emb>0) {
+          taskObj.sync_embedded_proportions(filled_emb);
+#ifdef _OPENACC
+          // lengths may be still in use in async mode, wait
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+#endif
           taskObj._run(filled_emb,lengths);
           filled_emb=0;
     }
@@ -676,9 +652,7 @@ void unifracTT(biom &table,
     }
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples_r*max_emb])
     free(lengths);
-    free(embedded_proportions);
 }
 
 void su::unifrac(biom &table,
@@ -728,8 +702,9 @@ void unifrac_vawTT(biom &table,
                           std::vector<double*> &dm_stripes_total,
                           const su::task_parameters* task_p) {
     int err;
-#ifndef _OPENACC
-    // processor affinity, when not using openacc
+#if defined(_OPENACC) || defined(_OPENMP)
+    // no processor affinity whenusing openacc or openmp
+#else
     err = bind_to_core(task_p->tid);
     if(err != 0) {
         fprintf(stderr, "Unable to bind thread %d to core: %d\n", task_p->tid, err);
@@ -747,21 +722,17 @@ void unifrac_vawTT(biom &table,
     PropStack propstack(table.n_samples);
     PropStack countstack(table.n_samples);
 
-    const unsigned int max_emb = 128;
+    const unsigned int max_emb = TaskT::RECOMMENDED_MAX_EMBS;
 
     uint32_t node;
     double *node_proportions;
     double *node_counts;
-    TFloat *embedded_proportions;
-    TFloat *embedded_counts;
     TFloat *sample_total_counts;
 
-    initialize_embedded<TFloat>(embedded_proportions, max_emb, task_p);
-    initialize_embedded<TFloat>(embedded_counts, max_emb, task_p);
     initialize_sample_counts<TFloat>(sample_total_counts, task_p, table);
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
-    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), embedded_proportions, embedded_counts, sample_total_counts, max_emb, task_p);
+    TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), sample_total_counts, max_emb, task_p);
 
     TFloat *lengths = NULL;
     err = posix_memalign((void **)&lengths, 4096, sizeof(TFloat) * max_emb);
@@ -786,13 +757,13 @@ void unifrac_vawTT(biom &table,
         if(task_p->bypass_tips && tree.isleaf(node))
             continue;
 
-        embed_proportions<TFloat>(embedded_proportions, node_proportions, filled_emb, task_p->n_samples);
-        embed_proportions<TFloat>(embedded_counts, node_counts, filled_emb, task_p->n_samples);
+        taskObj.embed(node_proportions, node_counts, filled_emb);
         filled_emb++;
 
         if (filled_emb==max_emb) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],embedded_counts[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+          taskObj.sync_embedded(filled_emb);
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
 
@@ -805,7 +776,8 @@ void unifrac_vawTT(biom &table,
 
     if (filled_emb>0) {
 #pragma acc wait
-#pragma acc update device(embedded_proportions[:n_samples_r*filled_emb],embedded_counts[:n_samples_r*filled_emb],lengths[:filled_emb])
+#pragma acc update device(lengths[:filled_emb])
+          taskObj.sync_embedded(filled_emb);
           taskObj._run(filled_emb,lengths);
           filled_emb = 0;
     }
@@ -830,10 +802,8 @@ void unifrac_vawTT(biom &table,
 
 
 #pragma acc exit data delete(lengths[:max_emb])
-#pragma acc exit data delete(embedded_proportions[:n_samples_r*max_emb],embedded_counts[:n_samples_r*max_emb],sample_total_counts[:n_samples_r])
+#pragma acc exit data delete(sample_total_counts[:n_samples_r])
     free(lengths);
-    free(embedded_proportions);
-    free(embedded_counts);
     free(sample_total_counts);
 }
 
@@ -883,10 +853,11 @@ void su::set_proportions(double* props,
                          bool normalize) {
     if(tree.isleaf(node)) {
        table.get_obs_data(tree.names[node], props);
-       for(unsigned int i = 0; i < table.n_samples; i++) {
-           props[i] = props[i];
-           if(normalize)
-               props[i] /= table.sample_counts[i];
+       if (normalize) {
+#pragma omp parallel for schedule(static)
+        for(unsigned int i = 0; i < table.n_samples; i++) {
+           props[i] /= table.sample_counts[i];
+        }
        }
 
     } else {
@@ -894,6 +865,7 @@ void su::set_proportions(double* props,
         unsigned int right = tree.rightchild(node);
         double *vec;
 
+#pragma omp parallel for schedule(static)
         for(unsigned int i = 0; i < table.n_samples; i++)
             props[i] = 0;
 
@@ -901,6 +873,7 @@ void su::set_proportions(double* props,
             vec = ps.get(current);  // pull from prop map
             ps.push(current);  // remove from prop map, place back on stack
 
+#pragma omp parallel for schedule(static)
             for(unsigned int i = 0; i < table.n_samples; i++)
                 props[i] = props[i] + vec[i];
 
@@ -947,8 +920,8 @@ void su::process_stripes(biom &table,
     report_status = (bool*)calloc(sizeof(bool), CPU_SETSIZE);
     pthread_mutex_init(&printf_mutex, NULL);
 
-#ifdef _OPENACC
-    // cannot use threading with openacc
+#if defined(_OPENACC) || defined(_OPENMP)
+    // cannot use threading with openacc or openmp
     for(unsigned int tid = 0; tid < threads.size(); tid++) {
         if(variance_adjust)
             su::unifrac_vaw(
