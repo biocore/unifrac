@@ -545,20 +545,6 @@ void unifracTT(biom &table,
     }
 #pragma acc enter data create(lengths[:max_emb])
 
-    unsigned int filled_emb = 0;
-
-    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
-        node = tree.postorderselect(k);
-        lengths[filled_emb] = tree.lengths[node];
-
-        node_proportions = propstack.pop(node);
-        set_proportions(node_proportions, tree, node, table, propstack);
-
-        if(task_p->bypass_tips && tree.isleaf(node))
-            continue;
-
-        taskObj.embed_proportions(node_proportions, filled_emb);
-        filled_emb++;
         /*
          * The values in the example vectors correspond to index positions of an
          * element in the resulting distance matrix. So, in the example below,
@@ -604,7 +590,25 @@ void unifracTT(biom &table,
          * (see C) but that is small over large N.
          */
 
-        if (filled_emb==max_emb) {
+    unsigned int k = 0; // index in tree
+    const unsigned int max_k = (tree.nparens / 2) - 1;
+
+    while (k<max_k) {
+          unsigned int filled_emb = 0;
+          for(filled_emb = 0; (filled_emb<max_emb) && (k<max_k); k++) {
+              node = tree.postorderselect(k);
+
+              node_proportions = propstack.pop(node);
+              set_proportions(node_proportions, tree, node, table, propstack);
+
+              if(task_p->bypass_tips && tree.isleaf(node))
+                  continue;
+
+              lengths[filled_emb] = tree.lengths[node];
+              taskObj.embed_proportions(node_proportions, filled_emb);
+              filled_emb++;
+          }
+
           taskObj.sync_embedded_proportions(filled_emb);
 #ifdef _OPENACC
           // lengths may be still in use in async mode, wait
@@ -615,21 +619,9 @@ void unifracTT(biom &table,
           filled_emb=0;
 
           if(__builtin_expect(report_status[task_p->tid], false)) {
-            sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
-            report_status[task_p->tid] = false;
+              sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, max_k);
+              report_status[task_p->tid] = false;
           }
-        }
-    }
-
-    if (filled_emb>0) {
-          taskObj.sync_embedded_proportions(filled_emb);
-#ifdef _OPENACC
-          // lengths may be still in use in async mode, wait
-#pragma acc wait
-#pragma acc update device(lengths[:filled_emb])
-#endif
-          taskObj._run(filled_emb,lengths);
-          filled_emb=0;
     }
 
 #pragma acc wait
@@ -742,25 +734,28 @@ void unifrac_vawTT(biom &table,
     }
 #pragma acc enter data create(lengths[:max_emb])
 
-    unsigned int filled_emb = 0;
+    unsigned int k = 0; // index in tree
+    const unsigned int max_k = (tree.nparens / 2) - 1;
 
-    for(unsigned int k = 0; k < (tree.nparens / 2) - 1; k++) {
-        node = tree.postorderselect(k);
-        lengths[filled_emb] = tree.lengths[node];
+    while (k<max_k) {
+          unsigned int filled_emb = 0;
+          for(filled_emb = 0; (filled_emb<max_emb) && (k<max_k); k++) {
+              node = tree.postorderselect(k);
 
-        node_proportions = propstack.pop(node);
-        node_counts = countstack.pop(node);
+              node_proportions = propstack.pop(node);
+              node_counts = countstack.pop(node);
 
-        set_proportions(node_proportions, tree, node, table, propstack);
-        set_proportions(node_counts, tree, node, table, countstack, false);
+              set_proportions(node_proportions, tree, node, table, propstack);
+              set_proportions(node_counts, tree, node, table, countstack, false);
 
-        if(task_p->bypass_tips && tree.isleaf(node))
-            continue;
+              if(task_p->bypass_tips && tree.isleaf(node))
+                  continue;
 
-        taskObj.embed(node_proportions, node_counts, filled_emb);
-        filled_emb++;
+              lengths[filled_emb] = tree.lengths[node];
+              taskObj.embed(node_proportions, node_counts, filled_emb);
+              filled_emb++;
+          }
 
-        if (filled_emb==max_emb) {
 #pragma acc wait
 #pragma acc update device(lengths[:filled_emb])
           taskObj.sync_embedded(filled_emb);
@@ -768,18 +763,9 @@ void unifrac_vawTT(biom &table,
           filled_emb = 0;
 
           if(__builtin_expect(report_status[task_p->tid], false)) {
-            sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, (tree.nparens / 2) - 1);
-            report_status[task_p->tid] = false;
+              sync_printf("tid:%d\tstart:%d\tstop:%d\tk:%d\ttotal:%d\n", task_p->tid, task_p->start, task_p->stop, k, max_k);
+              report_status[task_p->tid] = false;
           }
-        }
-    }
-
-    if (filled_emb>0) {
-#pragma acc wait
-#pragma acc update device(lengths[:filled_emb])
-          taskObj.sync_embedded(filled_emb);
-          taskObj._run(filled_emb,lengths);
-          filled_emb = 0;
     }
 
 #pragma acc wait
