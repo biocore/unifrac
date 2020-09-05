@@ -868,6 +868,41 @@ void su::set_proportions(double* props,
     }
 }
 
+void su::set_proportions_range(double* props,
+                               const BPTree &tree,
+                               uint32_t node,
+                               const biom &table, 
+                               unsigned int start, unsigned int end,
+                               PropStack &ps,
+                               bool normalize) {
+    const unsigned int els = end-start;
+    if(tree.isleaf(node)) {
+       table.get_obs_data_range(tree.names[node], start, end, props);
+       if (normalize) {
+        for(unsigned int i = 0; i < els; i++) {
+           props[i] /= table.sample_counts[start+i];
+        }
+       }
+
+    } else {
+        const unsigned int right = tree.rightchild(node);
+        unsigned int current = tree.leftchild(node);
+
+        for(unsigned int i = 0; i < els; i++)
+            props[i] = 0;
+
+        while(current <= right && current != 0) {
+            const double * vec = ps.get(current);  // pull from prop map
+            ps.push(current);  // remove from prop map, place back on stack
+
+            for(unsigned int i = 0; i < els; i++)
+                props[i] += vec[i];
+
+            current = tree.rightsibling(current);
+        }
+    }
+}
+
 std::vector<double*> su::make_strides(unsigned int n_samples) {
     uint32_t n_rotations = (n_samples + 1) / 2;
     std::vector<double*> dm_stripes(n_rotations);

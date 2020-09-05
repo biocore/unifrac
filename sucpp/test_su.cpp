@@ -631,6 +631,110 @@ void test_unifrac_set_proportions() {
     SUITE_END();
 }
 
+void test_unifrac_set_proportions_range() {
+    SUITE_START("test unifrac set proportions range");
+    //                           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+    //                           ( ( ) ( ( ) ( ) ) ( ( ) ( ) ) )
+    su::BPTree tree = su::BPTree("(GG_OTU_1,(GG_OTU_2,GG_OTU_3),(GG_OTU_5,GG_OTU_4));");
+    su::biom table = su::biom("test.biom");
+
+    const double exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
+    const double exp6[] = {0.0, 0.0, 0.25, 0.666666666667, 0.0, 0.5};
+    const double exp3[] = {0.71428571, 0.33333333, 0.25, 1.0, 1.0, 0.75};
+
+
+    // first the whole table
+    {
+      su::PropStack ps = su::PropStack(table.n_samples);
+
+      double *obs = ps.pop(4); // GG_OTU_2
+      set_proportions_range(obs, tree, 4, table, 0, table.n_samples, ps);
+      for(unsigned int i = 0; i < table.n_samples; i++)
+        ASSERT(fabs(obs[i] - exp4[i]) < 0.000001);
+
+      obs = ps.pop(6); // GG_OTU_3
+      set_proportions_range(obs, tree, 6, table, 0, table.n_samples, ps);
+      for(unsigned int i = 0; i < table.n_samples; i++)
+        ASSERT(fabs(obs[i] - exp6[i]) < 0.000001);
+
+      obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
+      set_proportions_range(obs, tree, 3, table, 0, table.n_samples, ps);
+      for(unsigned int i = 0; i < table.n_samples; i++)
+        ASSERT(fabs(obs[i] - exp3[i]) < 0.000001);
+    }
+
+    // beginning
+    {
+      su::PropStack ps = su::PropStack(3);
+
+      double *obs = ps.pop(4); // GG_OTU_2
+      set_proportions_range(obs, tree, 4, table, 0, 3, ps);
+      for(unsigned int i = 0; i < 3; i++)
+        ASSERT(fabs(obs[i] - exp4[i]) < 0.000001);
+
+      obs = ps.pop(6); // GG_OTU_3
+      set_proportions_range(obs, tree, 6, table, 0, 3, ps);
+      for(unsigned int i = 0; i < 3; i++)
+        ASSERT(fabs(obs[i] - exp6[i]) < 0.000001);
+
+      obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
+      set_proportions_range(obs, tree, 3, table, 0, 3, ps);
+      for(unsigned int i = 0; i < 3; i++)
+        ASSERT(fabs(obs[i] - exp3[i]) < 0.000001);
+    }
+
+    
+    // end
+    {
+      su::PropStack ps = su::PropStack(4);
+
+      double *obs = ps.pop(4); // GG_OTU_2
+      set_proportions_range(obs, tree, 4, table, 2, table.n_samples, ps);
+      for(unsigned int i = 2; i < table.n_samples; i++)
+        ASSERT(fabs(obs[i-2] - exp4[i]) < 0.000001);
+
+      obs = ps.pop(6); // GG_OTU_3
+      set_proportions_range(obs, tree, 6, table, 2, table.n_samples, ps);
+      for(unsigned int i = 2; i < table.n_samples; i++)
+        ASSERT(fabs(obs[i-2] - exp6[i]) < 0.000001);
+
+      obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
+      set_proportions_range(obs, tree, 3, table, 2, table.n_samples, ps);
+      for(unsigned int i = 2; i < table.n_samples; i++)
+        ASSERT(fabs(obs[i-2] - exp3[i]) < 0.000001);
+    }
+
+    
+    // middle
+    {
+      const unsigned int start = 1;
+      const unsigned int end = 4;
+      su::PropStack ps = su::PropStack(end-start);
+
+      double *obs = ps.pop(4); // GG_OTU_2
+      set_proportions_range(obs, tree, 4, table, start, end, ps);
+      for(unsigned int i =start; i < end; i++)
+        ASSERT(fabs(obs[i-start] - exp4[i]) < 0.000001);
+
+      obs = ps.pop(6); // GG_OTU_3
+      set_proportions_range(obs, tree, 6, table, start, end, ps);
+      for(unsigned int i = start; i < end; i++)
+        ASSERT(fabs(obs[i-start] - exp6[i]) < 0.000001);
+
+      obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
+      set_proportions_range(obs, tree, 3, table, start, end, ps);
+      for(unsigned int i = start; i < end; i++)
+        ASSERT(fabs(obs[i-start] - exp3[i]) < 0.000001);
+    }
+
+    
+
+
+    SUITE_END();
+}
+
+
+
 void test_unifrac_deconvolute_stripes() {
     SUITE_START("test deconvolute stripes");
     std::vector<double*> stripes;
@@ -1703,6 +1807,7 @@ int main(int argc, char** argv) {
     test_propstack_get();
 
     test_unifrac_set_proportions();
+    test_unifrac_set_proportions_range();
     test_unifrac_deconvolute_stripes();
     test_unifrac_stripes_to_condensed_form_even();
     test_unifrac_stripes_to_condensed_form_odd();

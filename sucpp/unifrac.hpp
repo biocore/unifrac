@@ -80,6 +80,13 @@
                              const biom &table, 
                              PropStack &ps,
                              bool normalize = true);
+
+        void set_proportions_range(double* props,
+                                   const BPTree &tree, uint32_t node,
+                                   const biom &table,unsigned int start, unsigned int end,
+                                   PropStack &ps,
+                                   bool normalize = true);
+
         std::vector<double*> make_strides(unsigned int n_samples);
 
         inline uint64_t comb_2(uint64_t N) {

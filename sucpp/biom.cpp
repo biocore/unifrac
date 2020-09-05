@@ -213,6 +213,27 @@ void biom::get_obs_data(const std::string &id, double* out) const {
     }
 }
 
+// note: out is supposed to be fully filled, i.e. out[start:end]
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const {
+    uint32_t idx = obs_id_index.at(id);
+    unsigned int count = obs_counts_resident[idx];
+    const uint32_t * const indices = obs_indices_resident[idx];
+    const double * const data = obs_data_resident[idx];
+
+    // reset our output buffer
+    for(unsigned int i = start; i < end; i++)
+        out[i-start] = 0.0;
+
+    for(unsigned int i = 0; i < count; i++) {
+        const uint32_t j = indices[i];
+        if ((j>=start)&&(j<end)) { 
+          out[j-start] = data[i];
+        }
+    }
+}
+
+
+
 unsigned int biom::get_sample_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out) {
     uint32_t idx = sample_id_index.at(id);
     uint32_t start = sample_indptr[idx];

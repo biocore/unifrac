@@ -39,6 +39,18 @@ namespace su {
              *      have data will be zero'd.
              */
             void get_obs_data(const std::string &id, double* out) const; 
+
+            /* get a dense vector of a range of observation data
+             *
+             * @param id The observation ID to fetc
+             * @param start Initial index
+             * @param end   First index past the end
+             * @param out An allocated array of at least size (end-start). First element will corrrectpoint to index start. 
+             *      Values of an index position [0, (end-start)) which do not
+             *      have data will be zero'd.
+             */
+            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const;
+
         private:
             /* retain DataSet handles within the HDF5 file */
             H5::DataSet obs_indices;
