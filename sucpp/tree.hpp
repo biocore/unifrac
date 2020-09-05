@@ -36,7 +36,7 @@ namespace su {
              *
              * @param i The ith node in a postorder traversal
              */
-            uint32_t postorderselect(uint32_t i);
+            uint32_t postorderselect(uint32_t i)const ;
 
             /* preorder tree traversal
              *
@@ -45,37 +45,37 @@ namespace su {
              *
              * @param i The ith node in a preorder traversal
              */
-            uint32_t preorderselect(uint32_t i);
+            uint32_t preorderselect(uint32_t i) const;
 
             /* Test if the node at an index position is a leaf
              *
              * @param i The node to evaluate
              */
-            bool isleaf(uint32_t i);
+            bool isleaf(uint32_t i) const;
 
             /* Get the left child of a node
              *
              * @param i The node to obtain the left child from
              */
-            uint32_t leftchild(uint32_t i);
+            uint32_t leftchild(uint32_t i) const ;
 
             /* Get the right child of a node
              *
              * @param i The node to obtain the right child from
              */
-            uint32_t rightchild(uint32_t i);
+            uint32_t rightchild(uint32_t i) const;
 
             /* Get the right sibling of a node
              *
              * @param i The node to obtain the right sibling from
              */
-            uint32_t rightsibling(uint32_t i);
+            uint32_t rightsibling(uint32_t i) const;
             
             /* Get the parent of a node
              *
              * @param i The node to obtain the parent of
              */
-            int32_t parent(uint32_t i);
+            int32_t parent(uint32_t i) const;
 
             /* get the names at the tips of the tree */
             std::unordered_set<std::string> get_tip_names();
@@ -112,12 +112,12 @@ namespace su {
             void newick_to_metadata(std::string newick);  // convert newick to attributes
             void structure_to_openclose();  // set the cache mapping between parentheses pairs
             void set_node_metadata(unsigned int open_idx, std::string &token); // set attributes for a node
-            bool is_structure_character(char c);  // test if a character is a newick structure
-            inline uint32_t open(uint32_t i);  // obtain the index of the opening for a given parenthesis
-            inline uint32_t close(uint32_t i);  // obtain the index of the closing for a given parenthesis
+            bool is_structure_character(char c) const;  // test if a character is a newick structure
+            inline uint32_t open(uint32_t i) const;  // obtain the index of the opening for a given parenthesis
+            inline uint32_t close(uint32_t i) const;  // obtain the index of the closing for a given parenthesis
             std::string tokenize(std::string::iterator &start, const std::string::iterator &end);  // newick -> tokens
 
-            int32_t bwd(uint32_t i, int32_t d);
-            int32_t enclose(uint32_t i);
+            int32_t bwd(uint32_t i, int32_t d) const;
+            int32_t enclose(uint32_t i) const;
     };
 }

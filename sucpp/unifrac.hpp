@@ -76,8 +76,8 @@
         void condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uint32_t n, float*  __restrict__ buf2d);
 
         void set_proportions(double* props, 
-                             BPTree &tree, uint32_t node, 
-                             biom &table, 
+                             const BPTree &tree, uint32_t node, 
+                             const biom &table, 
                              PropStack &ps,
                              bool normalize = true);
         std::vector<double*> make_strides(unsigned int n_samples);

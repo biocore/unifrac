@@ -832,9 +832,9 @@ void su::unifrac_vaw(biom &table,
 }
 
 void su::set_proportions(double* props,
-                         BPTree &tree,
+                         const BPTree &tree,
                          uint32_t node,
-                         biom &table,
+                         const biom &table,
                          PropStack &ps,
                          bool normalize) {
     if(tree.isleaf(node)) {
