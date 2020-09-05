@@ -38,7 +38,7 @@ namespace su {
              *      Values of an index position [0, n_samples) which do not
              *      have data will be zero'd.
              */
-            void get_obs_data(std::string id, double* out);
+            void get_obs_data(const std::string &id, double* out) const; 
         private:
             /* retain DataSet handles within the HDF5 file */
             H5::DataSet obs_indices;
@@ -50,8 +50,8 @@ namespace su {
             double **obs_data_resident;
             unsigned int *obs_counts_resident;
 
-            unsigned int get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
-            unsigned int get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
+            unsigned int get_obs_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out);
+            unsigned int get_sample_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out);
             double* get_sample_counts();
 
             /* At construction, lookups mapping IDs -> index position within an
