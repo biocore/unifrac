@@ -418,7 +418,7 @@ void progressbar(float progress) {
 }
 
 template<class TFloat>
-void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, biom &table) {
+void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, const biom &table) {
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
     TFloat * counts = NULL;
@@ -499,8 +499,8 @@ void su::faith_pd(biom &table,
 }
 
 template<class TaskT, class TFloat>
-void unifracTT(biom &table,
-               BPTree &tree,
+void unifracTT(const biom &table,
+               const BPTree &tree,
                const bool want_total,
                std::vector<double*> &dm_stripes,
                std::vector<double*> &dm_stripes_total,
@@ -687,8 +687,8 @@ void su::unifrac(biom &table,
 
 
 template<class TaskT, class TFloat>
-void unifrac_vawTT(biom &table,
-                          BPTree &tree,
+void unifrac_vawTT(const biom &table,
+                   const BPTree &tree,
                           const bool want_total,
                           std::vector<double*> &dm_stripes,
                           std::vector<double*> &dm_stripes_total,
