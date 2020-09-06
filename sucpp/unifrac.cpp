@@ -908,7 +908,7 @@ void su::unifrac_vaw(biom &table,
 }
 
 template<class TFloat>
-void su::set_proportions(TFloat* props,
+void su::set_proportions(TFloat* __restrict__ props,
                          const BPTree &tree,
                          uint32_t node,
                          const biom &table,
@@ -926,14 +926,13 @@ void su::set_proportions(TFloat* props,
     } else {
         unsigned int current = tree.leftchild(node);
         unsigned int right = tree.rightchild(node);
-        TFloat *vec;
 
 #pragma omp parallel for schedule(static)
         for(unsigned int i = 0; i < table.n_samples; i++)
             props[i] = 0;
 
         while(current <= right && current != 0) {
-            vec = ps.get(current);  // pull from prop map
+            TFloat * __restrict__ vec = ps.get(current);  // pull from prop map
             ps.push(current);  // remove from prop map, place back on stack
 
 #pragma omp parallel for schedule(static)
@@ -946,13 +945,13 @@ void su::set_proportions(TFloat* props,
 }
 
 // make sure they get instantiated
-template void su::set_proportions(float* props,
+template void su::set_proportions(float* __restrict__ props,
                                   const BPTree &tree,
                                   uint32_t node,
                                   const biom &table,
                                   PropStack<float> &ps,
                                   bool normalize);
-template void su::set_proportions(double* props,
+template void su::set_proportions(double* __restrict__ props,
                                   const BPTree &tree,
                                   uint32_t node,
                                   const biom &table,
@@ -960,7 +959,7 @@ template void su::set_proportions(double* props,
                                   bool normalize);
 
 template<class TFloat>
-void su::set_proportions_range(TFloat* props,
+void su::set_proportions_range(TFloat* __restrict__ props,
                                const BPTree &tree,
                                uint32_t node,
                                const biom &table, 
@@ -984,7 +983,7 @@ void su::set_proportions_range(TFloat* props,
             props[i] = 0;
 
         while(current <= right && current != 0) {
-            const TFloat * vec = ps.get(current);  // pull from prop map
+            const TFloat * __restrict__ vec = ps.get(current);  // pull from prop map
             ps.push(current);  // remove from prop map, place back on stack
 
             for(unsigned int i = 0; i < els; i++)
@@ -996,14 +995,14 @@ void su::set_proportions_range(TFloat* props,
 }
 
 // make sure they get instantiated
-template void su::set_proportions_range(float* props,
+template void su::set_proportions_range(float* __restrict__ props,
                                         const BPTree &tree,
                                         uint32_t node,
                                         const biom &table,
                                         unsigned int start, unsigned int end,
                                         PropStack<float> &ps,
                                         bool normalize);
-template void su::set_proportions_range(double* props,
+template void su::set_proportions_range(double* __restrict__ props,
                                         const BPTree &tree,
                                         uint32_t node,
                                         const biom &table,

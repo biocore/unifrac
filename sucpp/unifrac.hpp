@@ -77,14 +77,14 @@
         void condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uint32_t n, float*  __restrict__ buf2d);
 
         template<class TFloat>
-        void set_proportions(TFloat* props, 
+        void set_proportions(TFloat* __restrict__ props, 
                              const BPTree &tree, uint32_t node, 
                              const biom &table, 
                              PropStack<TFloat> &ps,
                              bool normalize = true);
 
         template<class TFloat>
-        void set_proportions_range(TFloat* props,
+        void set_proportions_range(TFloat* __restrict__ props,
                                    const BPTree &tree, uint32_t node,
                                    const biom &table,unsigned int start, unsigned int end,
                                    PropStack<TFloat> &ps,
