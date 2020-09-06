@@ -134,7 +134,7 @@ template class su::PropStack<double>;
 template<class TFloat>
 class PropStackFixed : public PropStack<TFloat> {
   public:
-    static const uint32_t DEF_VEC_SIZE = 1024;
+    static const uint32_t DEF_VEC_SIZE = 1024*sizeof(double)/sizeof(TFloat);
 
     PropStackFixed() : PropStack<TFloat>(DEF_VEC_SIZE) {}
 };
