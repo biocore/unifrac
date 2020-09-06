@@ -626,6 +626,7 @@ void unifracTT(const biom &table,
           unsigned int filled_emb = 0;
 
           // chunk the progress to maximize cache reuse
+#pragma omp parallel for 
           for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
             PropStack &propstack = propstack_multi.get_prop_stack(ck);
             const unsigned int tstart = propstack_multi.get_start(ck);
@@ -786,6 +787,7 @@ void unifrac_vawTT(const biom &table,
           unsigned int filled_emb = 0;
 
           // chunk the progress to maximize cache reuse
+#pragma omp parallel for 
           for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
             PropStack &propstack = propstack_multi.get_prop_stack(ck);
             PropStack &countstack = countstack_multi.get_prop_stack(ck);
