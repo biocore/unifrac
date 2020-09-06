@@ -198,7 +198,8 @@ unsigned int biom::get_obs_data_direct(const std::string &id, uint32_t *& curren
     return count[0];
 }
 
-void biom::get_obs_data(const std::string &id, double* out) const {
+template<class TFloat>
+void biom::get_obs_data_TT(const std::string &id, TFloat* out) const {
     uint32_t idx = obs_id_index.at(id);
     unsigned int count = obs_counts_resident[idx];
     const uint32_t * const indices = obs_indices_resident[idx];
@@ -213,8 +214,18 @@ void biom::get_obs_data(const std::string &id, double* out) const {
     }
 }
 
+void biom::get_obs_data(const std::string &id, double* out) const {
+  biom::get_obs_data_TT(id,out);
+}
+
+void biom::get_obs_data(const std::string &id, float* out) const {
+  biom::get_obs_data_TT(id,out);
+}
+
+
 // note: out is supposed to be fully filled, i.e. out[start:end]
-void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const {
+template<class TFloat>
+void biom::get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, TFloat* out) const {
     uint32_t idx = obs_id_index.at(id);
     unsigned int count = obs_counts_resident[idx];
     const uint32_t * const indices = obs_indices_resident[idx];
@@ -232,7 +243,13 @@ void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigne
     }
 }
 
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const {
+  biom::get_obs_data_range_TT(id,start,end,out);
+}
 
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, float* out) const {
+  biom::get_obs_data_range_TT(id,start,end,out);
+}
 
 unsigned int biom::get_sample_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out) {
     uint32_t idx = sample_id_index.at(id);

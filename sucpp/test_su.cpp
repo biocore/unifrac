@@ -555,14 +555,14 @@ void test_bptree_rightsibling() {
 
 void test_propstack_constructor() {
     SUITE_START("test propstack constructor");
-    su::PropStack ps = su::PropStack(10);
+    su::PropStack<double> ps(10);
     // nothing to test directly...
     SUITE_END();
 }
 
 void test_propstack_push_and_pop() {
     SUITE_START("test propstack push and pop");
-    su::PropStack ps = su::PropStack(10);
+    su::PropStack<double> ps(10);
 
     double *vec1 = ps.pop(1);
     double *vec2 = ps.pop(2);
@@ -587,7 +587,7 @@ void test_propstack_push_and_pop() {
 
 void test_propstack_get() {
     SUITE_START("test propstack get");
-    su::PropStack ps = su::PropStack(10);
+    su::PropStack<double> ps(10);
 
     double *vec1 = ps.pop(1);
     double *vec2 = ps.pop(2);
@@ -609,7 +609,7 @@ void test_unifrac_set_proportions() {
     //                           ( ( ) ( ( ) ( ) ) ( ( ) ( ) ) )
     su::BPTree tree = su::BPTree("(GG_OTU_1,(GG_OTU_2,GG_OTU_3),(GG_OTU_5,GG_OTU_4));");
     su::biom table = su::biom("test.biom");
-    su::PropStack ps = su::PropStack(table.n_samples);
+    su::PropStack<double> ps(table.n_samples);
 
     double *obs = ps.pop(4); // GG_OTU_2
     double exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
@@ -645,7 +645,7 @@ void test_unifrac_set_proportions_range() {
 
     // first the whole table
     {
-      su::PropStack ps = su::PropStack(table.n_samples);
+      su::PropStack<double> ps(table.n_samples);
 
       double *obs = ps.pop(4); // GG_OTU_2
       set_proportions_range(obs, tree, 4, table, 0, table.n_samples, ps);
@@ -665,7 +665,7 @@ void test_unifrac_set_proportions_range() {
 
     // beginning
     {
-      su::PropStack ps = su::PropStack(3);
+      su::PropStack<double> ps(3);
 
       double *obs = ps.pop(4); // GG_OTU_2
       set_proportions_range(obs, tree, 4, table, 0, 3, ps);
@@ -686,7 +686,7 @@ void test_unifrac_set_proportions_range() {
     
     // end
     {
-      su::PropStack ps = su::PropStack(4);
+      su::PropStack<double> ps(4);
 
       double *obs = ps.pop(4); // GG_OTU_2
       set_proportions_range(obs, tree, 4, table, 2, table.n_samples, ps);
@@ -709,7 +709,7 @@ void test_unifrac_set_proportions_range() {
     {
       const unsigned int start = 1;
       const unsigned int end = 4;
-      su::PropStack ps = su::PropStack(end-start);
+      su::PropStack<double> ps(end-start);
 
       double *obs = ps.pop(4); // GG_OTU_2
       set_proportions_range(obs, tree, 4, table, start, end, ps);
@@ -727,8 +727,41 @@ void test_unifrac_set_proportions_range() {
         ASSERT(fabs(obs[i-start] - exp3[i]) < 0.000001);
     }
 
-    
+    SUITE_END();
+}
 
+void test_unifrac_set_proportions_range_float() {
+    SUITE_START("test unifrac set proportions range float");
+    //                           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+    //                           ( ( ) ( ( ) ( ) ) ( ( ) ( ) ) )
+    su::BPTree tree = su::BPTree("(GG_OTU_1,(GG_OTU_2,GG_OTU_3),(GG_OTU_5,GG_OTU_4));");
+    su::biom table = su::biom("test.biom");
+
+    const float exp4[] = {0.714285714286, 0.333333333333, 0.0, 0.333333333333, 1.0, 0.25};
+    const float exp6[] = {0.0, 0.0, 0.25, 0.666666666667, 0.0, 0.5};
+    const float exp3[] = {0.71428571, 0.33333333, 0.25, 1.0, 1.0, 0.75};
+
+    // just midle
+    {
+      const unsigned int start = 1;
+      const unsigned int end = 4;
+      su::PropStack<float> ps(end-start);
+
+      float *obs = ps.pop(4); // GG_OTU_2
+      set_proportions_range(obs, tree, 4, table, start, end, ps);
+      for(unsigned int i =start; i < end; i++)
+        ASSERT(fabs(obs[i-start] - exp4[i]) < 0.000001);
+
+      obs = ps.pop(6); // GG_OTU_3
+      set_proportions_range(obs, tree, 6, table, start, end, ps);
+      for(unsigned int i = start; i < end; i++)
+        ASSERT(fabs(obs[i-start] - exp6[i]) < 0.000001);
+
+      obs = ps.pop(3); // node containing GG_OTU_2 and GG_OTU_3
+      set_proportions_range(obs, tree, 3, table, start, end, ps);
+      for(unsigned int i = start; i < end; i++)
+        ASSERT(fabs(obs[i-start] - exp3[i]) < 0.000001);
+    }
 
     SUITE_END();
 }
@@ -1808,6 +1841,7 @@ int main(int argc, char** argv) {
 
     test_unifrac_set_proportions();
     test_unifrac_set_proportions_range();
+    test_unifrac_set_proportions_range_float();
     test_unifrac_deconvolute_stripes();
     test_unifrac_stripes_to_condensed_form_even();
     test_unifrac_stripes_to_condensed_form_odd();

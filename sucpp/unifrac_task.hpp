@@ -171,8 +171,8 @@ namespace su {
           return buf;
         }
 
-        void embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb);
-        void embed_proportions(const double* __restrict__ in, unsigned int emb) {embed_proportions_range(in,0,dm_stripes.n_samples,emb);}
+        void embed_proportions_range(const TFloat* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb);
+        void embed_proportions(const TFloat* __restrict__ in, unsigned int emb) {embed_proportions_range(in,0,dm_stripes.n_samples,emb);}
 
         
 
@@ -183,7 +183,7 @@ namespace su {
 
         // Just copy from one buffer to another
         // May convert between fp formats in the process (if TOut!=double)
-        template<class TOut> void embed_proportions_range_straight(TOut* __restrict__ out, const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) const
+        template<class TOut> void embed_proportions_range_straight(TOut* __restrict__ out, const TFloat* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) const
         {
           const unsigned int n_samples  = dm_stripes.n_samples;
           const uint64_t n_samples_r  = dm_stripes.n_samples_r;
@@ -207,7 +207,7 @@ namespace su {
         //    so it will likely take multiple passes to store all the values
         //
         // Note: assumes we are processing emb in increasing order, starting from 0
-        template<class TOut> void embed_proportions_range_bool(TOut* __restrict__ out, const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) const
+        template<class TOut> void embed_proportions_range_bool(TOut* __restrict__ out, const TFloat* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) const
         {
           const unsigned int n_packed = sizeof(TOut)*8;// e.g. 32 for unit32_t
           const unsigned int n_samples  = dm_stripes.n_samples;
@@ -245,14 +245,14 @@ namespace su {
     // straight embeded_proportions
     template<> inline void UnifracTaskBase<double,double>::embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_straight(embedded_proportions,in,start,end,emb);}
     template<> inline void UnifracTaskBase<double,float>::embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_straight(embedded_proportions,in,start,end,emb);}
-    template<> inline void UnifracTaskBase<float,float>::embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_straight(embedded_proportions,in,start,end,emb);}
+    template<> inline void UnifracTaskBase<float,float>::embed_proportions_range(const float* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_straight(embedded_proportions,in,start,end,emb);}
     template<> inline  unsigned int UnifracTaskBase<double,double>::get_emb_els(unsigned int max_embs) {return max_embs;}
     template<> inline  unsigned int UnifracTaskBase<double,float>::get_emb_els(unsigned int max_embs) {return max_embs;}
     template<> inline  unsigned int UnifracTaskBase<float,float>::get_emb_els(unsigned int max_embs) {return max_embs;}
 
     //packed bool embeded_proportions
     template<> inline void UnifracTaskBase<double,uint32_t>::embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_bool(embedded_proportions,in,start,end,emb);}
-    template<> inline void UnifracTaskBase<float,uint32_t>::embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_bool(embedded_proportions,in,start,end,emb);}
+    template<> inline void UnifracTaskBase<float,uint32_t>::embed_proportions_range(const float* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_bool(embedded_proportions,in,start,end,emb);}
     template<> inline  unsigned int UnifracTaskBase<double,uint32_t>::get_emb_els(unsigned int max_embs) {return (max_embs+31)/32;}
     template<> inline  unsigned int UnifracTaskBase<float,uint32_t>::get_emb_els(unsigned int max_embs) {return (max_embs+31)/32;}
 
@@ -464,11 +464,11 @@ namespace su {
 
        void sync_embedded(unsigned int filled_embs) { this->sync_embedded_proportions(filled_embs); this->sync_embedded_counts(filled_embs);}
 
-        void embed_range(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int start, unsigned int end, unsigned int emb) {
+        void embed_range(const TFloat* __restrict__ in_proportions, const TFloat* __restrict__ in_counts, unsigned int start, unsigned int end, unsigned int emb) {
           this->embed_proportions_range(in_proportions,start,end,emb);
           this->embed_proportions_range_straight(this->embedded_counts,in_counts,start,end,emb);
         }
-        void embed(const double* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) { embed_range(in_proportions,in_counts,0,this->dm_stripes.n_samples,emb);}
+        void embed(const TFloat* __restrict__ in_proportions, const double* __restrict__ in_counts, unsigned int emb) { embed_range(in_proportions,in_counts,0,this->dm_stripes.n_samples,emb);}
 
        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
     };

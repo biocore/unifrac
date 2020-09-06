@@ -39,6 +39,7 @@ namespace su {
              *      have data will be zero'd.
              */
             void get_obs_data(const std::string &id, double* out) const; 
+            void get_obs_data(const std::string &id, float* out) const;
 
             /* get a dense vector of a range of observation data
              *
@@ -50,6 +51,7 @@ namespace su {
              *      have data will be zero'd.
              */
             void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const;
+            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, float* out) const;
 
         private:
             /* retain DataSet handles within the HDF5 file */
@@ -97,5 +99,10 @@ namespace su {
              */
             void create_id_index(std::vector<std::string> &ids, 
                                  std::unordered_map<std::string, uint32_t> &map);
+
+
+            // templatized version
+            template<class TFloat> void get_obs_data_TT(const std::string &id, TFloat* out) const;
+            template<class TFloat> void get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, TFloat* out) const;
     };
 }

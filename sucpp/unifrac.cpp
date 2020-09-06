@@ -61,53 +61,57 @@ void sig_handler(int signo) {
 using namespace su;
 
 
-PropStack::PropStack(uint32_t vecsize) {
-    defaultsize = vecsize;
-    prop_stack = std::stack<double*>();
-    prop_map = std::unordered_map<uint32_t, double*>();
-
+template<class TFloat>
+PropStack<TFloat>::PropStack(uint32_t vecsize) 
+: prop_stack()
+, prop_map()
+, defaultsize(vecsize)
+{
     prop_map.reserve(1000);
 }
 
-PropStack::~PropStack() {
-    double *vec;
+template<class TFloat>
+PropStack<TFloat>::~PropStack() {
     // drain stack
     for(unsigned int i = 0; i < prop_stack.size(); i++) {
-        vec = prop_stack.top();
+        TFloat *vec = prop_stack.top();
         prop_stack.pop();
         free(vec);
     }
 
     // drain the map
     for(auto it = prop_map.begin(); it != prop_map.end(); it++) {
-        vec = it->second;
+        TFloat *vec = it->second;
         free(vec);
     }
     prop_map.clear();
 }
 
-double* PropStack::get(uint32_t i) {
+template<class TFloat>
+TFloat* PropStack<TFloat>::get(uint32_t i) {
     return prop_map[i];
 }
 
-void PropStack::push(uint32_t node) {
-    double* vec = prop_map[node];
+template<class TFloat>
+void PropStack<TFloat>::push(uint32_t node) {
+    TFloat* vec = prop_map[node];
     prop_map.erase(node);
     prop_stack.push(vec);
 }
 
-double* PropStack::pop(uint32_t node) {
+template<class TFloat>
+TFloat* PropStack<TFloat>::pop(uint32_t node) {
     /*
      * if we don't have any available vectors, create one
      * add it to our record of known vectors so we can track our mallocs
      */
-    double *vec;
+    TFloat *vec;
     int err = 0;
     if(prop_stack.empty()) {
-        err = posix_memalign((void **)&vec, 32, sizeof(double) * defaultsize);
+        err = posix_memalign((void **)&vec, 32, sizeof(TFloat) * defaultsize);
         if(vec == NULL || err != 0) {
             fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                    sizeof(double) * defaultsize, err, __FILE__, __LINE__);
+                    sizeof(TFloat) * defaultsize, err, __FILE__, __LINE__);
             exit(EXIT_FAILURE);
         }
     }
@@ -120,34 +124,41 @@ double* PropStack::pop(uint32_t node) {
     return vec;
 }
 
+// make sure they get instantiated
+template class su::PropStack<float>;
+template class su::PropStack<double>;
+
+
 // Helper class with default constructor
 // The default is small enough to fit in L1 cache
-class PropStackFixed : public PropStack {
+template<class TFloat>
+class PropStackFixed : public PropStack<TFloat> {
   public:
     static const uint32_t DEF_VEC_SIZE = 1024;
 
-    PropStackFixed() : PropStack(DEF_VEC_SIZE) {}
+    PropStackFixed() : PropStack<TFloat>(DEF_VEC_SIZE) {}
 };
 
 // Helper class that splits a large vec_size into several smaller chunks of def_size
+template<class TFloat> 
 class PropStackMulti {
   protected:
     const uint32_t vecsize;
-    std::vector<PropStackFixed> multi;
+    std::vector<PropStackFixed<TFloat> > multi;
 
   public:
     PropStackMulti(uint32_t _vecsize) 
     : vecsize(_vecsize)
-    , multi((vecsize + (PropStackFixed::DEF_VEC_SIZE-1))/PropStackFixed::DEF_VEC_SIZE) // round up
+    , multi((vecsize + (PropStackFixed<TFloat>::DEF_VEC_SIZE-1))/PropStackFixed<TFloat>::DEF_VEC_SIZE) // round up
     {}
     ~PropStackMulti() {}
 
-    uint32_t get_num_stacks() const {return (vecsize + (PropStackFixed::DEF_VEC_SIZE-1))/PropStackFixed::DEF_VEC_SIZE;}
+    uint32_t get_num_stacks() const {return (vecsize + (PropStackFixed<TFloat>::DEF_VEC_SIZE-1))/PropStackFixed<TFloat>::DEF_VEC_SIZE;}
 
-    uint32_t get_start(uint32_t idx) const {return idx*PropStackFixed::PropStackFixed::DEF_VEC_SIZE;}
-    uint32_t get_end(uint32_t idx) const   {return std::min((idx+1)*PropStackFixed::DEF_VEC_SIZE, vecsize);}
+    uint32_t get_start(uint32_t idx) const {return idx*PropStackFixed<TFloat>::DEF_VEC_SIZE;}
+    uint32_t get_end(uint32_t idx) const   {return std::min((idx+1)*PropStackFixed<TFloat>::DEF_VEC_SIZE, vecsize);}
 
-    PropStackFixed &get_prop_stack(uint32_t idx) {return multi[idx];}
+    PropStackFixed<TFloat> &get_prop_stack(uint32_t idx) {return multi[idx];}
 };
 
 double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
@@ -505,7 +516,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
 void su::faith_pd(biom &table,
                   BPTree &tree,
                   double* result) {
-    PropStack propstack(table.n_samples);
+    PropStack<double> propstack(table.n_samples);
 
     uint32_t node;
     double *node_proportions;
@@ -556,7 +567,7 @@ void unifracTT(const biom &table,
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
 
-    PropStackMulti propstack_multi(table.n_samples);
+    PropStackMulti<TFloat> propstack_multi(table.n_samples);
 
     const unsigned int max_emb =  TaskT::RECOMMENDED_MAX_EMBS;
 
@@ -628,7 +639,7 @@ void unifracTT(const biom &table,
           // chunk the progress to maximize cache reuse
 #pragma omp parallel for 
           for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
-            PropStack &propstack = propstack_multi.get_prop_stack(ck);
+            PropStack<TFloat> &propstack = propstack_multi.get_prop_stack(ck);
             const unsigned int tstart = propstack_multi.get_start(ck);
             const unsigned int tend = propstack_multi.get_end(ck);
             unsigned int my_filled_emb = 0;
@@ -638,7 +649,7 @@ void unifracTT(const biom &table,
               const uint32_t node = tree.postorderselect(my_k);
               my_k++;
 
-              double *node_proportions = propstack.pop(node);
+              TFloat *node_proportions = propstack.pop(node);
               set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
 
               if(task_p->bypass_tips && tree.isleaf(node))
@@ -758,8 +769,8 @@ void unifrac_vawTT(const biom &table,
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
-    PropStackMulti propstack_multi(table.n_samples);
-    PropStackMulti countstack_multi(table.n_samples);
+    PropStackMulti<TFloat> propstack_multi(table.n_samples);
+    PropStackMulti<TFloat> countstack_multi(table.n_samples);
 
     const unsigned int max_emb = TaskT::RECOMMENDED_MAX_EMBS;
 
@@ -789,8 +800,8 @@ void unifrac_vawTT(const biom &table,
           // chunk the progress to maximize cache reuse
 #pragma omp parallel for 
           for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
-            PropStack &propstack = propstack_multi.get_prop_stack(ck);
-            PropStack &countstack = countstack_multi.get_prop_stack(ck);
+            PropStack<TFloat> &propstack = propstack_multi.get_prop_stack(ck);
+            PropStack<TFloat> &countstack = countstack_multi.get_prop_stack(ck);
             const unsigned int tstart = propstack_multi.get_start(ck);
             const unsigned int tend = propstack_multi.get_end(ck);
             unsigned int my_filled_emb = 0;
@@ -800,8 +811,8 @@ void unifrac_vawTT(const biom &table,
               const uint32_t node = tree.postorderselect(my_k);
               my_k++;
 
-              double *node_proportions = propstack.pop(node);
-              double *node_counts = countstack.pop(node);
+              TFloat *node_proportions = propstack.pop(node);
+              TFloat *node_counts = countstack.pop(node);
 
               set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
               set_proportions_range(node_counts, tree, node, table, tstart, tend, countstack, false);
@@ -896,11 +907,12 @@ void su::unifrac_vaw(biom &table,
     }
 }
 
-void su::set_proportions(double* props,
+template<class TFloat>
+void su::set_proportions(TFloat* props,
                          const BPTree &tree,
                          uint32_t node,
                          const biom &table,
-                         PropStack &ps,
+                         PropStack<TFloat> &ps,
                          bool normalize) {
     if(tree.isleaf(node)) {
        table.get_obs_data(tree.names[node], props);
@@ -914,7 +926,7 @@ void su::set_proportions(double* props,
     } else {
         unsigned int current = tree.leftchild(node);
         unsigned int right = tree.rightchild(node);
-        double *vec;
+        TFloat *vec;
 
 #pragma omp parallel for schedule(static)
         for(unsigned int i = 0; i < table.n_samples; i++)
@@ -933,12 +945,27 @@ void su::set_proportions(double* props,
     }
 }
 
-void su::set_proportions_range(double* props,
+// make sure they get instantiated
+template void su::set_proportions(float* props,
+                                  const BPTree &tree,
+                                  uint32_t node,
+                                  const biom &table,
+                                  PropStack<float> &ps,
+                                  bool normalize);
+template void su::set_proportions(double* props,
+                                  const BPTree &tree,
+                                  uint32_t node,
+                                  const biom &table,
+                                  PropStack<double> &ps,
+                                  bool normalize);
+
+template<class TFloat>
+void su::set_proportions_range(TFloat* props,
                                const BPTree &tree,
                                uint32_t node,
                                const biom &table, 
                                unsigned int start, unsigned int end,
-                               PropStack &ps,
+                               PropStack<TFloat> &ps,
                                bool normalize) {
     const unsigned int els = end-start;
     if(tree.isleaf(node)) {
@@ -957,7 +984,7 @@ void su::set_proportions_range(double* props,
             props[i] = 0;
 
         while(current <= right && current != 0) {
-            const double * vec = ps.get(current);  // pull from prop map
+            const TFloat * vec = ps.get(current);  // pull from prop map
             ps.push(current);  // remove from prop map, place back on stack
 
             for(unsigned int i = 0; i < els; i++)
@@ -967,6 +994,22 @@ void su::set_proportions_range(double* props,
         }
     }
 }
+
+// make sure they get instantiated
+template void su::set_proportions_range(float* props,
+                                        const BPTree &tree,
+                                        uint32_t node,
+                                        const biom &table,
+                                        unsigned int start, unsigned int end,
+                                        PropStack<float> &ps,
+                                        bool normalize);
+template void su::set_proportions_range(double* props,
+                                        const BPTree &tree,
+                                        uint32_t node,
+                                        const biom &table,
+                                        unsigned int start, unsigned int end,
+                                        PropStack<double> &ps,
+                                        bool normalize);
 
 std::vector<double*> su::make_strides(unsigned int n_samples) {
     uint32_t n_rotations = (n_samples + 1) / 2;
