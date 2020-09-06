@@ -120,6 +120,36 @@ double* PropStack::pop(uint32_t node) {
     return vec;
 }
 
+// Helper class with default constructor
+// The default is small enough to fit in L1 cache
+class PropStackFixed : public PropStack {
+  public:
+    static const uint32_t DEF_VEC_SIZE = 1024;
+
+    PropStackFixed() : PropStack(DEF_VEC_SIZE) {}
+};
+
+// Helper class that splits a large vec_size into several smaller chunks of def_size
+class PropStackMulti {
+  protected:
+    const uint32_t vecsize;
+    std::vector<PropStackFixed> multi;
+
+  public:
+    PropStackMulti(uint32_t _vecsize) 
+    : vecsize(_vecsize)
+    , multi((vecsize + (PropStackFixed::DEF_VEC_SIZE-1))/PropStackFixed::DEF_VEC_SIZE) // round up
+    {}
+    ~PropStackMulti() {}
+
+    uint32_t get_num_stacks() const {return (vecsize + (PropStackFixed::DEF_VEC_SIZE-1))/PropStackFixed::DEF_VEC_SIZE;}
+
+    uint32_t get_start(uint32_t idx) const {return idx*PropStackFixed::PropStackFixed::DEF_VEC_SIZE;}
+    uint32_t get_end(uint32_t idx) const   {return std::min((idx+1)*PropStackFixed::DEF_VEC_SIZE, vecsize);}
+
+    PropStackFixed &get_prop_stack(uint32_t idx) {return multi[idx];}
+};
+
 double** su::deconvolute_stripes(std::vector<double*> &stripes, uint32_t n) {
     // would be better to just do striped_to_condensed_form
     double **dm;
@@ -526,12 +556,9 @@ void unifracTT(const biom &table,
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
 
-    PropStack propstack(table.n_samples);
+    PropStackMulti propstack_multi(table.n_samples);
 
     const unsigned int max_emb =  TaskT::RECOMMENDED_MAX_EMBS;
-
-    uint32_t node;
-    double *node_proportions;
 
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
@@ -593,20 +620,39 @@ void unifracTT(const biom &table,
     unsigned int k = 0; // index in tree
     const unsigned int max_k = (tree.nparens / 2) - 1;
 
+    const unsigned int num_prop_chunks = propstack_multi.get_num_stacks();
     while (k<max_k) {
+          const unsigned int k_start = k;
           unsigned int filled_emb = 0;
-          for(filled_emb = 0; (filled_emb<max_emb) && (k<max_k); k++) {
-              node = tree.postorderselect(k);
 
-              node_proportions = propstack.pop(node);
-              set_proportions(node_proportions, tree, node, table, propstack);
+          // chunk the progress to maximize cache reuse
+          for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
+            PropStack &propstack = propstack_multi.get_prop_stack(ck);
+            const unsigned int tstart = propstack_multi.get_start(ck);
+            const unsigned int tend = propstack_multi.get_end(ck);
+            unsigned int my_filled_emb = 0;
+            unsigned int my_k=k_start;
+
+            while ((my_filled_emb<max_emb) && (my_k<max_k)) {
+              const uint32_t node = tree.postorderselect(my_k);
+              my_k++;
+
+              double *node_proportions = propstack.pop(node);
+              set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
 
               if(task_p->bypass_tips && tree.isleaf(node))
                   continue;
 
-              lengths[filled_emb] = tree.lengths[node];
-              taskObj.embed_proportions(node_proportions, filled_emb);
-              filled_emb++;
+              if (ck==0) { // they all do the same thing, so enough for the first to update the global state
+                lengths[filled_emb] = tree.lengths[node];
+                filled_emb++;
+              }
+              taskObj.embed_proportions_range(node_proportions, tstart, tend, my_filled_emb);
+              my_filled_emb++;
+            }
+            if (ck==0) { // they all do the same thing, so enough for the first to update the global state
+              k=my_k;
+            }
           }
 
           taskObj.sync_embedded_proportions(filled_emb);
@@ -711,14 +757,11 @@ void unifrac_vawTT(const biom &table,
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
-    PropStack propstack(table.n_samples);
-    PropStack countstack(table.n_samples);
+    PropStackMulti propstack_multi(table.n_samples);
+    PropStackMulti countstack_multi(table.n_samples);
 
     const unsigned int max_emb = TaskT::RECOMMENDED_MAX_EMBS;
 
-    uint32_t node;
-    double *node_proportions;
-    double *node_counts;
     TFloat *sample_total_counts;
 
     initialize_sample_counts<TFloat>(sample_total_counts, task_p, table);
@@ -737,23 +780,43 @@ void unifrac_vawTT(const biom &table,
     unsigned int k = 0; // index in tree
     const unsigned int max_k = (tree.nparens / 2) - 1;
 
+    const unsigned int num_prop_chunks = propstack_multi.get_num_stacks();
     while (k<max_k) {
+          const unsigned int k_start = k;
           unsigned int filled_emb = 0;
-          for(filled_emb = 0; (filled_emb<max_emb) && (k<max_k); k++) {
-              node = tree.postorderselect(k);
 
-              node_proportions = propstack.pop(node);
-              node_counts = countstack.pop(node);
+          // chunk the progress to maximize cache reuse
+          for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
+            PropStack &propstack = propstack_multi.get_prop_stack(ck);
+            PropStack &countstack = countstack_multi.get_prop_stack(ck);
+            const unsigned int tstart = propstack_multi.get_start(ck);
+            const unsigned int tend = propstack_multi.get_end(ck);
+            unsigned int my_filled_emb = 0;
+            unsigned int my_k=k_start;
 
-              set_proportions(node_proportions, tree, node, table, propstack);
-              set_proportions(node_counts, tree, node, table, countstack, false);
+            while ((my_filled_emb<max_emb) && (my_k<max_k)) {
+              const uint32_t node = tree.postorderselect(my_k);
+              my_k++;
+
+              double *node_proportions = propstack.pop(node);
+              double *node_counts = countstack.pop(node);
+
+              set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
+              set_proportions_range(node_counts, tree, node, table, tstart, tend, countstack, false);
 
               if(task_p->bypass_tips && tree.isleaf(node))
                   continue;
 
-              lengths[filled_emb] = tree.lengths[node];
-              taskObj.embed(node_proportions, node_counts, filled_emb);
-              filled_emb++;
+              if (ck==0) { // they all do the same thing, so enough for the first to update the global state
+                lengths[filled_emb] = tree.lengths[node];
+                filled_emb++;
+              }
+              taskObj.embed_range(node_proportions, node_counts, tstart, tend, my_filled_emb);
+              my_filled_emb++;
+            }
+            if (ck==0) { // they all do the same thing, so enough for the first to update the global state
+              k=my_k;
+            }
           }
 
 #pragma acc wait
