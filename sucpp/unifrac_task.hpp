@@ -26,7 +26,7 @@ namespace su {
 #else
 
 // CPUs don't need such a big alignment
-#define UNIFRAC_BLOCK 8
+#define UNIFRAC_BLOCK 16
 #endif
 
     // Note: This adds a copy, which is suboptimal
@@ -289,8 +289,8 @@ namespace su {
         static const unsigned int acc_vector_size = 32*64*8/sizeof(TFloat);
   #endif
 #else
-        // The serial nature of CPU cores prefers a small step
-        static const unsigned int step_size = 4;
+        // Use one cache line
+        static const unsigned int step_size = 16*4/sizeof(TFloat);
 #endif
 
       public:
@@ -310,12 +310,12 @@ namespace su {
        virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) = 0;
 
       protected:
-       static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128;
-       // 512 == 16k in fp32, just about perfect for L1 cache
+       static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128-16; // a little less to leave a bit of space of maxed-out L1
+       // 512 == 64k in fp32, just about perfect for V100 L1 cache, L2 in older GPUs
 #ifdef _OPENACC
        static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512;
 #else
-       // CPUs seem to prefer a slight over-comittment
+       // Keep it in L2 (2k == 256k in fp32)
        static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512*4*4/sizeof(TFloat);
 #endif
 
