@@ -256,6 +256,11 @@ namespace su {
     template<> inline  unsigned int UnifracTaskBase<double,uint32_t>::get_emb_els(unsigned int max_embs) {return (max_embs+31)/32;}
     template<> inline  unsigned int UnifracTaskBase<float,uint32_t>::get_emb_els(unsigned int max_embs) {return (max_embs+31)/32;}
 
+    template<> inline void UnifracTaskBase<double,uint64_t>::embed_proportions_range(const double* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_bool(embedded_proportions,in,start,end,emb);}
+    template<> inline void UnifracTaskBase<float,uint64_t>::embed_proportions_range(const float* __restrict__ in, unsigned int start, unsigned int end, unsigned int emb) {embed_proportions_range_bool(embedded_proportions,in,start,end,emb);}
+    template<> inline  unsigned int UnifracTaskBase<double,uint64_t>::get_emb_els(unsigned int max_embs) {return (max_embs+63)/64;}
+    template<> inline  unsigned int UnifracTaskBase<float,uint64_t>::get_emb_els(unsigned int max_embs) {return (max_embs+63)/64;}
+
     /* void su::unifrac tasks
      *
      * all methods utilize the same function signature. that signature is as follows:
@@ -275,22 +280,13 @@ namespace su {
     template<class TFloat, class TEmb>
     class UnifracTask : public UnifracTaskBase<TFloat,TEmb> {
       protected:
-#ifdef _OPENACC
-
-        // The parallel nature of GPUs needs a largish step
-  #ifndef SMALLGPU
-        // default to larger step, which makes a big difference for bigger GPUs like V100
-        static const unsigned int step_size = 32;
-        // keep the vector size just big enough to keep the used emb array inside the 32k buffer
-        static const unsigned int acc_vector_size = 32*64*8/sizeof(TFloat);
-  #else
-        // smaller GPUs prefer a slightly smaller step
-        static const unsigned int step_size = 16;
-        static const unsigned int acc_vector_size = 32*64*8/sizeof(TFloat);
-  #endif
-#else
-        // Use one cache line
+        // Use one cache line on CPU
+        // On GPU, shaing a cache line is actually a good thing
         static const unsigned int step_size = 16*4/sizeof(TFloat);
+
+#ifdef _OPENACC
+        // Use as big vector size as we can, to maximize cache line reuse
+        static const unsigned int acc_vector_size = 2048;
 #endif
 
       public:
@@ -311,13 +307,8 @@ namespace su {
 
       protected:
        static const unsigned int RECOMMENDED_MAX_EMBS_STRAIGHT = 128-16; // a little less to leave a bit of space of maxed-out L1
-       // 512 == 64k in fp32, just about perfect for V100 L1 cache, L2 in older GPUs
-#ifdef _OPENACC
-       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512;
-#else
-       // Keep it in L2 (2k == 256k in fp32)
-       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 512*4*4/sizeof(TFloat);
-#endif
+       // packed uses 32x less memory,so this should be 32x larger than straight... but there are additional structures, so use half of that
+       static const unsigned int RECOMMENDED_MAX_EMBS_BOOL = 64*32;
 
     };
 
@@ -347,13 +338,13 @@ namespace su {
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
     template<class TFloat>
-    class UnifracUnweightedTask : public UnifracTask<TFloat,uint32_t> {
+    class UnifracUnweightedTask : public UnifracTask<TFloat,uint64_t> {
       public:
-        static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,uint32_t>::RECOMMENDED_MAX_EMBS_BOOL;
+        static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,uint64_t>::RECOMMENDED_MAX_EMBS_BOOL;
 
-        // Note: _max_emb MUST be multiple of 32
+        // Note: _max_emb MUST be multiple of 64
         UnifracUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
-        : UnifracTask<TFloat, uint32_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) 
+        : UnifracTask<TFloat, uint64_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) 
         {
           const unsigned int bsize = _max_embs*0x400/32;
           sums = NULL;

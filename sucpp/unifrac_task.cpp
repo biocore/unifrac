@@ -425,7 +425,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const uint64_t n_samples_r = this->dm_stripes.n_samples_r;
 
     // openacc only works well with local variables
-    const uint32_t * const __restrict__ embedded_proportions = this->embedded_proportions;
+    const uint64_t * const __restrict__ embedded_proportions = this->embedded_proportions;
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
     TFloat * const __restrict__ dm_stripes_total_buf = this->dm_stripes_total.buf;
 
@@ -434,10 +434,10 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
     const unsigned int step_size = su::UnifracUnweightedTask<TFloat>::step_size;
     const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
-    const unsigned int filled_embs_els = filled_embs/32;
-    const unsigned int filled_embs_rem = filled_embs%32; 
+    const unsigned int filled_embs_els = filled_embs/64;
+    const unsigned int filled_embs_rem = filled_embs%64; 
 
-    const unsigned int filled_embs_els_round = (filled_embs+31)/32;
+    const unsigned int filled_embs_els_round = (filled_embs+63)/64;
 
 
     // pre-compute sums of length elements, since they are likely to be accessed many times
@@ -446,8 +446,8 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #pragma acc parallel loop collapse(2) gang present(lengths,sums) async
 #endif
     for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
-       for (unsigned int sub4=0; sub4<4; sub4++) {
-          const unsigned int emb4 = emb_el*4+sub4;
+       for (unsigned int sub8=0; sub8<8; sub8++) {
+          const unsigned int emb4 = emb_el*8+sub8;
           TFloat * __restrict__ psum = &(sums[emb4<<8]);
           const TFloat * __restrict__ pl   = &(lengths[emb4*8]);
 
@@ -473,9 +473,9 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #ifdef _OPENACC
 #pragma acc parallel loop gang present(lengths,sums) async
 #endif
-       for (unsigned int sub4=0; sub4<4; sub4++) {
+       for (unsigned int sub8=0; sub8<8; sub8++) {
           // we are summing we have enough buffer in sums
-          const unsigned int emb4 = emb_el*4+sub4;
+          const unsigned int emb4 = emb_el*8+sub8;
           TFloat * __restrict__ psum = &(sums[emb4<<8]);
 
 #pragma acc loop vector
@@ -511,36 +511,51 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 
             const unsigned int l1 = (k + stripe + 1)%n_samples; // wraparound
 
-            TFloat my_stripe = dm_stripe[k];
-            TFloat my_stripe_total = dm_stripe_total[k];
+            bool did_update = false;
+            TFloat my_stripe = 0.0;
+            TFloat my_stripe_total = 0.0;
 
 #pragma acc loop seq
             for (unsigned int emb_el=0; emb_el<filled_embs_els_round; emb_el++) {
                 const uint64_t offset = n_samples_r * emb_el;
-                const TFloat * __restrict__ psum = &(sums[emb_el*0x400]);
+                const TFloat * __restrict__ psum = &(sums[emb_el*0x800]);
 
-                uint32_t u1 = embedded_proportions[offset + k];
-                uint32_t v1 = embedded_proportions[offset + l1];
-                uint32_t x1 = u1 ^ v1;
-                uint32_t o1 = u1 | v1;
+                uint64_t u1 = embedded_proportions[offset + k];
+                uint64_t v1 = embedded_proportions[offset + l1];
+                uint64_t o1 = u1 | v1;
 
-                // Use the pre-computed sums
-                // Each range of 8 lengths has already been pre-computed and stored in psum
-                // Since embedded_proportions packed format is in 32-bit format for performance reasons
-                //    we need to add the 4 sums using the four 8-bits for addressing inside psum
+                if (o1!=0) {  // zeros are prevalent
+                    did_update=true;
+                    uint64_t x1 = u1 ^ v1;
 
-                my_stripe       += psum[              (x1 & 0xff)] + 
+                    // Use the pre-computed sums
+                    // Each range of 8 lengths has already been pre-computed and stored in psum
+                    // Since embedded_proportions packed format is in 64-bit format for performance reasons
+                    //    we need to add the 8 sums using the four 8-bits for addressing inside psum
+
+                    my_stripe       += psum[              (x1 & 0xff)] + 
                                    psum[0x100+((x1 >>  8) & 0xff)] +
                                    psum[0x200+((x1 >> 16) & 0xff)] +
-                                   psum[0x300+((x1 >> 24)       )];
-                my_stripe_total += psum[              (o1 & 0xff)] +
+                                   psum[0x300+((x1 >> 24) & 0xff)] +
+                                   psum[0x400+((x1 >> 32) & 0xff)] +
+                                   psum[0x500+((x1 >> 40) & 0xff)] +
+                                   psum[0x600+((x1 >> 48) & 0xff)] +
+                                   psum[0x700+((x1 >> 56)       )];
+                    my_stripe_total += psum[              (o1 & 0xff)] +
                                    psum[0x100+((o1 >>  8) & 0xff)] +
                                    psum[0x200+((o1 >> 16) & 0xff)] +
-                                   psum[0x300+((o1 >> 24)       )];
+                                   psum[0x300+((o1 >> 24) & 0xff)] +
+                                   psum[0x400+((o1 >> 32) & 0xff)] +
+                                   psum[0x500+((o1 >> 40) & 0xff)] +
+                                   psum[0x600+((o1 >> 42) & 0xff)] +
+                                   psum[0x700+((o1 >> 56)       )];
+                }
             }
 
-            dm_stripe[k]     = my_stripe;
-            dm_stripe_total[k]     = my_stripe_total;
+            if (did_update) {
+              dm_stripe[k]       += my_stripe;
+              dm_stripe_total[k] += my_stripe_total;
+            }
 
         }
 
