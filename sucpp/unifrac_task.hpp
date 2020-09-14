@@ -234,7 +234,7 @@ namespace su {
           } else {
             // just update my bit
             for(unsigned int i = start; i < end; i++) {
-              out[offset + i] |= ((in[i-start] > 0) << emb_bit);
+              out[offset + i] |= (TOut(in[i-start] > 0) << emb_bit);
             }
 
             // the rest of the els are already OK
