@@ -447,9 +447,9 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #endif
     for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
        for (unsigned int sub8=0; sub8<8; sub8++) {
-          const unsigned int emb4 = emb_el*8+sub8;
-          TFloat * __restrict__ psum = &(sums[emb4<<8]);
-          const TFloat * __restrict__ pl   = &(lengths[emb4*8]);
+          const unsigned int emb8 = emb_el*8+sub8;
+          TFloat * __restrict__ psum = &(sums[emb8<<8]);
+          const TFloat * __restrict__ pl   = &(lengths[emb8*8]);
 
 #pragma acc loop vector
           // compute all the combinations for this block (8-bits total)
@@ -475,16 +475,16 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #endif
        for (unsigned int sub8=0; sub8<8; sub8++) {
           // we are summing we have enough buffer in sums
-          const unsigned int emb4 = emb_el*8+sub8;
-          TFloat * __restrict__ psum = &(sums[emb4<<8]);
+          const unsigned int emb8 = emb_el*8+sub8;
+          TFloat * __restrict__ psum = &(sums[emb8<<8]);
 
 #pragma acc loop vector
           // compute all the combinations for this block, set to 0 any past the limit
           // as above
           for (unsigned int b8_i=0; b8_i<0x100; b8_i++) {
              TFloat val= 0;
-             for (unsigned int li=(emb4*8); li<filled_embs; li++) {
-               val += ((b8_i >>  (li-(emb4*8))) & 1) * lengths[li];
+             for (unsigned int li=(emb8*8); li<filled_embs; li++) {
+               val += ((b8_i >>  (li-(emb8*8))) & 1) * lengths[li];
              }
              psum[b8_i] = val;
           }
