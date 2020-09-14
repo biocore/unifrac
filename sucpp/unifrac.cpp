@@ -968,13 +968,7 @@ void su::set_proportions_range(TFloat* __restrict__ props,
                                bool normalize) {
     const unsigned int els = end-start;
     if(tree.isleaf(node)) {
-       table.get_obs_data_range(tree.names[node], start, end, props);
-       if (normalize) {
-        for(unsigned int i = 0; i < els; i++) {
-           props[i] /= table.sample_counts[start+i];
-        }
-       }
-
+       table.get_obs_data_range(tree.names[node], start, end, normalize, props);
     } else {
         const unsigned int right = tree.rightchild(node);
         unsigned int current = tree.leftchild(node);

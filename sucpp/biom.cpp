@@ -225,7 +225,7 @@ void biom::get_obs_data(const std::string &id, float* out) const {
 
 // note: out is supposed to be fully filled, i.e. out[start:end]
 template<class TFloat>
-void biom::get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, TFloat* out) const {
+void biom::get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, bool normalize, TFloat* out) const {
     uint32_t idx = obs_id_index.at(id);
     unsigned int count = obs_counts_resident[idx];
     const uint32_t * const indices = obs_indices_resident[idx];
@@ -235,20 +235,29 @@ void biom::get_obs_data_range_TT(const std::string &id, unsigned int start, unsi
     for(unsigned int i = start; i < end; i++)
         out[i-start] = 0.0;
 
-    for(unsigned int i = 0; i < count; i++) {
-        const uint32_t j = indices[i];
+    if (normalize) {
+      for(unsigned int i = 0; i < count; i++) {
+        const int32_t j = indices[i];
         if ((j>=start)&&(j<end)) { 
+          out[j-start] = data[i]/sample_counts[j];
+        }
+      }
+    } else {
+      for(unsigned int i = 0; i < count; i++) {
+        const uint32_t j = indices[i];
+        if ((j>=start)&&(j<end)) {
           out[j-start] = data[i];
         }
+      }
     }
 }
 
-void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const {
-  biom::get_obs_data_range_TT(id,start,end,out);
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, double* out) const {
+  biom::get_obs_data_range_TT(id,start,end,normalize,out);
 }
 
-void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, float* out) const {
-  biom::get_obs_data_range_TT(id,start,end,out);
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, float* out) const {
+  biom::get_obs_data_range_TT(id,start,end,normalize,out);
 }
 
 unsigned int biom::get_sample_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out) {

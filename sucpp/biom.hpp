@@ -46,12 +46,13 @@ namespace su {
              * @param id The observation ID to fetc
              * @param start Initial index
              * @param end   First index past the end
+             * @param normalize If set, divide by sample_counts
              * @param out An allocated array of at least size (end-start). First element will corrrectpoint to index start. 
              *      Values of an index position [0, (end-start)) which do not
              *      have data will be zero'd.
              */
-            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, double* out) const;
-            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, float* out) const;
+            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, double* out) const;
+            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, float* out) const;
 
         private:
             /* retain DataSet handles within the HDF5 file */
@@ -103,6 +104,6 @@ namespace su {
 
             // templatized version
             template<class TFloat> void get_obs_data_TT(const std::string &id, TFloat* out) const;
-            template<class TFloat> void get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, TFloat* out) const;
+            template<class TFloat> void get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, bool normalize, TFloat* out) const;
     };
 }
