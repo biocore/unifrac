@@ -196,7 +196,7 @@ namespace su {
           if (end==n_samples) {
             // avoid NaNs
             for(unsigned int i = n_samples; i < n_samples_r; i++) {
-              out[offset + i] = 1.0;
+              out[offset + i] = 0.0;
             }
           }
         }
