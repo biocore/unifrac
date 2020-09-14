@@ -547,7 +547,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
                                    psum[0x300+((o1 >> 24) & 0xff)] +
                                    psum[0x400+((o1 >> 32) & 0xff)] +
                                    psum[0x500+((o1 >> 40) & 0xff)] +
-                                   psum[0x600+((o1 >> 42) & 0xff)] +
+                                   psum[0x600+((o1 >> 48) & 0xff)] +
                                    psum[0x700+((o1 >> 56)       )];
                 }
             }
