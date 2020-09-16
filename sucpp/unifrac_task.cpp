@@ -16,18 +16,58 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
     const TFloat * const __restrict__ embedded_proportions = this->embedded_proportions;
     TFloat * const __restrict__ dm_stripes_buf = this->dm_stripes.buf;
 
+    bool * const __restrict__ zcheck = this->zcheck;
+
     const unsigned int step_size = su::UnifracUnnormalizedWeightedTask<TFloat>::step_size;
     const unsigned int sample_steps = (n_samples+(step_size-1))/step_size; // round up
 
-    // point of thread
 #ifdef _OPENACC
     const unsigned int acc_vector_size = su::UnifracUnnormalizedWeightedTask<TFloat>::acc_vector_size;
-#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,lengths) async
+#endif
+
+
+    // check for zero values
+#ifdef _OPENACC
+#pragma acc parallel loop vector_length(acc_vector_size) present(embedded_proportions,zcheck)
+#endif
+    for(unsigned int k=0; k<n_samples; k++) {
+            bool all_zeros=true;
+
+#pragma acc loop seq
+            for (unsigned int emb=0; emb<filled_embs; emb++) {
+                const uint64_t offset = n_samples_r * emb;
+
+                TFloat u1 = embedded_proportions[offset + k];
+                all_zeros = all_zeros && (u1==0.0);
+            }
+
+            zcheck[k] = all_zeros;
+    }
+
+
+    // now do the real compute
+#ifdef _OPENACC
+#pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,lengths,zcheck) async
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
-      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
-        for(unsigned int ik = 0; ik < step_size ; ik++) {
-            const uint64_t k = sk*step_size + ik;
+     for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
+      for(unsigned int ik = 0; ik < step_size ; ik++) {
+       const unsigned int k = sk*step_size + ik;
+
+       if (k>=n_samples) continue; // past the limit
+
+       const bool zcheck_k = zcheck[sk]; // due to loop collapse in ACC, must load in here
+
+       const unsigned int l1 = (k + stripe + 1)%n_samples; // wraparound
+
+       const bool allzero_k = zcheck[k];
+       const bool allzero_l1 = zcheck[l1];
+
+       if (allzero_k && allzero_l1) {
+         // nothing to do
+       } else {
+
+            // both sides non zero, use the explicit but slow approach
             const uint64_t idx = (stripe-start_idx)*n_samples_r;
             TFloat * const __restrict__ dm_stripe = dm_stripes_buf+idx;
             //TFloat *dm_stripe = dm_stripes[stripe];
@@ -52,10 +92,12 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
             }
 
             dm_stripe[k]     = my_stripe;
-        }
 
-      }
-    }
+       }
+
+      } // for ik
+     } // for stripe
+    } // for sk
 
 #ifdef _OPENACC
    // next iteration will use the alternative space

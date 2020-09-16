@@ -319,11 +319,30 @@ namespace su {
         static const unsigned int RECOMMENDED_MAX_EMBS = UnifracTask<TFloat,TFloat>::RECOMMENDED_MAX_EMBS_STRAIGHT;
 
         UnifracUnnormalizedWeightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
-        : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) {}
+        : UnifracTask<TFloat,TFloat>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p)
+        {
+          const unsigned int n_samples = this->task_p->n_samples;
+
+          zcheck = NULL;
+          posix_memalign((void **)&zcheck, 4096, sizeof(bool) * n_samples);
+#pragma acc enter data create(zcheck[:n_samples])
+        }
+
+        virtual ~UnifracUnnormalizedWeightedTask()
+        {
+#ifdef _OPENACC
+          const unsigned int n_samples = this->task_p->n_samples;
+#pragma acc exit data delete(zcheck[:n_samples])
+#endif
+          free(zcheck);
+        }
 
         virtual void run(unsigned int filled_embs, const TFloat * __restrict__ length) {_run(filled_embs, length);}
 
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
+      protected:
+        // temp buffer
+        bool     *zcheck;
     };
     template<class TFloat>
     class UnifracNormalizedWeightedTask : public UnifracTask<TFloat,TFloat> {
