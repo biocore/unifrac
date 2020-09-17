@@ -327,7 +327,7 @@ namespace su {
           sums = NULL;
           posix_memalign((void **)&zcheck, 4096, sizeof(bool) * n_samples);
           posix_memalign((void **)&sums  , 4096, sizeof(TFloat) * n_samples);
-#pragma acc enter data create(zcheck[:n_samples],sums[:_max_embs])
+#pragma acc enter data create(zcheck[:n_samples],sums[:n_samples])
         }
 
         virtual ~UnifracUnnormalizedWeightedTask()
