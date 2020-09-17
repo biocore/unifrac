@@ -324,16 +324,19 @@ namespace su {
           const unsigned int n_samples = this->task_p->n_samples;
 
           zcheck = NULL;
+          sums = NULL;
           posix_memalign((void **)&zcheck, 4096, sizeof(bool) * n_samples);
-#pragma acc enter data create(zcheck[:n_samples])
+          posix_memalign((void **)&sums  , 4096, sizeof(TFloat) * n_samples);
+#pragma acc enter data create(zcheck[:n_samples],sums[:_max_embs])
         }
 
         virtual ~UnifracUnnormalizedWeightedTask()
         {
 #ifdef _OPENACC
           const unsigned int n_samples = this->task_p->n_samples;
-#pragma acc exit data delete(zcheck[:n_samples])
+#pragma acc exit data delete(sums[:n_samples],zcheck[:n_samples])
 #endif
+          free(sums);
           free(zcheck);
         }
 
@@ -341,8 +344,9 @@ namespace su {
 
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
       protected:
-        // temp buffer
+        // temp buffers
         bool     *zcheck;
+        TFloat   *sums;
     };
     template<class TFloat>
     class UnifracNormalizedWeightedTask : public UnifracTask<TFloat,TFloat> {
