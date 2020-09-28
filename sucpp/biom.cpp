@@ -159,7 +159,7 @@ void biom::create_id_index(std::vector<std::string> &ids,
     }
 }
 
-unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out) {
+unsigned int biom::get_obs_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out) {
     uint32_t idx = obs_id_index.at(id);
     uint32_t start = obs_indptr[idx];
     uint32_t end = obs_indptr[idx + 1];
@@ -198,11 +198,12 @@ unsigned int biom::get_obs_data_direct(std::string id, uint32_t *& current_indic
     return count[0];
 }
 
-void biom::get_obs_data(std::string id, double* out) {
+template<class TFloat>
+void biom::get_obs_data_TT(const std::string &id, TFloat* out) const {
     uint32_t idx = obs_id_index.at(id);
     unsigned int count = obs_counts_resident[idx];
-    uint32_t *indices = obs_indices_resident[idx];
-    double *data = obs_data_resident[idx];
+    const uint32_t * const indices = obs_indices_resident[idx];
+    const double * const data = obs_data_resident[idx];
 
     // reset our output buffer
     for(unsigned int i = 0; i < n_samples; i++)
@@ -213,7 +214,53 @@ void biom::get_obs_data(std::string id, double* out) {
     }
 }
 
-unsigned int biom::get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out) {
+void biom::get_obs_data(const std::string &id, double* out) const {
+  biom::get_obs_data_TT(id,out);
+}
+
+void biom::get_obs_data(const std::string &id, float* out) const {
+  biom::get_obs_data_TT(id,out);
+}
+
+
+// note: out is supposed to be fully filled, i.e. out[start:end]
+template<class TFloat>
+void biom::get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, bool normalize, TFloat* out) const {
+    uint32_t idx = obs_id_index.at(id);
+    unsigned int count = obs_counts_resident[idx];
+    const uint32_t * const indices = obs_indices_resident[idx];
+    const double * const data = obs_data_resident[idx];
+
+    // reset our output buffer
+    for(unsigned int i = start; i < end; i++)
+        out[i-start] = 0.0;
+
+    if (normalize) {
+      for(unsigned int i = 0; i < count; i++) {
+        const int32_t j = indices[i];
+        if ((j>=start)&&(j<end)) { 
+          out[j-start] = data[i]/sample_counts[j];
+        }
+      }
+    } else {
+      for(unsigned int i = 0; i < count; i++) {
+        const uint32_t j = indices[i];
+        if ((j>=start)&&(j<end)) {
+          out[j-start] = data[i];
+        }
+      }
+    }
+}
+
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, double* out) const {
+  biom::get_obs_data_range_TT(id,start,end,normalize,out);
+}
+
+void biom::get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, float* out) const {
+  biom::get_obs_data_range_TT(id,start,end,normalize,out);
+}
+
+unsigned int biom::get_sample_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out) {
     uint32_t idx = sample_id_index.at(id);
     uint32_t start = sample_indptr[idx];
     uint32_t end = sample_indptr[idx + 1];

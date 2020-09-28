@@ -8,18 +8,19 @@
 #ifndef __UNIFRAC
     namespace su {
         enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized, unweighted_fp32, weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32};
-        
+
+        template<class TFloat> 
         class PropStack {
             private:
-                std::stack<double*> prop_stack;
-                std::unordered_map<uint32_t, double*> prop_map;
+                std::stack<TFloat*> prop_stack;
+                std::unordered_map<uint32_t, TFloat*> prop_map;
                 uint32_t defaultsize;
             public:
                 PropStack(uint32_t vecsize);
                 ~PropStack();
-                double* pop(uint32_t i);
+                TFloat* pop(uint32_t i);
                 void push(uint32_t i);
-                double* get(uint32_t i);
+                TFloat* get(uint32_t i);
         };
 
         void faith_pd(biom &table, BPTree &tree, double* result);
@@ -75,11 +76,20 @@
         void condensed_form_to_matrix(const double*  __restrict__ cf, const uint32_t n, double*  __restrict__ buf2d);
         void condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uint32_t n, float*  __restrict__ buf2d);
 
-        void set_proportions(double* props, 
-                             BPTree &tree, uint32_t node, 
-                             biom &table, 
-                             PropStack &ps,
+        template<class TFloat>
+        void set_proportions(TFloat* __restrict__ props, 
+                             const BPTree &tree, uint32_t node, 
+                             const biom &table, 
+                             PropStack<TFloat> &ps,
                              bool normalize = true);
+
+        template<class TFloat>
+        void set_proportions_range(TFloat* __restrict__ props,
+                                   const BPTree &tree, uint32_t node,
+                                   const biom &table,unsigned int start, unsigned int end,
+                                   PropStack<TFloat> &ps,
+                                   bool normalize = true);
+
         std::vector<double*> make_strides(unsigned int n_samples);
 
         inline uint64_t comb_2(uint64_t N) {

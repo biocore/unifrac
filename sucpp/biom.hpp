@@ -38,7 +38,22 @@ namespace su {
              *      Values of an index position [0, n_samples) which do not
              *      have data will be zero'd.
              */
-            void get_obs_data(std::string id, double* out);
+            void get_obs_data(const std::string &id, double* out) const; 
+            void get_obs_data(const std::string &id, float* out) const;
+
+            /* get a dense vector of a range of observation data
+             *
+             * @param id The observation ID to fetc
+             * @param start Initial index
+             * @param end   First index past the end
+             * @param normalize If set, divide by sample_counts
+             * @param out An allocated array of at least size (end-start). First element will corrrectpoint to index start. 
+             *      Values of an index position [0, (end-start)) which do not
+             *      have data will be zero'd.
+             */
+            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, double* out) const;
+            void get_obs_data_range(const std::string &id, unsigned int start, unsigned int end, bool normalize, float* out) const;
+
         private:
             /* retain DataSet handles within the HDF5 file */
             H5::DataSet obs_indices;
@@ -50,8 +65,8 @@ namespace su {
             double **obs_data_resident;
             unsigned int *obs_counts_resident;
 
-            unsigned int get_obs_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
-            unsigned int get_sample_data_direct(std::string id, uint32_t *& current_indices_out, double *& current_data_out);
+            unsigned int get_obs_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out);
+            unsigned int get_sample_data_direct(const std::string &id, uint32_t *& current_indices_out, double *& current_data_out);
             double* get_sample_counts();
 
             /* At construction, lookups mapping IDs -> index position within an
@@ -85,5 +100,10 @@ namespace su {
              */
             void create_id_index(std::vector<std::string> &ids, 
                                  std::unordered_map<std::string, uint32_t> &map);
+
+
+            // templatized version
+            template<class TFloat> void get_obs_data_TT(const std::string &id, TFloat* out) const;
+            template<class TFloat> void get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, bool normalize, TFloat* out) const;
     };
 }

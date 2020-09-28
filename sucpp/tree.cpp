@@ -197,27 +197,27 @@ void BPTree::index_and_cache() {
     }
 }
 
-uint32_t BPTree::postorderselect(uint32_t k) { 
+uint32_t BPTree::postorderselect(uint32_t k) const { 
     return open(select_0_index[k]);
 }
 
-uint32_t BPTree::preorderselect(uint32_t k) {
+uint32_t BPTree::preorderselect(uint32_t k) const {
     return select_1_index[k];
 }
 
-inline uint32_t BPTree::open(uint32_t i) {
+inline uint32_t BPTree::open(uint32_t i) const {
     return structure[i] ? i : openclose[i];
 }
 
-inline uint32_t BPTree::close(uint32_t i) {
+inline uint32_t BPTree::close(uint32_t i) const {
     return structure[i] ? openclose[i] : i;
 }
 
-bool BPTree::isleaf(unsigned int idx) {
+bool BPTree::isleaf(unsigned int idx) const {
     return (structure[idx] && !structure[idx + 1]);
 }
 
-uint32_t BPTree::leftchild(uint32_t i) {
+uint32_t BPTree::leftchild(uint32_t i) const {
     // aka fchild
     if(isleaf(i))
         return 0;  // this is awkward, using 0 which is root, but a root cannot be a child. edge case
@@ -225,7 +225,7 @@ uint32_t BPTree::leftchild(uint32_t i) {
         return i + 1;
 }
 
-uint32_t BPTree::rightchild(uint32_t i) {
+uint32_t BPTree::rightchild(uint32_t i) const {
     // aka lchild
     if(isleaf(i))
         return 0;  // this is awkward, using 0 which is root, but a root cannot be a child. edge case
@@ -233,7 +233,7 @@ uint32_t BPTree::rightchild(uint32_t i) {
         return open(close(i) - 1);
 }
 
-uint32_t BPTree::rightsibling(uint32_t i) {
+uint32_t BPTree::rightsibling(uint32_t i) const {
     // aka nsibling
     uint32_t position = close(i) + 1;
     if(position >= nparens)
@@ -244,18 +244,18 @@ uint32_t BPTree::rightsibling(uint32_t i) {
         return 0;
 }
 
-int32_t BPTree::parent(uint32_t i) {
+int32_t BPTree::parent(uint32_t i) const {
     return enclose(i);
 }
 
-int32_t BPTree::enclose(uint32_t i) {
+int32_t BPTree::enclose(uint32_t i) const {
     if(structure[i])
         return bwd(i, -2) + 1;
     else
         return bwd(i - 1, -2) + 1; 
 }
 
-int32_t BPTree::bwd(uint32_t i, int d) {
+int32_t BPTree::bwd(uint32_t i, int d) const {
     uint32_t target_excess = excess[i] + d;
     for(int current_idx = i - 1; current_idx >= 0; current_idx--) {
         if(excess[current_idx] == target_excess)
@@ -410,7 +410,7 @@ void BPTree::set_node_metadata(unsigned int open_idx, std::string &token) {
     lengths[open_idx] = length;
 }
 
-inline bool BPTree::is_structure_character(char c) {
+inline bool BPTree::is_structure_character(char c) const {
     return (c == '(' || c == ')' || c == ',' || c == ';');
 }
 
