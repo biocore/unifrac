@@ -1,5 +1,8 @@
 #include <iostream>
 #include "api.hpp"
+#include "biom.hpp"
+#include "tree.hpp"
+#include "unifrac.hpp"
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
@@ -655,6 +658,44 @@ void test_merge_partial_mmap() {
     SUITE_END();
 }
 
+void test_center_mat() {
+    SUITE_START("test center mat");
+
+    mat_t *result = NULL;
+    compute_status status;
+    status = one_off("test.biom", "test.tre", "unweighted",
+                     false, 1.0, false, 1, &result);
+    ASSERT(status == okay);
+    ASSERT(result != NULL);
+
+    const uint32_t n_samples = result->n_samples;
+    ASSERT(n_samples == 6);
+
+    double matrix[6*6];
+
+    su::condensed_form_to_matrix_T(result->condensed_form, n_samples, matrix);
+
+    double exp[] = { 0.05343726,  0.04366213, -0.0329743 , -0.07912698, -0.00495654, 0.01995843,
+                     0.04366213,  0.073887  ,  0.04867914, -0.11112434, -0.04973167,-0.00537226,
+                    -0.0329743 ,  0.04867914,  0.20714475, -0.07737528, -0.17044974, 0.02497543,
+                    -0.07912698, -0.11112434, -0.07737528,  0.14830877,  0.11192366, 0.00739418,
+                    -0.00495654, -0.04973167, -0.17044974,  0.11192366,  0.18664966,-0.07343537,
+                     0.01995843, -0.00537226,  0.02497543,  0.00739418, -0.07343537, 0.02647959 };
+
+    double centered[6*6]; 
+
+    mat_to_centered(matrix, n_samples, centered);
+
+    for(int i = 0; i < (6*6); i++) {
+      //printf("%i %f %f\n",i,float(centered[i]),float(exp[i]));
+      ASSERT(fabs(centered[i] - exp[i]) < 0.000001);
+    }
+
+    SUITE_END();
+}
+
+
+
 int main(int argc, char** argv) {
     /* one_off and partial are executed as integration tests */    
 
@@ -665,6 +706,8 @@ int main(int argc, char** argv) {
     test_merge_partial_dyn_mat();
     test_merge_partial_io();
     test_merge_partial_mmap();
+
+    test_center_mat();    
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);

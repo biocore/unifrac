@@ -509,6 +509,11 @@ MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int 
 MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result);
 
 
+void mat_to_centered(const double * mat, const uint32_t n_samples, double * centered);
+void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * centered);
+void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered);
+
+
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
 void set_tasks(std::vector<su::task_parameters> &tasks,

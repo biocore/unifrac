@@ -1198,3 +1198,157 @@ MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats,
 }
 
 
+// Compute the E_matrix with means
+// centered must be pre-allocated and same size as mat (n_samples*n_samples)...will work even if centered==mat
+// row_means must be pre-allocated and n_samples in size
+template<class TRealIn, class TReal>
+inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,               // IN
+                           TReal * centered, TReal * row_means, TReal &global_mean) {   // OUT
+  /*
+    Compute E matrix from a distance matrix and store in temp centered matrix.
+
+    Squares and divides by -2 the input elementwise. Eq. 9.20 in
+    Legendre & Legendre 1998.
+
+    Compute sum of the rows at the same time.
+  */
+
+  TReal global_sum = 0.0;
+
+#pragma omp parallel for shared(mat,centered,row_means) reduction(+: global_sum)
+  for (uint32_t row=0; row<n_samples; row++) {
+    const TRealIn * mat_row = mat + n_samples*row;
+    TReal         * centered_row = centered + n_samples*row;
+
+    TReal row_sum = 0.0;
+
+    const TReal mhalf = -0.5;
+    uint32_t col=0;
+
+#ifdef __AVX2__
+    for (; (col+7)<n_samples; col+=8) {
+       TReal el0 = mat_row[col  ];
+       TReal el1 = mat_row[col+1];
+       TReal el2 = mat_row[col+2];
+       TReal el3 = mat_row[col+3];
+       TReal el4 = mat_row[col+4];
+       TReal el5 = mat_row[col+5];
+       TReal el6 = mat_row[col+6];
+       TReal el7 = mat_row[col+7];
+       el0 =  mhalf*el0*el0;
+       el1 =  mhalf*el1*el1;
+       el2 =  mhalf*el2*el2;
+       el3 =  mhalf*el3*el3;
+       el4 =  mhalf*el4*el4;
+       el5 =  mhalf*el5*el5;
+       el6 =  mhalf*el6*el6;
+       el7 =  mhalf*el7*el7;
+       centered_row[col  ] = el0;
+       centered_row[col+1] = el1;
+       centered_row[col+2] = el2;
+       centered_row[col+3] = el3;
+       centered_row[col+4] = el4;
+       centered_row[col+5] = el5;
+       centered_row[col+6] = el6;
+       centered_row[col+7] = el7;
+      
+       row_sum += el0 + el1 + el2 + el3 + el4 + el5 + el6 + el7; 
+    }
+#else
+
+#ifdef __AVX__
+    for (; (col+3)<n_samples; col+=4) {
+       TReal el0 = mat_row[col  ];
+       TReal el1 = mat_row[col+1];
+       TReal el2 = mat_row[col+2];
+       TReal el3 = mat_row[col+3];
+       el0 =  mhalf*el0*el0;
+       el1 =  mhalf*el1*el1;
+       el2 =  mhalf*el2*el2;
+       el3 =  mhalf*el3*el3;
+       centered_row[col  ] = el0;
+       centered_row[col+1] = el1;
+       centered_row[col+2] = el2;
+       centered_row[col+3] = el3;
+      
+       row_sum += el0 + el1 + el2 + el3; 
+    }
+#endif
+
+#endif
+
+    // in case there are any leftovers
+    for (; col<n_samples; col++) {
+       TReal el0 = mat_row[col  ];
+       el0 =  mhalf*el0*el0;
+       centered_row[col  ] = el0;
+       row_sum += el0;
+    }
+
+    global_sum += row_sum;
+    row_means[row] += row_sum/n_samples;
+  }
+
+  global_mean = (global_sum/n_samples)/n_samples;
+}
+
+// centered must be pre-allocated and same size as mat
+template<class TReal>
+inline void F_matrix_inplace(const TReal * __restrict__ row_means, const TReal global_mean, TReal * __restrict__ centered, const uint32_t n_samples) {
+  /*
+    Compute F matrix from E matrix.
+
+    Centring step: for each element, the mean of the corresponding
+    row and column are substracted, and the mean of the whole
+    matrix is added. Eq. 9.21 in Legendre & Legendre 1998.
+    Pseudo-code:
+    row_means = E_matrix.mean(axis=1, keepdims=True)
+    col_means = Transpose(row_means)
+    matrix_mean = E_matrix.mean()
+    return E_matrix - row_means - col_means + matrix_mean
+  */
+
+  // use a tiled pattern to maximize locality of row_means
+#pragma omp parallel for shared(centered,row_means)
+  for (uint32_t trow=0; trow<n_samples; trow+=512) {
+    uint32_t trow_max = std::min(trow+512, n_samples);
+
+    for (uint32_t tcol=0; tcol<n_samples; tcol+=512) {
+      uint32_t tcol_max = std::min(tcol+512, n_samples);
+
+      for (uint32_t row=trow; row<trow_max; row++) {
+        TReal *  __restrict__ centered_row = centered + n_samples*row;
+        const TReal gr_mean = global_mean - row_means[row];
+
+        for (uint32_t col=tcol; col<tcol_max; col++) {
+          centered_row[col] += gr_mean - row_means[col];
+        }
+      }
+    }
+
+  }
+}
+
+// centered must be pre-allocated and same size as mat...will work even if centered==mat
+template<class TRealIn, class TReal>
+inline void mat_to_centered_T(const TRealIn * mat, const uint32_t n_samples, TReal * centered) {
+
+   TReal global_mean;
+   TReal *row_means = (TReal *) malloc(n_samples*sizeof(TReal));
+   E_matrix_means(mat, n_samples, centered, row_means, global_mean);
+   F_matrix_inplace(row_means, global_mean, centered, n_samples);
+   free(row_means);
+}
+
+void mat_to_centered(const double * mat, const uint32_t n_samples, double * centered) {
+  mat_to_centered_T(mat,n_samples,centered);
+}
+
+void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * centered) {
+  mat_to_centered_T(mat,n_samples,centered);
+}
+
+void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered) {
+  mat_to_centered_T(mat,n_samples,centered);
+}
+
