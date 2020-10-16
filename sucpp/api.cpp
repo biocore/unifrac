@@ -1286,7 +1286,7 @@ inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,       
     }
 
     global_sum += row_sum;
-    row_means[row] += row_sum/n_samples;
+    row_means[row] = row_sum/n_samples;
   }
 
   global_mean = (global_sum/n_samples)/n_samples;
