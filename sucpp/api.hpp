@@ -131,7 +131,7 @@ void destroy_partial_mat(partial_mat_t** result);
 void destroy_partial_dyn_mat(partial_dyn_mat_t** result);
 void destroy_results_vec(r_vec** result);
 
-/* Compute UniFrac
+/* Compute UniFrac - condensed form
  *
  * biom_filename <const char*> the filename to the biom table.
  * tree_filename <const char*> the filename to the correspodning tree.
@@ -153,6 +153,58 @@ void destroy_results_vec(r_vec** result);
 EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename,
                              const char* unifrac_method, bool variance_adjust, double alpha,
                              bool bypass_tips, unsigned int threads, mat_t** result);
+
+/* Compute UniFrac - matrix form
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads/blocks to use.
+ * mmap_dir <const char*> If not NULL, area to use for temp memory storage
+ * result <mat_full_fp64_t**> the resulting distance matrix in matrix form, this is initialized within the method so using **
+ *
+ * one_off_matrix returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ */
+EXTERN compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
+                                     const char* unifrac_method, bool variance_adjust, double alpha,
+                                     bool bypass_tips, unsigned int nthreads,
+                                     const char *mmap_dir,
+                                     mat_full_fp64_t** result);
+
+/* Compute UniFrac - matrix form, fp32 variant
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads/blocks to use.
+ * mmap_dir <const char*> If not NULL, area to use for temp memory storage
+ * result <mat_full_fp32_t**> the resulting distance matrix in matrix form, this is initialized within the method so using **
+ *
+ * one_off_matrix_fp32 returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ */
+EXTERN compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                          const char* unifrac_method, bool variance_adjust, double alpha,
+                                          bool bypass_tips, unsigned int nthreads,
+                                          const char *mmap_dir,
+                                          mat_full_fp32_t** result);
 
 
 /* compute Faith PD

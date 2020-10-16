@@ -1,8 +1,5 @@
 #include <iostream>
 #include "api.hpp"
-#include "biom.hpp"
-#include "tree.hpp"
-#include "unifrac.hpp"
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
@@ -661,19 +658,17 @@ void test_merge_partial_mmap() {
 void test_center_mat() {
     SUITE_START("test center mat");
 
-    mat_t *result = NULL;
+    mat_full_fp64_t *result = NULL;
     compute_status status;
-    status = one_off("test.biom", "test.tre", "unweighted",
-                     false, 1.0, false, 1, &result);
+    status = one_off_matrix("test.biom", "test.tre", "unweighted",
+                            false, 1.0, false, 1, NULL, &result);
     ASSERT(status == okay);
     ASSERT(result != NULL);
 
     const uint32_t n_samples = result->n_samples;
     ASSERT(n_samples == 6);
 
-    double matrix[6*6];
-
-    su::condensed_form_to_matrix_T(result->condensed_form, n_samples, matrix);
+    double *matrix = result->matrix;
 
     double exp[] = { 0.05343726,  0.04366213, -0.0329743 , -0.07912698, -0.00495654, 0.01995843,
                      0.04366213,  0.073887  ,  0.04867914, -0.11112434, -0.04973167,-0.00537226,
@@ -682,7 +677,7 @@ void test_center_mat() {
                     -0.00495654, -0.04973167, -0.17044974,  0.11192366,  0.18664966,-0.07343537,
                      0.01995843, -0.00537226,  0.02497543,  0.00739418, -0.07343537, 0.02647959 };
 
-    double centered[6*6]; 
+    double *centered = (double *) malloc(6*6*sizeof(double)); 
 
     mat_to_centered(matrix, n_samples, centered);
 
@@ -693,8 +688,6 @@ void test_center_mat() {
 
     SUITE_END();
 }
-
-
 
 int main(int argc, char** argv) {
     /* one_off and partial are executed as integration tests */    

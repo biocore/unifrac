@@ -400,12 +400,9 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     SET_METHOD(unifrac_method, unknown_method)
     PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
 
-    // we resize to the largest number of possible stripes even if only computing
-    // partial, however we do not allocate arrays for non-computed stripes so
-    // there is a little memory waste here but should be on the order of
-    // 8 bytes * N samples per vector.
-    std::vector<double*> dm_stripes((table.n_samples + 1) / 2);
-    std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
+    const unsigned int stripe_stop = (table.n_samples + 1) / 2;
+    std::vector<double*> dm_stripes(stripe_stop);
+    std::vector<double*> dm_stripes_total(stripe_stop);
 
     if(nthreads > dm_stripes.size()) {
         fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", dm_stripes.size());
@@ -415,7 +412,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
 
-    set_tasks(tasks, alpha, table.n_samples, 0, 0, bypass_tips, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, 0, stripe_stop, bypass_tips, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_mat(*result, table, true);  // true -> is_upper_triangle
@@ -435,6 +432,77 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
 
     return okay;
 }
+
+// TMat mat_full_fp32_t
+template<class TReal, class TMat>
+compute_status one_off_matrix_T(const char* biom_filename, const char* tree_filename,
+                                const char* unifrac_method, bool variance_adjust, double alpha,
+                                bool bypass_tips, unsigned int nthreads,
+                                const char *mmap_dir,  
+                                TMat** result) {
+    CHECK_FILE(biom_filename, table_missing)
+    CHECK_FILE(tree_filename, tree_missing)
+    SET_METHOD(unifrac_method, unknown_method)
+    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+
+    const unsigned int stripe_stop = (table.n_samples + 1) / 2;
+    partial_mat_t *partial_mat = NULL;
+
+    {
+      std::vector<double*> dm_stripes(stripe_stop);
+      std::vector<double*> dm_stripes_total(stripe_stop);
+
+      std::vector<su::task_parameters> tasks(nthreads);
+      std::vector<std::thread> threads(nthreads);
+
+      set_tasks(tasks, alpha, table.n_samples, 0, stripe_stop, bypass_tips, nthreads);
+      su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
+
+      initialize_partial_mat(partial_mat, table, dm_stripes, 0, stripe_stop, true);  // true -> is_upper_triangle
+      if ((partial_mat==NULL) || (partial_mat->stripes==NULL) || (partial_mat->sample_ids==NULL) ) {
+          fprintf(stderr, "Memory allocation error! (initialize_partial_mat)\n");
+          exit(EXIT_FAILURE);
+      }
+      destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, 0, stripe_stop);
+    }
+
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mat->sample_ids, partial_mat->n_samples,mmap_dir);
+
+    if (((*result)==NULL) || ((*result)->matrix==NULL) || ((*result)->sample_ids==NULL) ) {
+        fprintf(stderr, "Memory allocation error! (initialize_mat)\n");
+        exit(EXIT_FAILURE);
+    }
+
+
+    {
+      MemoryStripes ps(partial_mat->stripes);
+      const uint32_t tile_size = (mmap_dir==NULL) ? \
+                                  (128/sizeof(TReal)) : /* keep it small for memory access, to fit in chip cache */ \
+                                  (4096/sizeof(TReal)); /* make it larger for mmap, as the limiting factor is swapping */
+      su::stripes_to_matrix_T<TReal>(ps, partial_mat->n_samples, partial_mat->stripe_total, (*result)->matrix, tile_size);
+    }
+    destroy_partial_mat(&partial_mat);
+
+    return okay;
+}
+
+
+compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
+                              const char* unifrac_method, bool variance_adjust, double alpha,
+                              bool bypass_tips, unsigned int nthreads,
+                              const char *mmap_dir,
+                              mat_full_fp64_t** result) {
+ return one_off_matrix_T<double,mat_full_fp64_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
+}
+
+compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                   const char* unifrac_method, bool variance_adjust, double alpha,
+                                   bool bypass_tips, unsigned int nthreads,
+                                   const char *mmap_dir,
+                                   mat_full_fp32_t** result) {
+ return one_off_matrix_T<float,mat_full_fp32_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
+}
+
 
 IOStatus write_mat(const char* output_filename, mat_t* result) {
     std::ofstream output;
