@@ -662,7 +662,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
                          "consolidations are: %s"
                          % (consolidation, ', '.join(CONSOLIDATIONS.keys())))
 
-    if alpha is not None and method is not generalized:
+    if alpha is not None and method_ is not generalized:
         raise ValueError("The alpha parameter can only be set when the method "
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
