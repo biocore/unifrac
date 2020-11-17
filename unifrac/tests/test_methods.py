@@ -100,7 +100,7 @@ class StateUnifracTests(unittest.TestCase):
     def test_meta_unifrac_alpha_not_generalized(self):
         with self.assertRaisesRegex(ValueError,
                                     "The alpha parameter can"):
-            meta((self.table1, ), (self.tree1, ), method='generalized',
+            meta((self.table1, ), (self.tree1, ), method='unweighted',
                  alpha=1, consolidation='skipping_missing_matrices')
 
 
