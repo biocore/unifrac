@@ -11,13 +11,13 @@ ifdef DEBUG
 	endif
 else
 	ifneq (,$(findstring pgi,$(COMPILER)))
-		OPT = -fast
+		OPT = -fast -mp
 	else
 	  ifneq (,$(findstring gcc,$(COMPILER)))
-		OPT = -O4
+		OPT = -O4  -fopenmp
 		TGTFLAGS = -fwhole-program
 	  else
-		OPT = -O3
+		OPT = -O3 -fopenmp
 	  endif
 	endif
 endif
@@ -38,7 +38,7 @@ EXEFLAGS =
 
 ifndef NOGPU
 	ifneq (,$(findstring pgi,$(COMPILER)))
-		CPPFLAGS += -acc -mp
+		CPPFLAGS += -acc
 	        ifeq ($(PERFORMING_CONDA_BUILD),True)
 	            CPPFLAGS += -ta=tesla:ccall
 		else
