@@ -26,7 +26,7 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
 #ifdef _OPENACC
 #pragma acc parallel loop present(embedded_proportions,lengths,zcheck,sums)
 #else
-#pragma omp parallel shared(embedded_proportions,lengths,zcheck,sums)
+#pragma omp parallel for default(shared)
 #endif
     for(unsigned int k=0; k<n_samples; k++) {
             bool all_zeros=true;
@@ -52,7 +52,7 @@ void su::UnifracUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs,
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,lengths,zcheck,sums) async
 #else
     // use dynamic scheduling due to non-homogeneity in the loop
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,dm_stripes_buf,lengths,zcheck,sums)
+#pragma omp parallel for default(shared) schedule(dynamic,1)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -140,7 +140,7 @@ void su::UnifracVawUnnormalizedWeightedTask<TFloat>::_run(unsigned int filled_em
     const unsigned int acc_vector_size = su::UnifracVawUnnormalizedWeightedTask<TFloat>::acc_vector_size;
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,lengths) async
 #else
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,lengths)
+#pragma omp parallel for default(shared) schedule(dynamic,1)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -209,7 +209,7 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
 #ifdef _OPENACC
 #pragma acc parallel loop present(embedded_proportions,lengths,zcheck,sums)
 #else
-#pragma omp parallel shared(embedded_proportions,lengths,zcheck,sums)
+#pragma omp parallel for default(shared)
 #endif
     for(unsigned int k=0; k<n_samples; k++) {
             bool all_zeros=true;
@@ -234,7 +234,7 @@ void su::UnifracNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs, c
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths,zcheck,sums) async
 #else
     // use dynamic scheduling due to non-homogeneity in the loop
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths,zcheck,sums)
+#pragma omp parallel for schedule(dynamic,1) default(shared)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
      for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -329,7 +329,7 @@ void su::UnifracVawNormalizedWeightedTask<TFloat>::_run(unsigned int filled_embs
     const unsigned int acc_vector_size = su::UnifracVawNormalizedWeightedTask<TFloat>::acc_vector_size;
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
 #else
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths)
+#pragma omp parallel for schedule(dynamic,1) default(shared)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -404,7 +404,7 @@ void su::UnifracGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const TF
     const unsigned int acc_vector_size = su::UnifracGeneralizedTask<TFloat>::acc_vector_size;
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths) async
 #else
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,lengths)
+#pragma omp parallel for schedule(dynamic,1) default(shared)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -480,7 +480,7 @@ void su::UnifracVawGeneralizedTask<TFloat>::_run(unsigned int filled_embs, const
     const unsigned int acc_vector_size = su::UnifracVawGeneralizedTask<TFloat>::acc_vector_size;
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
 #else
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths)
+#pragma omp parallel for schedule(dynamic,1) default(shared)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -563,7 +563,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #ifdef _OPENACC
 #pragma acc parallel loop collapse(2) gang present(lengths,sums) async
 #else 
-#pragma omp parallel shared(lengths,sums)
+#pragma omp parallel for default(shared)
 #endif
     for (unsigned int emb_el=0; emb_el<filled_embs_els; emb_el++) {
        for (unsigned int sub8=0; sub8<8; sub8++) {
@@ -620,7 +620,7 @@ void su::UnifracUnweightedTask<TFloat>::_run(unsigned int filled_embs, const TFl
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,sums) async
 #else
     // use dynamic scheduling due to non-homogeneity in the loop
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,dm_stripes_buf,dm_stripes_total_buf,sums)
+#pragma omp parallel for schedule(dynamic,1) default(shared)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
@@ -717,7 +717,7 @@ void su::UnifracVawUnweightedTask<TFloat>::_run(unsigned int filled_embs, const 
     const unsigned int acc_vector_size = su::UnifracVawUnweightedTask<TFloat>::acc_vector_size;
 #pragma acc parallel loop collapse(3) vector_length(acc_vector_size) present(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths) async
 #else
-#pragma omp parallel for schedule(dynamic,1) shared(embedded_proportions,embedded_counts,sample_total_counts,dm_stripes_buf,dm_stripes_total_buf,lengths)
+#pragma omp parallel for schedule(dynamic,1) default(shared)
 #endif
     for(unsigned int sk = 0; sk < sample_steps ; sk++) {
       for(unsigned int stripe = start_idx; stripe < stop_idx; stripe++) {
