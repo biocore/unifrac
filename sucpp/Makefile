@@ -11,13 +11,13 @@ ifdef DEBUG
 	endif
 else
 	ifneq (,$(findstring pgi,$(COMPILER)))
-		OPT = -fast -mp
+		OPT = -fast
 	else
 	  ifneq (,$(findstring gcc,$(COMPILER)))
-		OPT = -O4  -fopenmp
+		OPT = -O4
 		TGTFLAGS = -fwhole-program
 	  else
-		OPT = -O3 -fopenmp
+		OPT = -O3
 	  endif
 	endif
 endif
@@ -35,6 +35,15 @@ else
 endif
 
 EXEFLAGS =
+
+ifneq (,$(findstring pgi,$(COMPILER)))
+	MPFLAG =  -mp
+else
+	MPFLAG = -fopenmp
+endif
+
+LDDFLAGS += $(MPFLAG)
+CPPFLAGS += $(MPFLAG)
 
 ifndef NOGPU
 	ifneq (,$(findstring pgi,$(COMPILER)))
