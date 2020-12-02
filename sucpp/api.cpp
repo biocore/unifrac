@@ -12,6 +12,9 @@
 #include <sys/mman.h>
 #include <lz4.h>
 
+#include <random>
+#include <mkl_cblas.h>
+#include <mkl_lapacke.h>
 
 #define MMAP_FD_MASK 0x0fff
 #define MMAP_FLAG    0x1000
@@ -1294,6 +1297,7 @@ inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,       
     uint32_t col=0;
 
 #ifdef __AVX2__
+    // group many together when HW supports vecotrization
     for (; (col+7)<n_samples; col+=8) {
        TReal el0 = mat_row[col  ];
        TReal el1 = mat_row[col+1];
@@ -1397,6 +1401,8 @@ inline void F_matrix_inplace(const TReal * __restrict__ row_means, const TReal g
   }
 }
 
+// Center the matrix
+// mat and center must be nxn and symmetric
 // centered must be pre-allocated and same size as mat...will work even if centered==mat
 template<class TRealIn, class TReal>
 inline void mat_to_centered_T(const TRealIn * mat, const uint32_t n_samples, TReal * centered) {
@@ -1419,4 +1425,130 @@ void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * c
 void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered) {
   mat_to_centered_T(mat,n_samples,centered);
 }
+
+// Matrix dot multiplication
+// Expects FORTRAN-style ColOrder
+// mat must be   cols x rows
+// other must be cols x rows (ColOrder... rows elements together)
+template<class TReal>
+inline void mat_dot_T(const TReal *mat, const TReal *other, const uint32_t rows, const uint32_t cols, TReal *out);
+
+template<>
+inline void mat_dot_T<double>(const double *mat, const double *other, const uint32_t rows, const uint32_t cols, double *out)
+{
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, other, rows, 0.0, out, rows);
+}
+
+// Expects FORTRAN-style ColOrder
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// Step 1
+// centered == n x n
+// randomized = k*2 x n (ColOrder... n elements together)
+template<class TReal>
+inline void centered_randomize_T(const TReal * centered, const uint32_t n_samples, const uint32_t k, TReal * randomized) {
+  uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
+  TReal * tmp = (TReal *) malloc(matrix_els*sizeof(TReal));
+
+  // Form a real n x k matrix whose entries are independent, identically
+  // distributed Gaussian random variables of zero mean and unit variance
+  TReal *G = tmp;
+  {
+    std::default_random_engine generator;
+    std::normal_distribution<TReal> distribution;
+    for (uint64_t i=0; i<matrix_els; i++) G[i] = distribution(generator);
+  }
+
+  // Note: Using the transposed version for efficiency (COL_ORDER)
+  // Since centered is symmetric, it works just fine
+
+  //First compute the top part of H
+  mat_dot_T<TReal>(centered,G,n_samples,k,randomized);
+
+  // power method... single iteration.. store in 2nd part of output
+  // Reusing tmp buffer for intermediate storage
+  mat_dot_T<TReal>(centered,randomized,n_samples,k,tmp);
+  mat_dot_T<TReal>(centered,tmp,n_samples,k,randomized+matrix_els);
+
+  free(tmp);
+}
+
+
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
+template<class TReal>
+inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal **eigenvalues, TReal **eigenvectors);
+
+template<>
+inline void find_eigens_fast_T<double>(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
+  const uint32_t k = n_dims+2;
+  uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
+  uint64_t square_els = uint64_t(n_samples)*uint64_t(n_samples);
+
+  // Will return these buffers
+  double *S = (double *) malloc(uint64_t(n_samples)*sizeof(double));
+  double * U = (double *) malloc(square_els*sizeof(double));
+
+  double * tau = (double *) malloc(sizeof(double)*std::min(n_samples,k*2));
+
+  double * H = (double *) malloc(sizeof(double)*matrix_els*2);
+
+  // step 1
+  centered_randomize_T<double>(centered, n_samples, k, H);
+
+  //printf("=======  H    =========\n");
+  //for (uint64_t i=0; i<(matrix_els*2); i++) printf("%i %.4f\n",i, H[i]);
+
+  // step 2
+  // QR decomposition of H , Q returned in implicit form
+  // updates in-place H, which is used later on for computing Q dots
+  if (LAPACKE_dgeqrf(LAPACK_COL_MAJOR, n_samples, k*2, H, n_samples, tau)!=0) exit(1); // should never fail
+
+  // step 3
+  // T = centered * Q (since centered^T == centered, due to being symmetric)
+  // T == centered, updated in-place
+  double * T = centered;
+  if (LAPACKE_dormqr(LAPACK_COL_MAJOR, 'R', 'N', n_samples, n_samples, n_samples, H, n_samples, tau, centered, n_samples)!=0) exit(1); // should never fail
+
+  //printf("=======  T    =========\n");
+  //for (uint64_t i=0; i<square_els; i++) printf("%i %.4f\n",i, T[i]);
+
+  // step 4
+  // compute svt
+  double *vt = U; // will be updated in place later
+  {
+    double *superb = (double *) malloc(sizeof(double)*n_samples);
+    if (LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'A', n_samples, n_samples, T, n_samples, S, NULL, k, vt, n_samples, superb)!=0) exit(1); // should never fail
+    free(superb);
+  }
+
+  //printf("=======  S    =========\n");
+  //for (uint64_t i=0; i<n_samples; i++) printf("%i %.4f\n",i, S[i]);
+
+  // step 5
+  // compute U = (Q * v)^t = (vt * Qt)
+  // U == vt, updated in-place
+  if (LAPACKE_dormqr(LAPACK_COL_MAJOR, 'R', 'T', n_samples, n_samples, n_samples, H, n_samples, tau, vt, n_samples)!=0) exit(1); // should never fail
+
+  free(H);
+  free(tau);
+
+  //printf("=======  U    =========\n");
+  //for (uint64_t i=0; i<square_els; i++) printf("%i %.4f\n",i, U[i]);
+
+  // step 6
+  // get theinteresting subset, and return
+  //*eigenvalues  = (double *) realloc(S, sizeof(double)*n_dims);
+  //*eigenvectors = (double *) realloc(U, sizeof(double)*uint64_t(n_samples)*uint64_t(n_dims));
+
+  // while we do waste a little bit of memory, it is not a lot, and keeps the heap less fragmented
+  *eigenvalues  = S;
+  *eigenvectors = U;
+}
+
+void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
+  return find_eigens_fast_T<double>(n_samples,n_dims,centered,eigenvalues, eigenvectors);
+}
+
 
