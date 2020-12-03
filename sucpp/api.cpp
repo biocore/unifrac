@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <thread>
 #include <cstring>
+#include <stdlib.h> 
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -13,6 +14,8 @@
 #include <lz4.h>
 
 #include <random>
+
+// Not using anything mkl specific, but this is what we get from Conda
 #include <mkl_cblas.h>
 #include <mkl_lapacke.h>
 
@@ -1473,82 +1476,127 @@ inline void centered_randomize_T(const TReal * centered, const uint32_t n_sample
   free(tmp);
 }
 
+// templated LAPACKE wrapper
+
+// Compute QR
+// H is in
+// H&tau is out
+template<class TReal>
+inline int qr_i_T(const uint32_t rows, const uint32_t cols, TReal *H, TReal *tau);
+
+template<>
+inline int qr_i_T(const uint32_t rows, const uint32_t cols, double *H, double *tau) {
+  return LAPACKE_dgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+}
+
+// Compute mat = Q * mat
+// side and trans apply to Q
+template<class TReal>
+inline int qdot_i_T(const char side,const char trans, const uint32_t n, TReal *H, TReal *tau, TReal *mat);
+
+template<>
+inline int qdot_i_T(const char side,const char trans, const uint32_t n, double *H, double *tau, double *mat) {
+  return LAPACKE_dormqr(LAPACK_COL_MAJOR, side, trans, n, n, n, H, n, tau, mat, n);
+}
+
+// compute svt, and return S and V
+// T = input
+// S output
+// T is Vt on output
+template<class TReal>
+inline int svt_it_T(const uint32_t n, TReal *T, TReal *S);
+
+template<>
+inline int svt_it_T(const uint32_t n, double *T, double *S) {
+  double *superb = (double *) malloc(sizeof(double)*n);
+  int res =LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'O', n, n, T, n, S, NULL, n, NULL, n, superb);
+  free(superb);
+
+  return res;
+}
+
+// square matrix transpose, in-place
+template<class TReal>
+inline void transpose_i_T(const uint32_t n, TReal *mat) {
+  // To be optimized
+  for (uint32_t i=0; i<n; i++)
+    for (uint32_t j=0; j<i; j++)
+       std::swap(mat[i*n+j],mat[i+ j*n]);
+}
+
+// arbitrary matrix transpose, with copy
+// in  is cols x rows
+// out is rows x cols
+template<class TReal>
+inline void transpose_T(const uint32_t rows, const uint32_t cols, TReal *in, TReal *out) {
+  // To be optimized
+  for (uint32_t i=0; i<rows; i++)
+    for (uint32_t j=0; j<cols; j++)
+       out[i*cols+j] = in[i + j*rows];
+}
+
 
 // Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
 //     Original Paper: https://arxiv.org/abs/1007.5510
 // centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
 template<class TReal>
-inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal **eigenvalues, TReal **eigenvectors);
-
-template<>
-inline void find_eigens_fast_T<double>(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
+inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal **eigenvalues, TReal **eigenvectors) {
   const uint32_t k = n_dims+2;
   uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
   uint64_t square_els = uint64_t(n_samples)*uint64_t(n_samples);
 
-  // Will return these buffers
-  double *S = (double *) malloc(uint64_t(n_samples)*sizeof(double));
-  double * U = (double *) malloc(square_els*sizeof(double));
+  TReal *S = (TReal *) malloc(uint64_t(n_samples)*sizeof(TReal));
 
-  double * tau = (double *) malloc(sizeof(double)*std::min(n_samples,k*2));
+  TReal *tau = (TReal *) malloc(sizeof(TReal)*std::min(n_samples,k*2));
 
-  double * H = (double *) malloc(sizeof(double)*matrix_els*2);
+  TReal *H = (TReal *) malloc(sizeof(TReal)*matrix_els*2);
 
   // step 1
-  centered_randomize_T<double>(centered, n_samples, k, H);
-
-  //printf("=======  H    =========\n");
-  //for (uint64_t i=0; i<(matrix_els*2); i++) printf("%i %.4f\n",i, H[i]);
+  centered_randomize_T<TReal>(centered, n_samples, k, H);
 
   // step 2
   // QR decomposition of H , Q returned in implicit form
   // updates in-place H, which is used later on for computing Q dots
-  if (LAPACKE_dgeqrf(LAPACK_COL_MAJOR, n_samples, k*2, H, n_samples, tau)!=0) exit(1); // should never fail
+  if (qr_i_T<TReal>(n_samples, k*2, H, tau)!=0) exit(1); // should never fail
 
   // step 3
   // T = centered * Q (since centered^T == centered, due to being symmetric)
   // T == centered, updated in-place
-  double * T = centered;
-  if (LAPACKE_dormqr(LAPACK_COL_MAJOR, 'R', 'N', n_samples, n_samples, n_samples, H, n_samples, tau, centered, n_samples)!=0) exit(1); // should never fail
-
-  //printf("=======  T    =========\n");
-  //for (uint64_t i=0; i<square_els; i++) printf("%i %.4f\n",i, T[i]);
+  TReal * T = centered;
+  if (qdot_i_T<TReal>('R', 'N', n_samples, H, tau, centered)!=0) exit(1); // should never fail
 
   // step 4
   // compute svt
-  double *vt = U; // will be updated in place later
-  {
-    double *superb = (double *) malloc(sizeof(double)*n_samples);
-    if (LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'A', n_samples, n_samples, T, n_samples, S, NULL, k, vt, n_samples, superb)!=0) exit(1); // should never fail
-    free(superb);
-  }
-
-  //printf("=======  S    =========\n");
-  //for (uint64_t i=0; i<n_samples; i++) printf("%i %.4f\n",i, S[i]);
+  // update T in-place, Vt on output
+  if (svt_it_T<TReal>(n_samples, T, S)!=0) exit(1); // should never fail
 
   // step 5
-  // compute U = (Q * v)^t = (vt * Qt)
-  // U == vt, updated in-place
-  if (LAPACKE_dormqr(LAPACK_COL_MAJOR, 'R', 'T', n_samples, n_samples, n_samples, H, n_samples, tau, vt, n_samples)!=0) exit(1); // should never fail
+  // Compute U = Q*vt^t
+
+  // transpose vt -> v in-place
+  transpose_i_T<TReal>(n_samples, T);
+  TReal *V = T;
+
+  if (qdot_i_T<TReal>('L', 'N', n_samples, H, tau, V)!=0) exit(1); // should never fail
 
   free(H);
   free(tau);
 
-  //printf("=======  U    =========\n");
-  //for (uint64_t i=0; i<square_els; i++) printf("%i %.4f\n",i, U[i]);
-
   // step 6
-  // get theinteresting subset, and return
-  //*eigenvalues  = (double *) realloc(S, sizeof(double)*n_dims);
-  //*eigenvectors = (double *) realloc(U, sizeof(double)*uint64_t(n_samples)*uint64_t(n_dims));
+  // get the interesting subset, and return
+  
+  // simply truncate the values, since it is a vector
+  *eigenvalues  = (TReal *) realloc(S, sizeof(TReal)*n_dims);
 
-  // while we do waste a little bit of memory, it is not a lot, and keeps the heap less fragmented
-  *eigenvalues  = S;
+  // *eigenvectors = U = Vt
+  // use only the truncated part of V, then transpose
+  TReal *U = (TReal *) malloc(uint64_t(n_samples)*uint64_t(n_dims)*sizeof(TReal));
+
+  transpose_T<TReal>(n_samples, n_dims, V, U);
   *eigenvectors = U;
 }
 
 void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
   return find_eigens_fast_T<double>(n_samples,n_dims,centered,eigenvalues, eigenvectors);
 }
-
 
