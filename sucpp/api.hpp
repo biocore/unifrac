@@ -131,7 +131,7 @@ void destroy_partial_mat(partial_mat_t** result);
 void destroy_partial_dyn_mat(partial_dyn_mat_t** result);
 void destroy_results_vec(r_vec** result);
 
-/* Compute UniFrac
+/* Compute UniFrac - condensed form
  *
  * biom_filename <const char*> the filename to the biom table.
  * tree_filename <const char*> the filename to the correspodning tree.
@@ -153,6 +153,58 @@ void destroy_results_vec(r_vec** result);
 EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filename,
                              const char* unifrac_method, bool variance_adjust, double alpha,
                              bool bypass_tips, unsigned int threads, mat_t** result);
+
+/* Compute UniFrac - matrix form
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads/blocks to use.
+ * mmap_dir <const char*> If not NULL, area to use for temp memory storage
+ * result <mat_full_fp64_t**> the resulting distance matrix in matrix form, this is initialized within the method so using **
+ *
+ * one_off_matrix returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ */
+EXTERN compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
+                                     const char* unifrac_method, bool variance_adjust, double alpha,
+                                     bool bypass_tips, unsigned int nthreads,
+                                     const char *mmap_dir,
+                                     mat_full_fp64_t** result);
+
+/* Compute UniFrac - matrix form, fp32 variant
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads/blocks to use.
+ * mmap_dir <const char*> If not NULL, area to use for temp memory storage
+ * result <mat_full_fp32_t**> the resulting distance matrix in matrix form, this is initialized within the method so using **
+ *
+ * one_off_matrix_fp32 returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ */
+EXTERN compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                          const char* unifrac_method, bool variance_adjust, double alpha,
+                                          bool bypass_tips, unsigned int nthreads,
+                                          const char *mmap_dir,
+                                          mat_full_fp32_t** result);
 
 
 /* compute Faith PD
@@ -508,6 +560,28 @@ MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int 
  */
 MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result);
 
+
+// Center the matrix
+// mat and center must be nxn and symmetric
+// centered must be pre-allocated and same size as mat...will work even if centered==mat
+void mat_to_centered(const double * mat, const uint32_t n_samples, double * centered);
+void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * centered);
+void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered);
+
+// Find eigen values and vectors
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
+void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors);
+
+// Perform Principal Coordinate Analysis
+// mat       - in, result of unifrac compute
+// n_samples - in, size of the matrix (n x n)
+// n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
+// eigenvalues - out, alocated buffer of size n_dims
+// samples     - out, alocated buffer of size n_dims x n_samples
+// proportion_explained - out, allocated buffer of size n_dims
+void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double **eigenvalues, double **samples, double **proportion_explained);
 
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro

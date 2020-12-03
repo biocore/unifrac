@@ -6,12 +6,18 @@
 #include <iomanip>
 #include <thread>
 #include <cstring>
+#include <stdlib.h> 
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <lz4.h>
 
+#include <random>
+
+// Not using anything mkl specific, but this is what we get from Conda
+#include <mkl_cblas.h>
+#include <mkl_lapacke.h>
 
 #define MMAP_FD_MASK 0x0fff
 #define MMAP_FLAG    0x1000
@@ -400,12 +406,9 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     SET_METHOD(unifrac_method, unknown_method)
     PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
 
-    // we resize to the largest number of possible stripes even if only computing
-    // partial, however we do not allocate arrays for non-computed stripes so
-    // there is a little memory waste here but should be on the order of
-    // 8 bytes * N samples per vector.
-    std::vector<double*> dm_stripes((table.n_samples + 1) / 2);
-    std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
+    const unsigned int stripe_stop = (table.n_samples + 1) / 2;
+    std::vector<double*> dm_stripes(stripe_stop);
+    std::vector<double*> dm_stripes_total(stripe_stop);
 
     if(nthreads > dm_stripes.size()) {
         fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", dm_stripes.size());
@@ -415,7 +418,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
 
-    set_tasks(tasks, alpha, table.n_samples, 0, 0, bypass_tips, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, 0, stripe_stop, bypass_tips, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_mat(*result, table, true);  // true -> is_upper_triangle
@@ -435,6 +438,77 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
 
     return okay;
 }
+
+// TMat mat_full_fp32_t
+template<class TReal, class TMat>
+compute_status one_off_matrix_T(const char* biom_filename, const char* tree_filename,
+                                const char* unifrac_method, bool variance_adjust, double alpha,
+                                bool bypass_tips, unsigned int nthreads,
+                                const char *mmap_dir,  
+                                TMat** result) {
+    CHECK_FILE(biom_filename, table_missing)
+    CHECK_FILE(tree_filename, tree_missing)
+    SET_METHOD(unifrac_method, unknown_method)
+    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+
+    const unsigned int stripe_stop = (table.n_samples + 1) / 2;
+    partial_mat_t *partial_mat = NULL;
+
+    {
+      std::vector<double*> dm_stripes(stripe_stop);
+      std::vector<double*> dm_stripes_total(stripe_stop);
+
+      std::vector<su::task_parameters> tasks(nthreads);
+      std::vector<std::thread> threads(nthreads);
+
+      set_tasks(tasks, alpha, table.n_samples, 0, stripe_stop, bypass_tips, nthreads);
+      su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
+
+      initialize_partial_mat(partial_mat, table, dm_stripes, 0, stripe_stop, true);  // true -> is_upper_triangle
+      if ((partial_mat==NULL) || (partial_mat->stripes==NULL) || (partial_mat->sample_ids==NULL) ) {
+          fprintf(stderr, "Memory allocation error! (initialize_partial_mat)\n");
+          exit(EXIT_FAILURE);
+      }
+      destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, 0, stripe_stop);
+    }
+
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mat->sample_ids, partial_mat->n_samples,mmap_dir);
+
+    if (((*result)==NULL) || ((*result)->matrix==NULL) || ((*result)->sample_ids==NULL) ) {
+        fprintf(stderr, "Memory allocation error! (initialize_mat)\n");
+        exit(EXIT_FAILURE);
+    }
+
+
+    {
+      MemoryStripes ps(partial_mat->stripes);
+      const uint32_t tile_size = (mmap_dir==NULL) ? \
+                                  (128/sizeof(TReal)) : /* keep it small for memory access, to fit in chip cache */ \
+                                  (4096/sizeof(TReal)); /* make it larger for mmap, as the limiting factor is swapping */
+      su::stripes_to_matrix_T<TReal>(ps, partial_mat->n_samples, partial_mat->stripe_total, (*result)->matrix, tile_size);
+    }
+    destroy_partial_mat(&partial_mat);
+
+    return okay;
+}
+
+
+compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
+                              const char* unifrac_method, bool variance_adjust, double alpha,
+                              bool bypass_tips, unsigned int nthreads,
+                              const char *mmap_dir,
+                              mat_full_fp64_t** result) {
+ return one_off_matrix_T<double,mat_full_fp64_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
+}
+
+compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                   const char* unifrac_method, bool variance_adjust, double alpha,
+                                   bool bypass_tips, unsigned int nthreads,
+                                   const char *mmap_dir,
+                                   mat_full_fp32_t** result) {
+ return one_off_matrix_T<float,mat_full_fp32_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
+}
+
 
 IOStatus write_mat(const char* output_filename, mat_t* result) {
     std::ofstream output;
@@ -1195,6 +1269,425 @@ MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int 
 
 MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result) {
   return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, mmap_dir, result);
+}
+
+
+// Compute the E_matrix with means
+// centered must be pre-allocated and same size as mat (n_samples*n_samples)...will work even if centered==mat
+// row_means must be pre-allocated and n_samples in size
+template<class TRealIn, class TReal>
+inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,               // IN
+                           TReal * centered, TReal * row_means, TReal &global_mean) {   // OUT
+  /*
+    Compute E matrix from a distance matrix and store in temp centered matrix.
+
+    Squares and divides by -2 the input elementwise. Eq. 9.20 in
+    Legendre & Legendre 1998.
+
+    Compute sum of the rows at the same time.
+  */
+
+  TReal global_sum = 0.0;
+
+#pragma omp parallel for shared(mat,centered,row_means) reduction(+: global_sum)
+  for (uint32_t row=0; row<n_samples; row++) {
+    const TRealIn * mat_row = mat + n_samples*row;
+    TReal         * centered_row = centered + n_samples*row;
+
+    TReal row_sum = 0.0;
+
+    const TReal mhalf = -0.5;
+    uint32_t col=0;
+
+#ifdef __AVX2__
+    // group many together when HW supports vecotrization
+    for (; (col+7)<n_samples; col+=8) {
+       TReal el0 = mat_row[col  ];
+       TReal el1 = mat_row[col+1];
+       TReal el2 = mat_row[col+2];
+       TReal el3 = mat_row[col+3];
+       TReal el4 = mat_row[col+4];
+       TReal el5 = mat_row[col+5];
+       TReal el6 = mat_row[col+6];
+       TReal el7 = mat_row[col+7];
+       el0 =  mhalf*el0*el0;
+       el1 =  mhalf*el1*el1;
+       el2 =  mhalf*el2*el2;
+       el3 =  mhalf*el3*el3;
+       el4 =  mhalf*el4*el4;
+       el5 =  mhalf*el5*el5;
+       el6 =  mhalf*el6*el6;
+       el7 =  mhalf*el7*el7;
+       centered_row[col  ] = el0;
+       centered_row[col+1] = el1;
+       centered_row[col+2] = el2;
+       centered_row[col+3] = el3;
+       centered_row[col+4] = el4;
+       centered_row[col+5] = el5;
+       centered_row[col+6] = el6;
+       centered_row[col+7] = el7;
+      
+       row_sum += el0 + el1 + el2 + el3 + el4 + el5 + el6 + el7; 
+    }
+#else
+
+#ifdef __AVX__
+    for (; (col+3)<n_samples; col+=4) {
+       TReal el0 = mat_row[col  ];
+       TReal el1 = mat_row[col+1];
+       TReal el2 = mat_row[col+2];
+       TReal el3 = mat_row[col+3];
+       el0 =  mhalf*el0*el0;
+       el1 =  mhalf*el1*el1;
+       el2 =  mhalf*el2*el2;
+       el3 =  mhalf*el3*el3;
+       centered_row[col  ] = el0;
+       centered_row[col+1] = el1;
+       centered_row[col+2] = el2;
+       centered_row[col+3] = el3;
+      
+       row_sum += el0 + el1 + el2 + el3; 
+    }
+#endif
+
+#endif
+
+    // in case there are any leftovers
+    for (; col<n_samples; col++) {
+       TReal el0 = mat_row[col  ];
+       el0 =  mhalf*el0*el0;
+       centered_row[col  ] = el0;
+       row_sum += el0;
+    }
+
+    global_sum += row_sum;
+    row_means[row] = row_sum/n_samples;
+  }
+
+  global_mean = (global_sum/n_samples)/n_samples;
+}
+
+// centered must be pre-allocated and same size as mat
+template<class TReal>
+inline void F_matrix_inplace(const TReal * __restrict__ row_means, const TReal global_mean, TReal * __restrict__ centered, const uint32_t n_samples) {
+  /*
+    Compute F matrix from E matrix.
+
+    Centring step: for each element, the mean of the corresponding
+    row and column are substracted, and the mean of the whole
+    matrix is added. Eq. 9.21 in Legendre & Legendre 1998.
+    Pseudo-code:
+    row_means = E_matrix.mean(axis=1, keepdims=True)
+    col_means = Transpose(row_means)
+    matrix_mean = E_matrix.mean()
+    return E_matrix - row_means - col_means + matrix_mean
+  */
+
+  // use a tiled pattern to maximize locality of row_means
+#pragma omp parallel for shared(centered,row_means)
+  for (uint32_t trow=0; trow<n_samples; trow+=512) {
+    uint32_t trow_max = std::min(trow+512, n_samples);
+
+    for (uint32_t tcol=0; tcol<n_samples; tcol+=512) {
+      uint32_t tcol_max = std::min(tcol+512, n_samples);
+
+      for (uint32_t row=trow; row<trow_max; row++) {
+        TReal *  __restrict__ centered_row = centered + n_samples*row;
+        const TReal gr_mean = global_mean - row_means[row];
+
+        for (uint32_t col=tcol; col<tcol_max; col++) {
+          centered_row[col] += gr_mean - row_means[col];
+        }
+      }
+    }
+
+  }
+}
+
+// Center the matrix
+// mat and center must be nxn and symmetric
+// centered must be pre-allocated and same size as mat...will work even if centered==mat
+template<class TRealIn, class TReal>
+inline void mat_to_centered_T(const TRealIn * mat, const uint32_t n_samples, TReal * centered) {
+
+   TReal global_mean;
+   TReal *row_means = (TReal *) malloc(n_samples*sizeof(TReal));
+   E_matrix_means(mat, n_samples, centered, row_means, global_mean);
+   F_matrix_inplace(row_means, global_mean, centered, n_samples);
+   free(row_means);
+}
+
+void mat_to_centered(const double * mat, const uint32_t n_samples, double * centered) {
+  mat_to_centered_T(mat,n_samples,centered);
+}
+
+void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * centered) {
+  mat_to_centered_T(mat,n_samples,centered);
+}
+
+void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered) {
+  mat_to_centered_T(mat,n_samples,centered);
+}
+
+// Matrix dot multiplication
+// Expects FORTRAN-style ColOrder
+// mat must be   cols x rows
+// other must be cols x rows (ColOrder... rows elements together)
+template<class TReal>
+inline void mat_dot_T(const TReal *mat, const TReal *other, const uint32_t rows, const uint32_t cols, TReal *out);
+
+template<>
+inline void mat_dot_T<double>(const double *mat, const double *other, const uint32_t rows, const uint32_t cols, double *out)
+{
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, other, rows, 0.0, out, rows);
+}
+
+// Expects FORTRAN-style ColOrder
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// Step 1
+// centered == n x n
+// randomized = k*2 x n (ColOrder... n elements together)
+template<class TReal>
+inline void centered_randomize_T(const TReal * centered, const uint32_t n_samples, const uint32_t k, TReal * randomized) {
+  uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
+  TReal * tmp = (TReal *) malloc(matrix_els*sizeof(TReal));
+
+  // Form a real n x k matrix whose entries are independent, identically
+  // distributed Gaussian random variables of zero mean and unit variance
+  TReal *G = tmp;
+  {
+    std::default_random_engine generator;
+    std::normal_distribution<TReal> distribution;
+    for (uint64_t i=0; i<matrix_els; i++) G[i] = distribution(generator);
+  }
+
+  // Note: Using the transposed version for efficiency (COL_ORDER)
+  // Since centered is symmetric, it works just fine
+
+  //First compute the top part of H
+  mat_dot_T<TReal>(centered,G,n_samples,k,randomized);
+
+  // power method... single iteration.. store in 2nd part of output
+  // Reusing tmp buffer for intermediate storage
+  mat_dot_T<TReal>(centered,randomized,n_samples,k,tmp);
+  mat_dot_T<TReal>(centered,tmp,n_samples,k,randomized+matrix_els);
+
+  free(tmp);
+}
+
+// templated LAPACKE wrapper
+
+// Compute QR
+// H is in
+// H&tau is out
+template<class TReal>
+inline int qr_i_T(const uint32_t rows, const uint32_t cols, TReal *H, TReal *tau);
+
+template<>
+inline int qr_i_T(const uint32_t rows, const uint32_t cols, double *H, double *tau) {
+  return LAPACKE_dgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+}
+
+// Compute mat = Q * mat
+// side and trans apply to Q
+template<class TReal>
+inline int qdot_i_T(const char side,const char trans, const uint32_t n, TReal *H, TReal *tau, TReal *mat);
+
+template<>
+inline int qdot_i_T(const char side,const char trans, const uint32_t n, double *H, double *tau, double *mat) {
+  return LAPACKE_dormqr(LAPACK_COL_MAJOR, side, trans, n, n, n, H, n, tau, mat, n);
+}
+
+// compute svt, and return S and V
+// T = input
+// S output
+// T is Vt on output
+template<class TReal>
+inline int svt_it_T(const uint32_t n, TReal *T, TReal *S);
+
+template<>
+inline int svt_it_T(const uint32_t n, double *T, double *S) {
+  double *superb = (double *) malloc(sizeof(double)*n);
+  int res =LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'O', n, n, T, n, S, NULL, n, NULL, n, superb);
+  free(superb);
+
+  return res;
+}
+
+// square matrix transpose, in-place
+template<class TReal>
+inline void transpose_i_T(const uint32_t n, TReal *mat) {
+  // To be optimized
+  for (uint32_t i=0; i<n; i++)
+    for (uint32_t j=0; j<i; j++)
+       std::swap(mat[i*n+j],mat[i+ j*n]);
+}
+
+// arbitrary matrix transpose, with copy
+// in  is cols x rows
+// out is rows x cols
+template<class TReal>
+inline void transpose_T(const uint32_t rows, const uint32_t cols, TReal *in, TReal *out) {
+  // To be optimizedc
+  for (uint32_t i=0; i<rows; i++)
+    for (uint32_t j=0; j<cols; j++)
+       out[i*cols+j] = in[i + j*rows];
+}
+
+
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
+template<class TReal>
+inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal * &eigenvalues, TReal * &eigenvectors) {
+  const uint32_t k = n_dims+2;
+  uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
+  uint64_t square_els = uint64_t(n_samples)*uint64_t(n_samples);
+
+  TReal *S = (TReal *) malloc(uint64_t(n_samples)*sizeof(TReal));
+
+  TReal *tau = (TReal *) malloc(sizeof(TReal)*std::min(n_samples,k*2));
+
+  TReal *H = (TReal *) malloc(sizeof(TReal)*matrix_els*2);
+
+  // step 1
+  centered_randomize_T<TReal>(centered, n_samples, k, H);
+
+  // step 2
+  // QR decomposition of H , Q returned in implicit form
+  // updates in-place H, which is used later on for computing Q dots
+  if (qr_i_T<TReal>(n_samples, k*2, H, tau)!=0) exit(1); // should never fail
+
+  // step 3
+  // T = centered * Q (since centered^T == centered, due to being symmetric)
+  // T == centered, updated in-place
+  TReal * T = centered;
+  if (qdot_i_T<TReal>('R', 'N', n_samples, H, tau, centered)!=0) exit(1); // should never fail
+
+  // step 4
+  // compute svt
+  // update T in-place, Vt on output
+  if (svt_it_T<TReal>(n_samples, T, S)!=0) exit(1); // should never fail
+
+  // step 5
+  // Compute U = Q*vt^t
+
+  // transpose vt -> v in-place
+  transpose_i_T<TReal>(n_samples, T);
+  TReal *V = T;
+
+  if (qdot_i_T<TReal>('L', 'N', n_samples, H, tau, V)!=0) exit(1); // should never fail
+
+  free(H);
+  free(tau);
+
+  // step 6
+  // get the interesting subset, and return
+  
+  // simply truncate the values, since it is a vector
+  eigenvalues  = (TReal *) realloc(S, sizeof(TReal)*n_dims);
+
+  // *eigenvectors = U = Vt
+  // use only the truncated part of V, then transpose
+  TReal *U = (TReal *) malloc(uint64_t(n_samples)*uint64_t(n_dims)*sizeof(TReal));
+
+  transpose_T<TReal>(n_samples, n_dims, V, U);
+  eigenvectors = U;
+}
+
+void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
+  find_eigens_fast_T<double>(n_samples, n_dims, centered, *eigenvalues, *eigenvectors);
+}
+
+/*
+    Perform Principal Coordinate Analysis.
+
+    Principal Coordinate Analysis (PCoA) is a method similar
+    to Principal Components Analysis (PCA) with the difference that PCoA
+    operates on distance matrices, typically with non-euclidian and thus
+    ecologically meaningful distances like UniFrac in microbiome research.
+
+    In ecology, the euclidean distance preserved by Principal
+    Component Analysis (PCA) is often not a good choice because it
+    deals poorly with double zeros (Species have unimodal
+    distributions along environmental gradients, so if a species is
+    absent from two sites at the same site, it can't be known if an
+    environmental variable is too high in one of them and too low in
+    the other, or too low in both, etc. On the other hand, if an
+    species is present in two sites, that means that the sites are
+    similar.).
+
+    Note that the returned eigenvectors are not normalized to unit length.
+*/
+
+// mat       - in, result of unifrac compute
+// n_samples - in, size of the matrix (n x n)
+// n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
+// eigenvalues - out, alocated buffer of size n_dims
+// samples     - out, alocated buffer of size n_dims x n_samples
+// proportion_explained - out, allocated buffer of size n_dims
+
+template<class TRealIn, class TReal>
+inline void pcoa_T(const TRealIn * mat, const uint32_t n_samples, const uint32_t n_dims, TReal * &eigenvalues, TReal * &samples,TReal * &proportion_explained) {
+  proportion_explained = (TReal *) malloc(sizeof(TReal)*n_dims);
+
+
+  TReal *centered = (TReal *) malloc(sizeof(TReal)*uint64_t(n_samples)*uint64_t(n_samples));
+
+  // First must center the matrix
+  mat_to_centered_T<TRealIn,TReal>(mat,n_samples,centered);
+
+  // get the sum of the diagonal, needed later
+  // and centered will be updated in-place in find_eigen
+  TReal diag_sum = 0.0;
+  for (uint32_t i=0; i<n_samples; i++) diag_sum += centered[i*uint64_t(n_samples)+i];
+
+  // Find eigenvalues and eigenvectors
+  // Use the Fast method... will return the allocated buffers
+  eigenvalues = NULL;
+  TReal *eigenvectors = NULL;
+  find_eigens_fast_T<TReal>(n_samples,n_dims,centered,eigenvalues,eigenvectors);
+
+  free(centered); // we don't need it anymore
+  centered=NULL;
+
+  // expects eigenvalues to be ordered and non-negative
+  // The above unction guarantees that
+
+
+  // Scale eigenvalues to have length = sqrt(eigenvalue). This
+  // works because np.linalg.eigh returns normalized
+  // eigenvectors. Each row contains the coordinates of the
+  // objects in the space of principal coordinates. Note that at
+  // least one eigenvalue is zero because only n-1 axes are
+  // needed to represent n points in a euclidean space.
+  // samples = eigvecs * np.sqrt(eigvals) 
+  // we will  just update in place and pass out
+  samples = eigenvectors;
+
+  // use proportion_explained as tmp buffer here
+  {
+    TReal *sqvals = proportion_explained;
+    for (uint32_t i=0; i<n_dims; i++) sqvals[i]= sqrt(eigenvalues[i]);
+
+    // we will  just update in place and pass out
+    samples = eigenvectors;
+
+#pragma omp parallel for default(shared)
+    for (uint32_t row=0; row<n_samples; row++) {
+      TReal *prow = samples+(row*uint64_t(n_dims));
+      for (uint32_t i=0; i<n_dims; i++) prow[i] *= sqvals[i];
+    }
+  }
+
+  // now compute the real proportion_explained
+  for (uint32_t i=0; i<n_dims; i++) proportion_explained[i] = eigenvalues[i]/diag_sum;
+
+}
+
+void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double * *eigenvalues, double * *samples, double * *proportion_explained) {
+  pcoa_T<double,double>(mat,n_samples,n_dims, *eigenvalues, *samples, *proportion_explained);
 }
 
 
