@@ -1529,7 +1529,7 @@ inline void transpose_i_T(const uint32_t n, TReal *mat) {
 // out is rows x cols
 template<class TReal>
 inline void transpose_T(const uint32_t rows, const uint32_t cols, TReal *in, TReal *out) {
-  // To be optimized
+  // To be optimizedc
   for (uint32_t i=0; i<rows; i++)
     for (uint32_t j=0; j<cols; j++)
        out[i*cols+j] = in[i + j*rows];
@@ -1540,7 +1540,7 @@ inline void transpose_T(const uint32_t rows, const uint32_t cols, TReal *in, TRe
 //     Original Paper: https://arxiv.org/abs/1007.5510
 // centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
 template<class TReal>
-inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal **eigenvalues, TReal **eigenvectors) {
+inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal * &eigenvalues, TReal * &eigenvectors) {
   const uint32_t k = n_dims+2;
   uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
   uint64_t square_els = uint64_t(n_samples)*uint64_t(n_samples);
@@ -1586,17 +1586,108 @@ inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, 
   // get the interesting subset, and return
   
   // simply truncate the values, since it is a vector
-  *eigenvalues  = (TReal *) realloc(S, sizeof(TReal)*n_dims);
+  eigenvalues  = (TReal *) realloc(S, sizeof(TReal)*n_dims);
 
   // *eigenvectors = U = Vt
   // use only the truncated part of V, then transpose
   TReal *U = (TReal *) malloc(uint64_t(n_samples)*uint64_t(n_dims)*sizeof(TReal));
 
   transpose_T<TReal>(n_samples, n_dims, V, U);
-  *eigenvectors = U;
+  eigenvectors = U;
 }
 
 void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
-  return find_eigens_fast_T<double>(n_samples,n_dims,centered,eigenvalues, eigenvectors);
+  find_eigens_fast_T<double>(n_samples, n_dims, centered, *eigenvalues, *eigenvectors);
 }
+
+/*
+    Perform Principal Coordinate Analysis.
+
+    Principal Coordinate Analysis (PCoA) is a method similar
+    to Principal Components Analysis (PCA) with the difference that PCoA
+    operates on distance matrices, typically with non-euclidian and thus
+    ecologically meaningful distances like UniFrac in microbiome research.
+
+    In ecology, the euclidean distance preserved by Principal
+    Component Analysis (PCA) is often not a good choice because it
+    deals poorly with double zeros (Species have unimodal
+    distributions along environmental gradients, so if a species is
+    absent from two sites at the same site, it can't be known if an
+    environmental variable is too high in one of them and too low in
+    the other, or too low in both, etc. On the other hand, if an
+    species is present in two sites, that means that the sites are
+    similar.).
+
+    Note that the returned eigenvectors are not normalized to unit length.
+*/
+
+// mat       - in, result of unifrac compute
+// n_samples - in, size of the matrix (n x n)
+// n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
+// eigenvalues - out, alocated buffer of size n_dims
+// samples     - out, alocated buffer of size n_dims x n_samples
+// proportion_explained - out, allocated buffer of size n_dims
+
+template<class TRealIn, class TReal>
+inline void pcoa_T(const TRealIn * mat, const uint32_t n_samples, const uint32_t n_dims, TReal * &eigenvalues, TReal * &samples,TReal * &proportion_explained) {
+  proportion_explained = (TReal *) malloc(sizeof(TReal)*n_dims);
+
+
+  TReal *centered = (TReal *) malloc(sizeof(TReal)*uint64_t(n_samples)*uint64_t(n_samples));
+
+  // First must center the matrix
+  mat_to_centered_T<TRealIn,TReal>(mat,n_samples,centered);
+
+  // get the sum of the diagonal, needed later
+  // and centered will be updated in-place in find_eigen
+  TReal diag_sum = 0.0;
+  for (uint32_t i=0; i<n_samples; i++) diag_sum += centered[i*uint64_t(n_samples)+i];
+
+  // Find eigenvalues and eigenvectors
+  // Use the Fast method... will return the allocated buffers
+  eigenvalues = NULL;
+  TReal *eigenvectors = NULL;
+  find_eigens_fast_T<TReal>(n_samples,n_dims,centered,eigenvalues,eigenvectors);
+
+  free(centered); // we don't need it anymore
+  centered=NULL;
+
+  // expects eigenvalues to be ordered and non-negative
+  // The above unction guarantees that
+
+
+  // Scale eigenvalues to have length = sqrt(eigenvalue). This
+  // works because np.linalg.eigh returns normalized
+  // eigenvectors. Each row contains the coordinates of the
+  // objects in the space of principal coordinates. Note that at
+  // least one eigenvalue is zero because only n-1 axes are
+  // needed to represent n points in a euclidean space.
+  // samples = eigvecs * np.sqrt(eigvals) 
+  // we will  just update in place and pass out
+  samples = eigenvectors;
+
+  // use proportion_explained as tmp buffer here
+  {
+    TReal *sqvals = proportion_explained;
+    for (uint32_t i=0; i<n_dims; i++) sqvals[i]= sqrt(eigenvalues[i]);
+
+    // we will  just update in place and pass out
+    samples = eigenvectors;
+
+#pragma omp parallel for default(shared)
+    for (uint32_t row=0; row<n_samples; row++) {
+      TReal *prow = samples+(row*uint64_t(n_dims));
+      for (uint32_t i=0; i<n_dims; i++) prow[i] *= sqvals[i];
+    }
+  }
+
+  // now compute the real proportion_explained
+  for (uint32_t i=0; i<n_dims; i++) proportion_explained[i] = eigenvalues[i]/diag_sum;
+
+}
+
+void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double * *eigenvalues, double * *samples, double * *proportion_explained) {
+  pcoa_T<double,double>(mat,n_samples,n_dims, *eigenvalues, *samples, *proportion_explained);
+}
+
 

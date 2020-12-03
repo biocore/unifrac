@@ -568,11 +568,20 @@ void mat_to_centered(const double * mat, const uint32_t n_samples, double * cent
 void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * centered);
 void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered);
 
+// Find eigen values and vectors
 // Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
 //     Original Paper: https://arxiv.org/abs/1007.5510
 // centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
 void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors);
 
+// Perform Principal Coordinate Analysis
+// mat       - in, result of unifrac compute
+// n_samples - in, size of the matrix (n x n)
+// n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
+// eigenvalues - out, alocated buffer of size n_dims
+// samples     - out, alocated buffer of size n_dims x n_samples
+// proportion_explained - out, allocated buffer of size n_dims
+void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double **eigenvalues, double **samples, double **proportion_explained);
 
 #ifdef __cplusplus
 // TODO: only needed for testing, should be encased in a macro
