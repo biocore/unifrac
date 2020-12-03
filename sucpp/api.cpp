@@ -1442,6 +1442,12 @@ inline void mat_dot_T<double>(const double *mat, const double *other, const uint
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, other, rows, 0.0, out, rows);
 }
 
+template<>
+inline void mat_dot_T<float>(const float *mat, const float *other, const uint32_t rows, const uint32_t cols, float *out)
+{
+  cblas_sgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, other, rows, 0.0, out, rows);
+}
+
 // Expects FORTRAN-style ColOrder
 // Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
 //     Original Paper: https://arxiv.org/abs/1007.5510
@@ -1489,6 +1495,12 @@ inline int qr_i_T(const uint32_t rows, const uint32_t cols, double *H, double *t
   return LAPACKE_dgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
 }
 
+template<>
+inline int qr_i_T(const uint32_t rows, const uint32_t cols, float *H, float *tau) {
+  return LAPACKE_sgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+}
+
+
 // Compute mat = Q * mat
 // side and trans apply to Q
 template<class TReal>
@@ -1497,6 +1509,11 @@ inline int qdot_i_T(const char side,const char trans, const uint32_t n, TReal *H
 template<>
 inline int qdot_i_T(const char side,const char trans, const uint32_t n, double *H, double *tau, double *mat) {
   return LAPACKE_dormqr(LAPACK_COL_MAJOR, side, trans, n, n, n, H, n, tau, mat, n);
+}
+
+template<>
+inline int qdot_i_T(const char side,const char trans, const uint32_t n, float *H, float *tau, float *mat) {
+  return LAPACKE_sormqr(LAPACK_COL_MAJOR, side, trans, n, n, n, H, n, tau, mat, n);
 }
 
 // compute svt, and return S and V
@@ -1510,6 +1527,15 @@ template<>
 inline int svt_it_T(const uint32_t n, double *T, double *S) {
   double *superb = (double *) malloc(sizeof(double)*n);
   int res =LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'O', n, n, T, n, S, NULL, n, NULL, n, superb);
+  free(superb);
+
+  return res;
+}
+
+template<>
+inline int svt_it_T(const uint32_t n, float *T, float *S) {
+  float *superb = (float *) malloc(sizeof(float)*n);
+  int res =LAPACKE_sgesvd(LAPACK_COL_MAJOR, 'N', 'O', n, n, T, n, S, NULL, n, NULL, n, superb);
   free(superb);
 
   return res;
@@ -1690,4 +1716,11 @@ void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, d
   pcoa_T<double,double>(mat,n_samples,n_dims, *eigenvalues, *samples, *proportion_explained);
 }
 
+void pcoa_fp32(const float * mat, const uint32_t n_samples, const uint32_t n_dims, float * *eigenvalues, float * *samples, float * *proportion_explained) {
+  pcoa_T<float,float>(mat,n_samples,n_dims, *eigenvalues, *samples, *proportion_explained);
+}
+
+void pcoa_mixed(const double * mat, const uint32_t n_samples, const uint32_t n_dims, float * *eigenvalues, float * *samples, float * *proportion_explained) {
+  pcoa_T<double,float>(mat,n_samples,n_dims, *eigenvalues, *samples, *proportion_explained);
+}
 
