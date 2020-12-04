@@ -1485,79 +1485,138 @@ inline void centered_randomize_T(const TReal * centered, const uint32_t n_sample
 // templated LAPACKE wrapper
 
 // Compute QR
-// H is in
-// H&tau is out
+// H is in,overwritten by Q on out
+// H is (r x c), Q is (r x qc), with rc<=c
 template<class TReal>
-inline int qr_i_T(const uint32_t rows, const uint32_t cols, TReal *H, TReal *tau);
+inline int qr_i_T(const uint32_t rows, const uint32_t cols, TReal *H, uint32_t &qcols);
 
 template<>
-inline int qr_i_T(const uint32_t rows, const uint32_t cols, double *H, double *tau) {
-  return LAPACKE_dgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+inline int qr_i_T<double>(const uint32_t rows, const uint32_t cols, double *H, uint32_t &qcols) {
+  qcols= std::min(rows,cols);
+  double *tau= new double[qcols];
+  int rc = LAPACKE_dgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+  if (rc==0) {
+    qcols= std::min(rows,cols);
+    rc = LAPACKE_dorgqr(LAPACK_COL_MAJOR, rows, qcols, qcols, H, rows, tau);
+  }
+  delete[] tau;
+  return rc;
 }
 
 template<>
-inline int qr_i_T(const uint32_t rows, const uint32_t cols, float *H, float *tau) {
-  return LAPACKE_sgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+inline int qr_i_T<float>(const uint32_t rows, const uint32_t cols, float *H, uint32_t &qcols) {
+  qcols= std::min(rows,cols);
+  float *tau= new float[qcols];
+  int rc = LAPACKE_sgeqrf(LAPACK_COL_MAJOR, rows, cols, H, rows, tau);
+  if (rc==0) {
+    qcols= std::min(rows,cols);
+    rc = LAPACKE_sorgqr(LAPACK_COL_MAJOR, rows, qcols, qcols, H, rows, tau);
+  }
+  delete[] tau;
+  return rc;
 }
 
 
-// Compute mat = Q * mat
-// side and trans apply to Q
+// helper class, since QR ops are multi function
 template<class TReal>
-inline int qdot_i_T(const char side,const char trans, const uint32_t n, TReal *H, TReal *tau, TReal *mat);
+class QR {
+  public:
+    uint32_t rows;
+    uint32_t cols;
+
+    TReal *Q;
+
+    // will take ownership of _H
+    QR(const uint32_t _rows, const uint32_t _cols, TReal *_H) 
+    : rows(_rows)
+    , Q(_H)
+    {
+      int rc = qr_i_T<TReal>(_rows, _cols, Q, cols);
+      if (rc!=0) {
+        fprintf(stderr, "qr_i_T(_rows,_cols, H, cols) failed with %i\n", rc);
+        exit(1); // should never fail
+      }
+    }
+
+    ~QR() {
+      free(Q);
+    }
+
+    // res = mat * Q
+    // mat must be  rows x rows
+    // res will be rows * cols
+    void qdot_r_sq(const TReal *mat, TReal *res);
+
+    // res = Q * mat
+    // mat must be cols * cols
+    // res will be rows * cols
+    void qdot_l_sq(const TReal *mat, TReal *res);
+
+};
 
 template<>
-inline int qdot_i_T(const char side,const char trans, const uint32_t n, double *H, double *tau, double *mat) {
-  return LAPACKE_dormqr(LAPACK_COL_MAJOR, side, trans, n, n, n, H, n, tau, mat, n);
+inline void QR<double>::qdot_r_sq(const double *mat, double *res) {
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, Q, rows, 0.0, res, rows);
 }
 
 template<>
-inline int qdot_i_T(const char side,const char trans, const uint32_t n, float *H, float *tau, float *mat) {
-  return LAPACKE_sormqr(LAPACK_COL_MAJOR, side, trans, n, n, n, H, n, tau, mat, n);
+inline void QR<float>::qdot_r_sq(const float *mat, float *res) {
+  cblas_sgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, Q, rows, 0.0, res, rows);
 }
 
-// compute svt, and return S and V
+template<>
+inline void QR<double>::qdot_l_sq(const double *mat, double *res) {
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, cols, 1.0, Q, rows, mat, cols, 0.0, res, rows);
+}
+
+template<>
+inline void QR<float>::qdot_l_sq(const float *mat, float *res) {
+  cblas_sgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, cols, 1.0, Q, rows, mat, cols, 0.0, res, rows);
+}
+
+// compute svd, and return S and V
 // T = input
 // S output
 // T is Vt on output
 template<class TReal>
-inline int svt_it_T(const uint32_t n, TReal *T, TReal *S);
+inline int svd_it_T(const uint32_t rows, const uint32_t cols, TReal *T, TReal *S);
 
 template<>
-inline int svt_it_T(const uint32_t n, double *T, double *S) {
-  double *superb = (double *) malloc(sizeof(double)*n);
-  int res =LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'O', n, n, T, n, S, NULL, n, NULL, n, superb);
+inline int svd_it_T<double>(const uint32_t rows, const uint32_t cols, double *T, double *S) {
+  double *superb = (double *) malloc(sizeof(double)*rows);
+  int res =LAPACKE_dgesvd(LAPACK_COL_MAJOR, 'N', 'O', rows, cols, T, rows, S, NULL, rows, NULL, cols, superb);
   free(superb);
 
   return res;
 }
 
 template<>
-inline int svt_it_T(const uint32_t n, float *T, float *S) {
-  float *superb = (float *) malloc(sizeof(float)*n);
-  int res =LAPACKE_sgesvd(LAPACK_COL_MAJOR, 'N', 'O', n, n, T, n, S, NULL, n, NULL, n, superb);
+inline int svd_it_T<float>(const uint32_t rows, const uint32_t cols, float *T, float *S) {
+  float *superb = (float *) malloc(sizeof(float)*rows);
+  int res =LAPACKE_sgesvd(LAPACK_COL_MAJOR, 'N', 'O', rows, cols, T, rows, S, NULL, rows, NULL, cols, superb);
   free(superb);
 
   return res;
 }
 
-// square matrix transpose, in-place
+// square matrix transpose, with org not alingned
 template<class TReal>
-inline void transpose_i_T(const uint32_t n, TReal *mat) {
-  // To be optimized
-  for (uint32_t i=0; i<n; i++)
-    for (uint32_t j=0; j<i; j++)
-       std::swap(mat[i*n+j],mat[i+ j*n]);
+inline void transpose_sq_st_T(const uint64_t n, const uint64_t stride, const TReal *in, TReal *out) {
+  // n expected to be small, so simple single-thread perfect
+  // org_n>=n guaranteed
+  for (uint64_t i=0; i<n; i++)
+    for (uint64_t j=0; j<n; j++)
+       out[i*n+j] = in[i + j*stride];
 }
 
 // arbitrary matrix transpose, with copy
 // in  is cols x rows
 // out is rows x cols
 template<class TReal>
-inline void transpose_T(const uint32_t rows, const uint32_t cols, TReal *in, TReal *out) {
+inline void transpose_T(const uint64_t rows, const uint64_t cols, TReal *in, TReal *out) {
   // To be optimizedc
-  for (uint32_t i=0; i<rows; i++)
-    for (uint32_t j=0; j<cols; j++)
+  for (uint64_t i=0; i<rows; i++)
+    for (uint64_t j=0; j<cols; j++)
        out[i*cols+j] = in[i + j*rows];
 }
 
@@ -1568,45 +1627,54 @@ inline void transpose_T(const uint32_t rows, const uint32_t cols, TReal *in, TRe
 template<class TReal>
 inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, TReal * centered, TReal * &eigenvalues, TReal * &eigenvectors) {
   const uint32_t k = n_dims+2;
-  uint64_t matrix_els = uint64_t(n_samples)*uint64_t(k);
-  uint64_t square_els = uint64_t(n_samples)*uint64_t(n_samples);
 
-  TReal *S = (TReal *) malloc(uint64_t(n_samples)*sizeof(TReal));
+  int rc;
 
-  TReal *tau = (TReal *) malloc(sizeof(TReal)*std::min(n_samples,k*2));
+  TReal *S = (TReal *) malloc(n_samples*sizeof(TReal));  // take worst case size as a start
+  TReal *Ut = NULL;
 
-  TReal *H = (TReal *) malloc(sizeof(TReal)*matrix_els*2);
+  {
+    TReal *H = (TReal *) malloc(sizeof(TReal)*uint64_t(n_samples)*uint64_t(k)*2);
 
-  // step 1
-  centered_randomize_T<TReal>(centered, n_samples, k, H);
+    // step 1
+    centered_randomize_T<TReal>(centered, n_samples, k, H);
 
-  // step 2
-  // QR decomposition of H , Q returned in implicit form
-  // updates in-place H, which is used later on for computing Q dots
-  if (qr_i_T<TReal>(n_samples, k*2, H, tau)!=0) exit(1); // should never fail
+    // step 2
+    // QR decomposition of H 
 
-  // step 3
-  // T = centered * Q (since centered^T == centered, due to being symmetric)
-  // T == centered, updated in-place
-  TReal * T = centered;
-  if (qdot_i_T<TReal>('R', 'N', n_samples, H, tau, centered)!=0) exit(1); // should never fail
+    QR<TReal> qr_obj(n_samples, k*2, H); // H is now owned by qr_obj, as Q
 
-  // step 4
-  // compute svt
-  // update T in-place, Vt on output
-  if (svt_it_T<TReal>(n_samples, T, S)!=0) exit(1); // should never fail
+    // step 3
+    // T = centered * Q (since centered^T == centered, due to being symmetric)
+    // centered = n x n
+    // T = n x ref
+    
+    TReal *T = (TReal *) malloc(sizeof(TReal)*uint64_t(qr_obj.rows)*uint64_t(qr_obj.cols));
+    qr_obj.qdot_r_sq(centered,T);
 
-  // step 5
-  // Compute U = Q*vt^t
+    // step 4
+    // compute svd
+    // update T in-place, Wt on output (Vt according to the LAPACK nomenclature)
+    rc=svd_it_T<TReal>(qr_obj.rows,qr_obj.cols, T, S);
+    if (rc!=0) {
+      fprintf(stderr, "svd_it_T<TReal>(n_samples, T, S) failed with %i\n",rc);
+      exit(1); // should never fail
+    }
 
-  // transpose vt -> v in-place
-  transpose_i_T<TReal>(n_samples, T);
-  TReal *V = T;
+    // step 5
+    // Compute U = Q*Wt^t
+    {
+      // transpose Wt -> W, Wt uses n_samples strides
+      TReal * W = (TReal *) malloc(sizeof(TReal)*uint64_t(qr_obj.cols)*uint64_t(qr_obj.cols));
+      transpose_sq_st_T<TReal>(qr_obj.cols, qr_obj.rows, T, W);  // Wt == T on input
 
-  if (qdot_i_T<TReal>('L', 'N', n_samples, H, tau, V)!=0) exit(1); // should never fail
+      Ut = T; // Ut takes ownership of the T buffer
+      qr_obj.qdot_l_sq(W, Ut);
 
-  free(H);
-  free(tau);
+      free(W);
+    }
+
+  } // we don't need qr_obj anymore, release memory
 
   // step 6
   // get the interesting subset, and return
@@ -1615,11 +1683,13 @@ inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, 
   eigenvalues  = (TReal *) realloc(S, sizeof(TReal)*n_dims);
 
   // *eigenvectors = U = Vt
-  // use only the truncated part of V, then transpose
+  // use only the truncated part of W, then transpose
   TReal *U = (TReal *) malloc(uint64_t(n_samples)*uint64_t(n_dims)*sizeof(TReal));
 
-  transpose_T<TReal>(n_samples, n_dims, V, U);
+  transpose_T<TReal>(n_samples, n_dims, Ut, U);
   eigenvectors = U;
+
+  free(Ut);
 }
 
 void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
