@@ -561,18 +561,12 @@ MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int 
 MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result);
 
 
-// Center the matrix
-// mat and center must be nxn and symmetric
-// centered must be pre-allocated and same size as mat...will work even if centered==mat
-void mat_to_centered(const double * mat, const uint32_t n_samples, double * centered);
-void mat_to_centered_fp32(const float * mat, const uint32_t n_samples, float * centered);
-void mat_to_centered_mixed(const double * mat, const uint32_t n_samples, float * centered);
-
 // Find eigen values and vectors
 // Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
 //     Original Paper: https://arxiv.org/abs/1007.5510
 // centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
 void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors);
+void find_eigens_fast_p32(const uint32_t n_samples, const uint32_t n_dims,float * centered, float **eigenvalues, float **eigenvectors);
 
 // Perform Principal Coordinate Analysis
 // mat       - in, result of unifrac compute
