@@ -85,6 +85,7 @@ CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
 test: tree.o test_su.cpp biom.o unifrac.o skbio_alt.o api.o
 	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o skbio_alt.o api.o -llz4 -lcblas -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska skbio_alt.o tree.o biom.o unifrac.o api.o -llz4 -lcblas -lpthread
 	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o skbio_alt.o api.o -llz4 -lcblas -lpthread
 
 main: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o
