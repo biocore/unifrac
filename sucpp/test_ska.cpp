@@ -263,6 +263,36 @@ void test_pcoa() {
       free(proportion_explained_fp32);
     }
 
+    // test in-place
+    {
+      double *eigenvalues;
+      double *samples;
+      double *proportion_explained;
+
+      su::pcoa_inplace(matrix, n_samples, 5, eigenvalues, samples, proportion_explained);
+      // Note: matrix content has been destroyed
+
+      for(int i = 0; i < 5; i++) {
+        //printf("%i %f %f\n",i,float(eigenvalues[i]),float(exp4a[i]));
+        ASSERT(fabs(eigenvalues[i] - exp4a[i]) < 0.000001);
+      }
+
+      // signs may flip, that's normal
+      for(int i = 0; i < (5*9); i++) {
+        //printf("%i %f %f %f\n",i,float(samples[i]),float(exp4b[i]),float(fabs(samples[i]) - fabs(exp4b[i])));
+        ASSERT( fabs(fabs(samples[i]) - fabs(exp4b[i])) < 0.000001);
+      }
+
+      for(int i = 0; i < 5; i++) {
+        //printf("%i %f %f\n",i,float(proportion_explained[i]),float(exp4c[i]));
+        ASSERT(fabs(proportion_explained[i] - exp4c[i]) < 0.000001);
+      }
+
+      free(eigenvalues);
+      free(samples);
+      free(proportion_explained);
+    }
+
     SUITE_END();
 }
 
@@ -380,46 +410,89 @@ void test_pcoa_big() {
     }
 
     {
-      double matrix_fp32[57*57];
+      float matrix_fp32[57*57];
       for (unsigned int i=0; i<(57*57); i++)
         matrix_fp32[i] = matrix[i];
 
-      float *eigenvalues;
-      float *samples;
-      float *proportion_explained;
+      {
+        float *eigenvalues;
+        float *samples;
+        float *proportion_explained;
 
-      su::pcoa(matrix_fp32, n_samples, n_dims, eigenvalues, samples, proportion_explained);
+        su::pcoa(matrix_fp32, n_samples, n_dims, eigenvalues, samples, proportion_explained);
 
-      // last three eignes are very close to each other and could come back in reverse order
+        // last three eignes are very close to each other and could come back in reverse order
 
-      for(unsigned int i = 0; i < n_dims ; i++) {
-        //printf("%i %f %f %f\n",i,float(eigenvalues[i]),float(exp1[i]),float(fabs(eigenvalues[i] - exp1[i])));
-        const float max_err = (i<4) ? 0.01 : 0.1; // the values are approximate, based on a random number in the algo
-        ASSERT(fabs(eigenvalues[i] - exp1[i]) < max_err);
-      }
-
-      // signs may flip, that's normal
-      for(unsigned int i = 0; i < (n_samples*n_dims); i++) {
-        if ((i%n_dims)<4) {
-          //printf("%i %f %f %f\n",i,float(samples[i]),float(exp2[i]),float(fabs(samples[i]) - fabs(exp2[i])));
-          ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.05)
-        } else {
-          // any of the 3 will do
-          unsigned int ibase = (i/n_dims)*n_dims;
-          //printf("%i %f %f %f %f\n",i,float(samples[i]),float(exp2[ibase+4]),float(exp2[ibase+5]),float(exp2[ibase+6]));
-          ASSERT( (fabs(fabs(samples[i]) - fabs(exp2[ibase+4])) < 0.15) || (fabs(fabs(samples[i]) - fabs(exp2[ibase+5])) < 0.15) || (fabs(fabs(samples[i]) - fabs(exp2[ibase+6])) < 0.15) );
+        for(unsigned int i = 0; i < n_dims ; i++) {
+          //printf("%i %f %f %f\n",i,float(eigenvalues[i]),float(exp1[i]),float(fabs(eigenvalues[i] - exp1[i])));
+          const float max_err = (i<4) ? 0.01 : 0.1; // the values are approximate, based on a random number in the algo
+          ASSERT(fabs(eigenvalues[i] - exp1[i]) < max_err);
         }
+
+        // signs may flip, that's normal
+        for(unsigned int i = 0; i < (n_samples*n_dims); i++) {
+          if ((i%n_dims)<4) {
+            //printf("%i %f %f %f\n",i,float(samples[i]),float(exp2[i]),float(fabs(samples[i]) - fabs(exp2[i])));
+            ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.05)
+          } else {
+            // any of the 3 will do
+            unsigned int ibase = (i/n_dims)*n_dims;
+            //printf("%i %f %f %f %f\n",i,float(samples[i]),float(exp2[ibase+4]),float(exp2[ibase+5]),float(exp2[ibase+6]));
+            ASSERT( (fabs(fabs(samples[i]) - fabs(exp2[ibase+4])) < 0.15) || (fabs(fabs(samples[i]) - fabs(exp2[ibase+5])) < 0.15) || (fabs(fabs(samples[i]) - fabs(exp2[ibase+6])) < 0.15) );
+          }
+        }
+
+        for(unsigned int i = 0; i < n_dims; i++) {
+          //printf("%i %f %f\n",i,float(proportion_explained[i]),float(exp3[i]),float(fabs(proportion_explained[i] - exp3[i])));
+          const float max_err = (i<4) ? 0.001 : 0.01;
+          ASSERT(fabs(proportion_explained[i] - exp3[i]) < max_err);
+        }
+
+        free(proportion_explained);
+        free(samples);
+        free(eigenvalues);
       }
 
-      for(unsigned int i = 0; i < n_dims; i++) {
-        //printf("%i %f %f\n",i,float(proportion_explained[i]),float(exp3[i]),float(fabs(proportion_explained[i] - exp3[i])));
-        const float max_err = (i<4) ? 0.001 : 0.01;
-        ASSERT(fabs(proportion_explained[i] - exp3[i]) < max_err);
+      {
+        float *eigenvalues;
+        float *samples;
+        float *proportion_explained;
+
+        su::pcoa_inplace(matrix_fp32, n_samples, n_dims, eigenvalues, samples, proportion_explained);
+        // Note: content of matrix_fp32 has been destroyed 
+
+        // last three eignes are very close to each other and could come back in reverse order
+
+        for(unsigned int i = 0; i < n_dims ; i++) {
+          //printf("%i %f %f %f\n",i,float(eigenvalues[i]),float(exp1[i]),float(fabs(eigenvalues[i] - exp1[i])));
+          const float max_err = (i<4) ? 0.01 : 0.1; // the values are approximate, based on a random number in the algo
+          ASSERT(fabs(eigenvalues[i] - exp1[i]) < max_err);
+        }
+
+        // signs may flip, that's normal
+        for(unsigned int i = 0; i < (n_samples*n_dims); i++) {
+          if ((i%n_dims)<4) {
+            //printf("%i %f %f %f\n",i,float(samples[i]),float(exp2[i]),float(fabs(samples[i]) - fabs(exp2[i])));
+            ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.05)
+          } else {
+            // any of the 3 will do
+            unsigned int ibase = (i/n_dims)*n_dims;
+            //printf("%i %f %f %f %f\n",i,float(samples[i]),float(exp2[ibase+4]),float(exp2[ibase+5]),float(exp2[ibase+6]));
+            ASSERT( (fabs(fabs(samples[i]) - fabs(exp2[ibase+4])) < 0.15) || (fabs(fabs(samples[i]) - fabs(exp2[ibase+5])) < 0.15) || (fabs(fabs(samples[i]) - fabs(exp2[ibase+6])) < 0.15) );
+          }
+        }
+
+        for(unsigned int i = 0; i < n_dims; i++) {
+          //printf("%i %f %f\n",i,float(proportion_explained[i]),float(exp3[i]),float(fabs(proportion_explained[i] - exp3[i])));
+          const float max_err = (i<4) ? 0.001 : 0.01;
+          ASSERT(fabs(proportion_explained[i] - exp3[i]) < max_err);
+        }
+
+        free(proportion_explained);
+        free(samples);
+        free(eigenvalues);
       }
 
-      free(proportion_explained);
-      free(samples);
-      free(eigenvalues);
     }
 
 

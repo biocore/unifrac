@@ -255,6 +255,7 @@ inline int qr_i_T<float>(const uint32_t rows, const uint32_t cols, float *H, uin
   return rc;
 }
 
+namespace su {
 
 // helper class, since QR ops are multi function
 template<class TReal>
@@ -293,23 +294,25 @@ class QR {
 
 };
 
+}
+
 template<>
-inline void QR<double>::qdot_r_sq(const double *mat, double *res) {
+inline void su::QR<double>::qdot_r_sq(const double *mat, double *res) {
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, Q, rows, 0.0, res, rows);
 }
 
 template<>
-inline void QR<float>::qdot_r_sq(const float *mat, float *res) {
+inline void su::QR<float>::qdot_r_sq(const float *mat, float *res) {
   cblas_sgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, rows, 1.0, mat, rows, Q, rows, 0.0, res, rows);
 }
 
 template<>
-inline void QR<double>::qdot_l_sq(const double *mat, double *res) {
+inline void su::QR<double>::qdot_l_sq(const double *mat, double *res) {
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, cols, 1.0, Q, rows, mat, cols, 0.0, res, rows);
 }
 
 template<>
-inline void QR<float>::qdot_l_sq(const float *mat, float *res) {
+inline void su::QR<float>::qdot_l_sq(const float *mat, float *res) {
   cblas_sgemm(CblasColMajor,CblasNoTrans,CblasNoTrans, rows , cols, cols, 1.0, Q, rows, mat, cols, 0.0, res, rows);
 }
 
@@ -381,7 +384,7 @@ inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, 
     // step 2
     // QR decomposition of H 
 
-    QR<TReal> qr_obj(n_samples, k*2, H); // H is now owned by qr_obj, as Q
+    su::QR<TReal> qr_obj(n_samples, k*2, H); // H is now owned by qr_obj, as Q
 
     // step 3
     // T = centered * Q (since centered^T == centered, due to being symmetric)
@@ -439,6 +442,60 @@ void su::find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, float
   find_eigens_fast_T<float>(n_samples, n_dims, centered, eigenvalues, eigenvectors);
 }
 
+// helper class
+
+namespace su {
+
+template<class TReal>
+class NewCentered {
+private:
+   const uint32_t n_samples;
+   const uint32_t n_dims;
+   TReal * centered_buf;
+public:
+   NewCentered(const uint32_t _n_samples, const uint32_t _n_dims) 
+   : n_samples(_n_samples)
+   , n_dims(_n_dims)
+   , centered_buf(NULL)
+   {}
+
+   TReal * get_buf() {
+     if (centered_buf==NULL) centered_buf = (TReal *) malloc(sizeof(TReal)*uint64_t(n_samples)*uint64_t(n_samples));
+     return centered_buf;
+   }
+
+   void release_buf() {
+     if (centered_buf!=NULL) free(centered_buf);
+     centered_buf=NULL;
+   }
+
+   ~NewCentered() {
+     if (centered_buf!=NULL) release_buf();
+   }
+
+private:
+   NewCentered(const NewCentered<TReal> &other) = delete;
+   NewCentered<TReal>& operator=(const NewCentered<TReal> &other) = delete;
+}; 
+
+template<class TReal>
+class InPlaceCentered {
+private:
+   TReal * mat;
+public:
+   InPlaceCentered(TReal * _mat)
+   : mat(_mat)
+   {}
+
+   TReal * get_buf() { return mat; }
+
+   void release_buf() {}
+
+   ~InPlaceCentered() {}
+};
+
+}
+
 /*
     Perform Principal Coordinate Analysis.
 
@@ -461,35 +518,38 @@ void su::find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, float
 */
 
 // mat       - in, result of unifrac compute
+// inplace   - in, if true, use mat as a work buffer 
 // n_samples - in, size of the matrix (n x n)
 // n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
 // eigenvalues - out, alocated buffer of size n_dims
 // samples     - out, alocated buffer of size n_dims x n_samples
 // proportion_explained - out, allocated buffer of size n_dims
 
-template<class TRealIn, class TReal>
-inline void pcoa_T(const TRealIn * mat, const uint32_t n_samples, const uint32_t n_dims, TReal * &eigenvalues, TReal * &samples,TReal * &proportion_explained) {
+template<class TRealIn, class TReal, class TCenter>
+inline void pcoa_T(TRealIn * mat, TCenter &center_obj, const uint32_t n_samples, const uint32_t n_dims, TReal * &eigenvalues, TReal * &samples,TReal * &proportion_explained) {
   proportion_explained = (TReal *) malloc(sizeof(TReal)*n_dims);
 
-
-  TReal *centered = (TReal *) malloc(sizeof(TReal)*uint64_t(n_samples)*uint64_t(n_samples));
-
-  // First must center the matrix
-  mat_to_centered_T<TRealIn,TReal>(mat,n_samples,centered);
-
-  // get the sum of the diagonal, needed later
-  // and centered will be updated in-place in find_eigen
   TReal diag_sum = 0.0;
-  for (uint32_t i=0; i<n_samples; i++) diag_sum += centered[i*uint64_t(n_samples)+i];
-
-  // Find eigenvalues and eigenvectors
-  // Use the Fast method... will return the allocated buffers
-  eigenvalues = NULL;
   TReal *eigenvectors = NULL;
-  find_eigens_fast_T<TReal>(n_samples,n_dims,centered,eigenvalues,eigenvectors);
 
-  free(centered); // we don't need it anymore
-  centered=NULL;
+  {
+    TReal *centered = center_obj.get_buf();
+
+    // First must center the matrix
+    mat_to_centered_T<TRealIn,TReal>(mat,n_samples,centered);
+
+    // get the sum of the diagonal, needed later
+    // and centered will be updated in-place in find_eigen
+    for (uint32_t i=0; i<n_samples; i++) diag_sum += centered[i*uint64_t(n_samples)+i];
+
+    // Find eigenvalues and eigenvectors
+    // Use the Fast method... will return the allocated buffers
+    eigenvalues = NULL;
+    eigenvectors = NULL;
+    find_eigens_fast_T<TReal>(n_samples,n_dims,centered,eigenvalues,eigenvectors);
+
+    center_obj.release_buf();
+  }
 
   // expects eigenvalues to be ordered and non-negative
   // The above unction guarantees that
@@ -526,14 +586,27 @@ inline void pcoa_T(const TRealIn * mat, const uint32_t n_samples, const uint32_t
 }
 
 void su::pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double * &eigenvalues, double * &samples, double * &proportion_explained) {
-  pcoa_T<double,double>(mat,n_samples,n_dims, eigenvalues, samples, proportion_explained);
+  su::NewCentered<double> cobj(n_samples, n_dims);
+  pcoa_T(mat, cobj , n_samples, n_dims, eigenvalues, samples, proportion_explained);
 }
 
 void su::pcoa(const float  * mat, const uint32_t n_samples, const uint32_t n_dims, float  * &eigenvalues, float  * &samples, float  * &proportion_explained) {
-  pcoa_T<float,float>(mat,n_samples,n_dims, eigenvalues, samples, proportion_explained);
+  su::NewCentered<float> cobj(n_samples, n_dims);
+  pcoa_T(mat, cobj, n_samples, n_dims, eigenvalues, samples, proportion_explained);
 }
 
 void su::pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, float  * &eigenvalues, float  * &samples, float  * &proportion_explained) {
-  pcoa_T<double,float>(mat,n_samples,n_dims, eigenvalues, samples, proportion_explained);
+  su::NewCentered<float> cobj(n_samples, n_dims);
+  pcoa_T(mat, cobj, n_samples, n_dims, eigenvalues, samples, proportion_explained);
+}
+
+void su::pcoa_inplace(double * mat, const uint32_t n_samples, const uint32_t n_dims, double * &eigenvalues, double * &samples, double * &proportion_explained) {
+  su::InPlaceCentered<double> cobj(mat);
+  pcoa_T(mat, cobj, n_samples, n_dims, eigenvalues, samples, proportion_explained);
+}
+
+void su::pcoa_inplace(float  * mat, const uint32_t n_samples, const uint32_t n_dims, float  * &eigenvalues, float  * &samples, float  * &proportion_explained) {
+  su::InPlaceCentered<float> cobj(mat);
+  pcoa_T(mat, cobj, n_samples, n_dims, eigenvalues, samples, proportion_explained);
 }
 
