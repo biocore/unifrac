@@ -538,7 +538,7 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
-IOStatus write_mat_from_matrix(const char* output_filename, const mat_full_fp64_t* result) {
+IOStatus write_mat_from_matrix(const char* output_filename, mat_full_fp64_t* result) {
     const double *buf2d  = result->matrix;
 
     std::ofstream output;
@@ -588,8 +588,8 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 }
 
 // Internal: Make sure TReal and real_id match
-template<class TMat>
-IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * result, hid_t real_id, unsigned int pcoa_dims) {
+template<class TReal, class TMat>
+IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result, hid_t real_id, unsigned int pcoa_dims) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -599,7 +599,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
        H5Fclose (output_file_id);
        return open_error;
    }
-   if (write_hdf5_string(output_file_id,"version","2020.06")<0) {
+   if (write_hdf5_string(output_file_id,"version","2020.12")<0) {
        H5Fclose (output_file_id);
        return open_error;
    }
@@ -615,11 +615,6 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      H5Tset_size(datatype_id,H5T_VARIABLE);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-
-     hsize_t     chunks[1];
-     chunks[0] = result->n_samples;
-
-     if (H5Pset_chunk (dcpl_id, 1, chunks)) return open_error; // just abort on error
 
      hid_t dataset_id = H5Dcreate1(output_file_id, "order", datatype_id, dataspace_id, dcpl_id);
 
@@ -647,24 +642,11 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
 
-     // shoot for a 0.75M chunk size at double, to fit in default cache
-     hsize_t     chunks[2];
-     chunks[0] = 1;
-     chunks[1] = 96*1024;
-     if ( chunks[1]>(result->n_samples) ) {
-       chunks[1] = result->n_samples;
-       chunks[0] = 96*1024/chunks[1];
-       if ( chunks[0]>(result->n_samples) ) {
-          chunks[0] = result->n_samples;
-       }
-     }
-
-     if (H5Pset_chunk (dcpl_id, 2, chunks)) return open_error; // just abort on error
-
      hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",real_id, dataspace_id,
                                    H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
      herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                               result->matrix);
+
 
      H5Pclose(dcpl_id);
      H5Dclose(dataset_id);
@@ -675,6 +657,112 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
        H5Fclose (output_file_id);
        return open_error;
      }
+   }
+
+   if (pcoa_dims>0) {
+     // compute pcoa and save it in the file
+     // use inplace variant to keep memory use in check; we don't need matrix anymore
+     TReal * eigenvalues;
+     TReal * samples;
+     TReal * proportion_explained;
+
+     su::pcoa_inplace(result->matrix, result->n_samples, pcoa_dims, eigenvalues, samples, proportion_explained);
+
+
+     if (write_hdf5_string(output_file_id,"pcoa_method","FSVD")<0) {
+       H5Fclose (output_file_id);
+       return open_error;
+     }
+
+     // save the eigenvalues
+     {
+       hsize_t     dims[1];
+       dims[0] = pcoa_dims;
+       hid_t dataspace_id = H5Screate_simple(1, dims, NULL);
+
+       hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+
+       hid_t dataset_id = H5Dcreate2(output_file_id, "pcoa_eigvals",real_id, dataspace_id,
+                                     H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
+       herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                                eigenvalues);
+
+
+       H5Pclose(dcpl_id);
+       H5Dclose(dataset_id);
+       H5Sclose(dataspace_id);
+
+       // check status after cleanup, for simplicity
+       if (status<0) {
+         H5Fclose (output_file_id);
+         free(samples);
+         free(proportion_explained);
+         free(eigenvalues);
+         return open_error;
+       }
+     }
+
+     // save the proportion_explained
+     {
+       hsize_t     dims[1];
+       dims[0] = pcoa_dims;
+       hid_t dataspace_id = H5Screate_simple(1, dims, NULL);
+
+       hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+
+       hid_t dataset_id = H5Dcreate2(output_file_id, "pcoa_proportion_explained",real_id, dataspace_id,
+                                     H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
+       herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                                proportion_explained);
+
+
+       H5Pclose(dcpl_id);
+       H5Dclose(dataset_id);
+       H5Sclose(dataspace_id);
+
+       // check status after cleanup, for simplicity
+       if (status<0) {
+         H5Fclose (output_file_id);
+         free(samples);
+         free(proportion_explained);
+         free(eigenvalues);
+         return open_error;
+       }
+     }
+
+     // save the samples
+     {
+       hsize_t     dims[2];
+       dims[0] = result->n_samples;
+       dims[1] = pcoa_dims;
+       hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
+
+       hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+
+       hid_t dataset_id = H5Dcreate2(output_file_id, "pcoa_samples",real_id, dataspace_id,
+                                     H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
+       herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                                samples);
+
+
+       H5Pclose(dcpl_id);
+       H5Dclose(dataset_id);
+       H5Sclose(dataspace_id);
+
+       // check status after cleanup, for simplicity
+       if (status<0) {
+         H5Fclose (output_file_id);
+         free(samples);
+         free(proportion_explained);
+         free(eigenvalues);
+         return open_error;
+       }
+     }
+
+     free(samples);
+     free(proportion_explained);
+     free(eigenvalues);
+
    }
 
    H5Fclose (output_file_id);
@@ -698,26 +786,26 @@ IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_
      mat_full.sample_ids = result->sample_ids; // just link
 
      condensed_form_to_matrix_T(result->condensed_form, n_samples, mat_full.matrix);
-     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, &mat_full, real_id, pcoa_dims);
+     IOStatus err =  write_mat_from_matrix_hdf5_T<TReal,TMat>(output_filename, &mat_full, real_id, pcoa_dims);
 
      free(mat_full.matrix);
      return err;
 }
 
-IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
+IOStatus write_mat_hdf5(const char* output_filename, mat_t* result, unsigned int pcoa_dims) {
+  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,pcoa_dims);
 }
 
-IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
+IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result, unsigned int pcoa_dims) {
+  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,pcoa_dims);
 }
 
-IOStatus write_mat_from_matrix_hdf5(const char* output_filename, const mat_full_fp64_t* result) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
+IOStatus write_mat_from_matrix_hdf5(const char* output_filename, mat_full_fp64_t* result, unsigned int pcoa_dims) {
+  return write_mat_from_matrix_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,pcoa_dims);
 }
 
-IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, const mat_full_fp32_t* result) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
+IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, mat_full_fp32_t* result, unsigned int pcoa_dims) {
+  return write_mat_from_matrix_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,pcoa_dims);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {

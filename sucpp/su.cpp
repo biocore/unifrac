@@ -40,6 +40,7 @@ void usage() {
     std::cout << "    \t\t    hfd5 : HFD5 format.  May be fp32 or fp64, depending on method." << std::endl;
     std::cout << "    \t\t    hdf5_fp32 : HFD5 format, using fp32 precision." << std::endl;
     std::cout << "    \t\t    hdf5_fp64 : HFD5 format, using fp64 precision." << std::endl;
+    std::cout << "    --pcoa\t[OPTIONAL] Number of PCoA dimensions to compute (default: 10, do not compute if 0)" << std::endl;
     std::cout << "    --diskbuf\t[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe)." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
@@ -136,9 +137,11 @@ int mode_partial_report(const std::string table_filename, int npartials, bool ba
             start = start + smallchunk;
         }
     }
+
+    return EXIT_SUCCESS;
 } 
 
-int mode_merge_partial_fp32(const char * output_filename, Format format_val,
+int mode_merge_partial_fp32(const char * output_filename, Format format_val, unsigned int pcoa_dims,
                             size_t partials_size, partial_dyn_mat_t* * partial_mats,
                             const char * mmap_dir) {
     mat_full_fp32_t *result = NULL;
@@ -153,7 +156,7 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
     }
 
     IOStatus iostatus;
-    iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result);
+    iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result, pcoa_dims);
     destroy_mat_full_fp32(&result);
     
     if(iostatus != write_okay) {
@@ -166,7 +169,7 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
     return EXIT_SUCCESS;
 }
 
-int mode_merge_partial_fp64(const char * output_filename, Format format_val,
+int mode_merge_partial_fp64(const char * output_filename, Format format_val, unsigned int pcoa_dims,
                             size_t partials_size, partial_dyn_mat_t* * partial_mats,
                             const char * mmap_dir) {
     mat_full_fp64_t *result = NULL;
@@ -182,7 +185,7 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
 
     IOStatus iostatus;
     if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_from_matrix_hdf5(output_filename, result);
+     iostatus = write_mat_from_matrix_hdf5(output_filename, result, pcoa_dims);
     } else {
      iostatus = write_mat_from_matrix(output_filename, result);
     }
@@ -199,7 +202,7 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
 }
 
 
-int mode_merge_partial(const std::string &output_filename, Format format_val,
+int mode_merge_partial(const std::string &output_filename, Format format_val, unsigned int pcoa_dims,
                        const std::string &partial_pattern,
                        const std::string &mmap_dir) {
     if(output_filename.empty()) {
@@ -231,11 +234,11 @@ int mode_merge_partial(const std::string &output_filename, Format format_val,
 
     int status;
     if (format_val==format_hdf5_fp64) {
-     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
+     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, pcoa_dims, partials.size(), partial_mats, mmap_dir_c);
     } else if (format_val==format_hdf5_fp32) {
-     status = mode_merge_partial_fp32(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
+     status = mode_merge_partial_fp32(output_filename.c_str(), format_val, pcoa_dims, partials.size(), partial_mats, mmap_dir_c);
     } else {
-     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
+     status = mode_merge_partial_fp64(output_filename.c_str(), format_val, pcoa_dims, partials.size(), partial_mats, mmap_dir_c);
     }
 
     for(size_t i = 0; i < partials.size(); i++) {
@@ -299,7 +302,7 @@ int mode_partial(std::string table_filename, std::string tree_filename,
 }
 
 int mode_one_off(std::string table_filename, std::string tree_filename, 
-                 std::string output_filename, Format format_val, std::string method_string,
+                 std::string output_filename, Format format_val, std::string method_string, unsigned int pcoa_dims,
                  bool vaw, double g_unifrac_alpha, bool bypass_tips,
                  unsigned int nthreads) {
     if(output_filename.empty()) {
@@ -333,9 +336,9 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
   
     IOStatus iostatus; 
     if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result);
+     iostatus = write_mat_hdf5(output_filename.c_str(), result, pcoa_dims);
     } else if (format_val==format_hdf5_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result);
+     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, pcoa_dims);
     } else {
      iostatus = write_mat(output_filename.c_str(), result);
     }
@@ -400,6 +403,7 @@ int main(int argc, char **argv){
     const std::string &report_bare = input.getCmdOption("--report-bare");
     const std::string &format_arg = input.getCmdOption("--format");
     const std::string &sformat_arg = input.getCmdOption("-r");
+    const std::string &pcoa_arg = input.getCmdOption("--pcoa");
     const std::string &diskbuf_arg = input.getCmdOption("--diskbuf");
 
     if(nthreads_arg.empty()) {
@@ -448,19 +452,23 @@ int main(int argc, char **argv){
         return EXIT_FAILURE;
     }
 
-
+    unsigned int pcoa_dims;
+    if(pcoa_arg.empty())
+        pcoa_dims = 10;
+    else
+        pcoa_dims = atoi(pcoa_arg.c_str());
 
 
     if(mode_arg.empty() || mode_arg == "one-off")
-        return mode_one_off(table_filename, tree_filename, output_filename, format_val, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads);
+        return mode_one_off(table_filename, tree_filename, output_filename, format_val, method_string, pcoa_dims, vaw, g_unifrac_alpha, bypass_tips, nthreads);
     else if(mode_arg == "partial")
         return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
-        return mode_merge_partial(output_filename, format_val, partial_pattern, diskbuf_arg);
+        return mode_merge_partial(output_filename, format_val, pcoa_dims, partial_pattern, diskbuf_arg);
     else if(mode_arg == "partial-report")
         return mode_partial_report(table_filename, n_partials, bare);
     else 
-        err("Unknown mode. Valid options are: one-off, partial, merge-partial");
+        err("Unknown mode. Valid options are: one-off, partial, merge-partial, partial-report");
 
     return EXIT_SUCCESS;
 }
