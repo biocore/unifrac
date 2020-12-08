@@ -255,30 +255,6 @@ EXTERN IOStatus write_mat_hdf5(const char* filename, mat_t* result);
  */
 EXTERN IOStatus write_mat_hdf5_fp32(const char* filename, mat_t* result);
 
-/* Write a matrix object using hdf5 format
- *
- * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_hdf5_compressed(const char* filename, mat_t* result, unsigned int compress_level);
-
-/* Write a matrix object using hdf5 format, using fp32 precision
- *
- * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_hdf5_fp32_compressed(const char* filename, mat_t* result, unsigned int compress_level);
-
 /* Write a matrix object
  *
  * filename <const char*> the file to write into
@@ -312,30 +288,6 @@ EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, const mat_full_
  * write_okay : no problems
  */
 EXTERN IOStatus write_mat_from_matrix_hdf5_fp32(const char* filename, const mat_full_fp32_t* result);
-
-/* Write a matrix object from buffer using hdf5 format
- *
- * filename <const char*> the file to write into
- * result <mat_full_fp64_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_from_matrix_hdf5_compressed(const char* filename, const mat_full_fp64_t* result, unsigned int compress_level);
-
-/* Write a matrix object from buffer using hdf5 format, using fp32 precision
- *
- * filename <const char*> the file to write into
- * result <mat_full_fp32_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* filename, const mat_full_fp32_t* result, unsigned int compress_level);
 
 /* Write a series
  *

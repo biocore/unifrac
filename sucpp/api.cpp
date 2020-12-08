@@ -589,7 +589,7 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 
 // Internal: Make sure TReal and real_id match
 template<class TMat>
-IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * result, hid_t real_id, unsigned int compress_level) {
+IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * result, hid_t real_id, unsigned int pcoa_dims) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    if (output_file_id<0) return open_error;
@@ -615,7 +615,6 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      H5Tset_size(datatype_id,H5T_VARIABLE);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-     if (H5Pset_deflate(dcpl_id, compress_level)<0) return open_error; // just abort on error
 
      hsize_t     chunks[1];
      chunks[0] = result->n_samples;
@@ -647,7 +646,6 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-     if (H5Pset_deflate(dcpl_id, compress_level)<0) return open_error; // just abort on error
 
      // shoot for a 0.75M chunk size at double, to fit in default cache
      hsize_t     chunks[2];
@@ -685,7 +683,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
 
 // Internal: Make sure TReal and real_id match
 template<class TReal, class TMat>
-IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
+IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int pcoa_dims) {
      // compute the matrix
      TMat mat_full;
      mat_full.n_samples = result->n_samples;
@@ -700,7 +698,7 @@ IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_
      mat_full.sample_ids = result->sample_ids; // just link
 
      condensed_form_to_matrix_T(result->condensed_form, n_samples, mat_full.matrix);
-     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, &mat_full, real_id, compress_level);
+     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, &mat_full, real_id, pcoa_dims);
 
      free(mat_full.matrix);
      return err;
@@ -714,28 +712,12 @@ IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
   return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
 }
 
-IOStatus write_mat_hdf5_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
-}
-
-IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
-}
-
 IOStatus write_mat_from_matrix_hdf5(const char* output_filename, const mat_full_fp64_t* result) {
   return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
 }
 
 IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, const mat_full_fp32_t* result) {
   return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
-}
-
-IOStatus write_mat_from_matrix_hdf5_compressed(const char* output_filename, const mat_full_fp64_t* result, unsigned int compress_level) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
-}
-
-IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* output_filename, const mat_full_fp32_t* result, unsigned int compress_level) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {

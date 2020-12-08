@@ -10,7 +10,7 @@
 #include "biom.hpp"
 #include "unifrac.hpp"
 
-enum Format {format_invalid,format_ascii, format_hdf5_fp32, format_hdf5_fp64, format_hdf5c_fp32, format_hdf5c_fp64};
+enum Format {format_invalid,format_ascii, format_hdf5_fp32, format_hdf5_fp64};
 
 void usage() {
     std::cout << "usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [-f]  [--vaw]" << std::endl;
@@ -40,7 +40,6 @@ void usage() {
     std::cout << "    \t\t    hfd5 : HFD5 format.  May be fp32 or fp64, depending on method." << std::endl;
     std::cout << "    \t\t    hdf5_fp32 : HFD5 format, using fp32 precision." << std::endl;
     std::cout << "    \t\t    hdf5_fp64 : HFD5 format, using fp64 precision." << std::endl;
-    std::cout << "    \t\t    hfd5c|hdf5c_fp32|hdf5c_fp64 : HFD5 format, with deflate ompression." << std::endl;
     std::cout << "    --diskbuf\t[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe)." << std::endl;
     std::cout << std::endl;
     std::cout << "Citations: " << std::endl;
@@ -154,11 +153,7 @@ int mode_merge_partial_fp32(const char * output_filename, Format format_val,
     }
 
     IOStatus iostatus;
-    if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_from_matrix_hdf5_fp32_compressed(output_filename, result, 5);
-    } else {           
-     iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result);
-    }   
+    iostatus = write_mat_from_matrix_hdf5_fp32(output_filename, result);
     destroy_mat_full_fp32(&result);
     
     if(iostatus != write_okay) {
@@ -188,8 +183,6 @@ int mode_merge_partial_fp64(const char * output_filename, Format format_val,
     IOStatus iostatus;
     if (format_val==format_hdf5_fp64) {
      iostatus = write_mat_from_matrix_hdf5(output_filename, result);
-    } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_from_matrix_hdf5_compressed(output_filename, result, 5);
     } else {
      iostatus = write_mat_from_matrix(output_filename, result);
     }
@@ -237,9 +230,9 @@ int mode_merge_partial(const std::string &output_filename, Format format_val,
     const char * mmap_dir_c = mmap_dir.empty() ? NULL : mmap_dir.c_str();
 
     int status;
-    if ((format_val==format_hdf5_fp64) || (format_val==format_hdf5c_fp64)) {
+    if (format_val==format_hdf5_fp64) {
      status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
-    } else if ((format_val==format_hdf5_fp32) || (format_val==format_hdf5c_fp32)) {
+    } else if (format_val==format_hdf5_fp32) {
      status = mode_merge_partial_fp32(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
     } else {
      status = mode_merge_partial_fp64(output_filename.c_str(), format_val, partials.size(), partial_mats, mmap_dir_c);
@@ -343,10 +336,6 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
      iostatus = write_mat_hdf5(output_filename.c_str(), result);
     } else if (format_val==format_hdf5_fp32) {
      iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result);
-    } else if (format_val==format_hdf5c_fp64) {
-     iostatus = write_mat_hdf5_compressed(output_filename.c_str(), result, 5);
-    } else if (format_val==format_hdf5c_fp32) {
-     iostatus = write_mat_hdf5_fp32_compressed(output_filename.c_str(), result, 5); 
     } else {
      iostatus = write_mat(output_filename.c_str(), result);
     }
@@ -376,15 +365,11 @@ Format get_format(const std::string &format_string, const std::string &method_st
         format_val = format_hdf5_fp32;
     } else if (format_string == "hdf5_fp64") {
         format_val = format_hdf5_fp64;
-    } else if (format_string == "hdf5c_fp32") {
-        format_val = format_hdf5c_fp32;
-    } else if (format_string == "hdf5c_fp64") {
-        format_val = format_hdf5c_fp64;
-    } else if ((format_string == "hdf5")||(format_string == "hdf5c")) {
+    } else if (format_string == "hdf5") {
         if ((method_string=="unweighted_fp32") || (method_string=="weighted_normalized_fp32") || (method_string=="weighted_unnormalized_fp32") || (method_string=="generalized_fp32"))
-           format_val = (format_string == "hdf5") ? format_hdf5_fp32 : format_hdf5c_fp32;
+           format_val = format_hdf5_fp32;
         else
-           format_val = (format_string == "hdf5") ? format_hdf5_fp64 : format_hdf5c_fp64;
+           format_val = format_hdf5_fp64;
     }
 
     return format_val;
