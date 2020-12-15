@@ -57,6 +57,10 @@ def _validate_meta(tables, phylogenies):
                              " to be newick")
 
 
+# 
+# Functions that compute Unifrac and return a memory object
+#
+
 def unweighted(table: str,
                phylogeny: str,
                threads: int = 1,
@@ -71,10 +75,10 @@ def unweighted(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default of 1.
+        The number of threads to split it into. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -127,10 +131,10 @@ def unweighted_fp32(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default of 1.
+        The number of threads to split it into. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -183,10 +187,10 @@ def weighted_normalized(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default of 1.
+        The number of threads to split it into. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -239,10 +243,10 @@ def weighted_normalized_fp32(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default of 1.
+        The number of threads to split it into. Default of 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -295,10 +299,10 @@ def weighted_unnormalized(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default is 1.
+        The number of threads to split it into. Default is 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -352,10 +356,10 @@ def weighted_unnormalized_fp32(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default is 1.
+        The number of threads to split it into. Default is 1.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -408,7 +412,7 @@ def generalized(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default is 1
+        The number of threads to split it into. Default is 1
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -416,7 +420,7 @@ def generalized(table: str,
         range [0, 1]. Default is 1.0.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -483,7 +487,7 @@ def generalized_fp32(table: str,
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to use. Default is 1
+        The number of threads to split it into. Default is 1
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -491,7 +495,7 @@ def generalized_fp32(table: str,
         range [0, 1]. Default is 1.0.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
-    bypass_tips : bool
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
 
@@ -578,11 +582,11 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
         'skipping_missing_values'. The default is 'skipping_missing_values'.
     method : str
         The UniFrac method to use. The available choices are:
-        'unweighted', 'weighted_unnormalized', 'weighted_normalized', and
-        'generalized'.
+        'unweighted', 'unweighted_fp32', 'weighted_unnormalized', 'weighted_unnormalized_fp32',
+        'weighted_normalized', 'weighted_normalized_fp32', 'generalized' and 'generalized_fp32'.
     threads : int, optional
-        The number of threads to use. Default is 1
-    bypass_tips : bool
+        The number of threads to split it into. Default is 1
+    bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     alpha : float, optional
@@ -682,3 +686,625 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     dm = consolidation_(dms, [dm.ids for dm in dms], weights, all_ids)
 
     return skbio.DistanceMatrix(dm, ids=all_ids)
+
+
+# 
+# Functions that compute Unifrac and write into a file
+#
+
+def unweighted_to_file(table: str,
+                       phylogeny: str,
+                       out_filename: str,
+                       pcoa_dims: int = 10,
+                       threads: int = 1,
+                       variance_adjusted: bool = False,
+                       bypass_tips: bool = False,
+                       format: str = "hdf5",
+                       buf_dirname: str = "") -> str:
+    """Compute Unweighted UniFrac and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu_to_file(table, phylogeny, out_filename, 'unweighted',
+                           variance_adjusted, 1.0, bypass_tips, threads,
+                           format, pcoa_dims, buf_dirname)
+
+def unweighted_fp32_to_file(table: str,
+                            phylogeny: str,
+                            out_filename: str,
+                            pcoa_dims: int = 10,
+                            threads: int = 1,
+                            variance_adjusted: bool = False,
+                            bypass_tips: bool = False,
+                            format: str = "hdf5",
+                            buf_dirname: str = "") -> str:
+    """Compute Unweighted UniFrac using fp32 math and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu_to_file(table, phylogeny, out_filename, 'unweighted_fp32',
+                           variance_adjusted, 1.0, bypass_tips, threads,
+                           format, pcoa_dims, buf_dirname)
+
+
+def weighted_normalized_to_file(table: str,
+                                phylogeny: str,
+                                out_filename: str,
+                                pcoa_dims: int = 10,
+                                threads: int = 1,
+                                variance_adjusted: bool = False,
+                                bypass_tips: bool = False,
+                                format: str = "hdf5",
+                                buf_dirname: str = "") -> str:
+    """Compute weighted normalized UniFrac and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized',
+                           variance_adjusted, 1.0, bypass_tips, threads,
+                           format, pcoa_dims, buf_dirname)
+
+def weighted_normalized_fp32_to_file(table: str,
+                                     phylogeny: str,
+                                     out_filename: str,
+                                     pcoa_dims: int = 10,
+                                     threads: int = 1,
+                                     variance_adjusted: bool = False,
+                                     bypass_tips: bool = False,
+                                     format: str = "hdf5",
+                                     buf_dirname: str = "") -> str:
+    """Compute weighted normalized UniFrac using fp32 math and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default of 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized_fp32',
+                           variance_adjusted, 1.0, bypass_tips, threads,
+                           format, pcoa_dims, buf_dirname)
+
+
+def weighted_unnormalized_to_file(table: str,
+                                     phylogeny: str,
+                                     out_filename: str,
+                                     pcoa_dims: int = 10,
+                                     threads: int = 1,
+                                     variance_adjusted: bool = False,
+                                     bypass_tips: bool = False,
+                                     format: str = "hdf5",
+                                     buf_dirname: str = "") -> str:
+    """Compute weighted unnormalized UniFrac and write it to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default is 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_unnormalized',
+                           variance_adjusted, 1.0, bypass_tips, threads,
+                           format, pcoa_dims, buf_dirname)
+
+def weighted_unnormalized_fp32_to_file(table: str,
+                                       phylogeny: str,
+                                       out_filename: str,
+                                       pcoa_dims: int = 10,
+                                       threads: int = 1,
+                                       variance_adjusted: bool = False,
+                                       bypass_tips: bool = False,
+                                       format: str = "hdf5",
+                                       buf_dirname: str = "") -> str:
+    """Compute weighted unnormalized UniFrac using fp32 math and write it to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default is 1.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_unnormalized_fp32',
+                           variance_adjusted, 1.0, bypass_tips, threads,
+                           format, pcoa_dims, buf_dirname)
+
+
+
+def generalized_to_file(table: str,
+                        phylogeny: str,
+                        out_filename: str,
+                        pcoa_dims: int = 10,
+                        threads: int = 1,
+                        alpha: float = 1.0,
+                        variance_adjusted: bool = False,
+                        bypass_tips: bool = False,
+                        format: str = "hdf5",
+                        buf_dirname: str = "") -> str:
+    """Compute Generalized UniFrac and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default is 1
+    alpha : float, optional
+        The level of contribution of high abundance branches. Higher alpha
+        increases the contribution of from high abundance branches while lower
+        alpha reduces the contribution. Alpha was originally defined over the
+        range [0, 1]. Default is 1.0.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Generalized UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, but was not described in as
+    applied to Generalized UniFrac. It is feasible to do, so it is exposed
+    here.
+
+    An alpha of 1.0 is Weighted normalized UniFrac. An alpha of 0.0 is
+    approximately Unweighted UniFrac, and is if the proportions are
+    dichotomized.
+
+    References
+    ----------
+    .. [1] Chen, J., Bittinger, K., Charlson, E. S., Hoffmann C., Lewis, J.,
+       Wu, G. D., Collman R. G., Bushman, F. D. & Hongzhe L. Associating
+       microbiome composition with environmental covariates using generalized
+       UniFrac distances. Bioinformatics 28(16), 2106–2113 (2012).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    if alpha == 1.0:
+        warn("alpha of 1.0 is weighted-normalized UniFrac. "
+             "Weighted-normalized is being used instead as it is more "
+             "optimized.",
+             Warning)
+        return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized',
+                               variance_adjusted, alpha, bypass_tips, threads,
+                               format, pcoa_dims, buf_dirname)
+    else:
+        return qsu.ssu_to_file(table, phylogeny, out_filename, 'generalized',
+                               variance_adjusted, alpha, bypass_tips, threads,
+                               format, pcoa_dims, buf_dirname)
+
+def generalized_fp32_to_file(table: str,
+                             phylogeny: str,
+                             out_filename: str,
+                             pcoa_dims: int = 10,
+                             threads: int = 1,
+                             alpha: float = 1.0,
+                             variance_adjusted: bool = False,
+                             bypass_tips: bool = False,
+                             format: str = "hdf5",
+                             buf_dirname: str = "") -> str:
+    """Compute Generalized UniFrac using fp32 math and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed. 
+        Defaults of 10.
+    threads : int, optional
+        The number of threads to split it into. Default is 1
+    alpha : float, optional
+        The level of contribution of high abundance branches. Higher alpha
+        increases the contribution of from high abundance branches while lower
+        alpha reduces the contribution. Alpha was originally defined over the
+        range [0, 1]. Default is 1.0.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Generalized UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, but was not described in as
+    applied to Generalized UniFrac. It is feasible to do, so it is exposed
+    here.
+
+    An alpha of 1.0 is Weighted normalized UniFrac. An alpha of 0.0 is
+    approximately Unweighted UniFrac, and is if the proportions are
+    dichotomized.
+
+    References
+    ----------
+    .. [1] Chen, J., Bittinger, K., Charlson, E. S., Hoffmann C., Lewis, J.,
+       Wu, G. D., Collman R. G., Bushman, F. D. & Hongzhe L. Associating
+       microbiome composition with environmental covariates using generalized
+       UniFrac distances. Bioinformatics 28(16), 2106–2113 (2012).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    _validate(table, phylogeny)
+    if alpha == 1.0:
+        warn("alpha of 1.0 is weighted-normalized UniFrac. "
+             "Weighted-normalized is being used instead as it is more "
+             "optimized.",
+             Warning)
+        return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized_fp32',
+                               variance_adjusted, alpha, bypass_tips, threads,
+                               format, pcoa_dims, buf_dirname)
+    else:
+        return qsu.ssu_to_file(table, phylogeny, out_filename, 'generalized_fp32',
+                               variance_adjusted, alpha, bypass_tips, threads,
+                               format, pcoa_dims, buf_dirname)
+
