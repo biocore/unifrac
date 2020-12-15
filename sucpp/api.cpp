@@ -148,7 +148,7 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
 
 template<class TReal, class TMat>
 void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids, unsigned int n_samples, 
-                                   const char *mmap_dir /* if NULL, use malloc */) {
+                                   const char *mmap_dir /* if NULL or "", use malloc */) {
     result = (TMat*)malloc(sizeof(mat));
     result->n_samples = n_samples;
 
@@ -450,6 +450,10 @@ compute_status one_off_matrix_T(const char* biom_filename, const char* tree_file
                                 bool bypass_tips, unsigned int nthreads,
                                 const char *mmap_dir,  
                                 TMat** result) {
+    if (mmap_dir!=NULL) {
+     if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
+    }
+
     CHECK_FILE(biom_filename, table_missing)
     CHECK_FILE(tree_filename, tree_missing)
     SET_METHOD(unifrac_method, unknown_method)
@@ -513,6 +517,69 @@ compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_f
  return one_off_matrix_T<float,mat_full_fp32_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
 }
 
+inline compute_status is_fp64(const std::string &method_string, const std::string &format_string, bool &fp64) {
+  if (format_string == "hdf5_fp32") {
+    fp64 = false;
+  } else if (format_string == "hdf5_fp64") {
+    fp64 = true;
+  } else if (format_string == "hdf5") {
+    if ((method_string=="unweighted_fp32") || (method_string=="weighted_normalized_fp32") || (method_string=="weighted_unnormalized_fp32") || (method_string=="generalized_fp32")) {
+       fp64 = false;
+    } else if ((method_string=="unweighted2") || (method_string=="weighted_normalized") || (method_string=="weighted_unnormalized2") || (method_string=="generalized")) {
+       fp64 = true;
+    } else {
+      return unknown_method;
+    }
+  } else {
+    return unknown_method; 
+  }
+
+  return okay;
+}
+
+
+compute_status unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                               const char* unifrac_method, bool variance_adjust, double alpha,
+                               bool bypass_tips, unsigned int threads, const char* format,
+                               unsigned int pcoa_dims, const char *mmap_dir)
+{
+    bool fp64;
+    compute_status rc = is_fp64(unifrac_method, format, fp64);
+
+    if (rc==okay) {
+      if (fp64) {
+        mat_full_fp64_t* result;
+        rc = one_off_matrix(biom_filename, tree_filename,
+                            unifrac_method, variance_adjust, alpha,
+                            bypass_tips, threads, mmap_dir,
+                            &result);
+
+        if (rc==okay) {
+          // we have no alternative to hdf5 right now
+          IOStatus iostatus = write_mat_from_matrix_hdf5(out_filename, result, pcoa_dims);
+          destroy_mat_full_fp64(&result);
+
+          if (iostatus!=write_okay) rc=output_error;
+        }
+      } else {
+        mat_full_fp32_t* result;
+        rc = one_off_matrix_fp32(biom_filename, tree_filename,
+                                 unifrac_method, variance_adjust, alpha,
+                                 bypass_tips, threads, mmap_dir,
+                                 &result);
+     
+        if (rc==okay) {
+          // we have no alternative to hdf5 right now 
+          IOStatus iostatus = write_mat_from_matrix_hdf5_fp32(out_filename, result, pcoa_dims);
+          destroy_mat_full_fp32(&result);
+
+          if (iostatus!=write_okay) rc=output_error;
+        }
+      }
+    }
+
+    return rc;
+}
 
 IOStatus write_mat(const char* output_filename, mat_t* result) {
     std::ofstream output;
@@ -601,16 +668,16 @@ template<class TReal, class TMat>
 IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result, hid_t real_id, unsigned int pcoa_dims) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-   if (output_file_id<0) return open_error;
+   if (output_file_id<0) return write_error;
 
    // simple header
    if (write_hdf5_string(output_file_id,"format","BDSM")<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
    }
    if (write_hdf5_string(output_file_id,"version","2020.12")<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
    }
 
    // save the ids
@@ -638,7 +705,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result
      // check status after cleanup, for simplicity
      if (status<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
      }
    }
 
@@ -664,7 +731,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result
      // check status after cleanup, for simplicity
      if (status<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
      }
    }
 
@@ -680,7 +747,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result
 
      if (write_hdf5_string(output_file_id,"pcoa_method","FSVD")<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
      }
 
      // save the eigenvalues
@@ -707,7 +774,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result
          free(samples);
          free(proportion_explained);
          free(eigenvalues);
-         return open_error;
+         return write_error;
        }
      }
 
@@ -735,7 +802,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result
          free(samples);
          free(proportion_explained);
          free(eigenvalues);
-         return open_error;
+         return write_error;
        }
      }
 
@@ -764,7 +831,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result
          free(samples);
          free(proportion_explained);
          free(eigenvalues);
-         return open_error;
+         return write_error;
        }
      }
 
@@ -835,7 +902,7 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
 
 IOStatus write_partial(const char* output_filename, const partial_mat_t* result) {
     int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC,  S_IRUSR |  S_IWUSR );
-    if (fd==-1) return open_error;
+    if (fd==-1) return write_error;
 
     int cnt = -1;
 
@@ -875,10 +942,10 @@ IOStatus write_partial(const char* output_filename, const partial_mat_t* result)
       header[7] = sample_id_length_compressed;
 
       cnt=write(fd,header, 8 * sizeof(uint32_t));
-      if (cnt<1)  {close(fd); return open_error;}
+      if (cnt<1)  {close(fd); return write_error;}
 
       cnt=write(fd,cmp_buf, sample_id_length_compressed);
-      if (cnt<1)  {close(fd); return open_error;}
+      if (cnt<1)  {close(fd); return write_error;}
 
       free(cmp_buf);
       free(samples_buf);
@@ -898,7 +965,7 @@ IOStatus write_partial(const char* output_filename, const partial_mat_t* result)
         *cmp_buf_size_p = cmp_size;
 
         cnt=write(fd, cmp_buf_raw, cmp_size+sizeof(uint32_t));
-        if (cnt<1) {return open_error;}
+        if (cnt<1) {return write_error;}
       }
 
       free(cmp_buf_raw);
@@ -1309,8 +1376,12 @@ class PartialStripes : public su::ManagedStripes {
 
 template<class TReal, class TMat>
 MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_partials, 
-                                      const char *mmap_dir, /* if NULL, use malloc */
+                                      const char *mmap_dir, /* if NULL or "", use malloc */
                                       TMat** result /* out */ ) {
+    if (mmap_dir!=NULL) {
+     if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
+    }
+
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 

@@ -70,7 +70,8 @@ const char* compute_status_messages[6] = {"No error.",
                                           "The table file cannot be found.",
                                           "The table file contains an empty table."
                                           "An unknown method was requested.", 
-                                          "Table observation IDs are not a subset of the tree tips. This error can also be triggered if a node name contains a single quote (this is unlikely)."};
+                                          "Table observation IDs are not a subset of the tree tips. This error can also be triggered if a node name contains a single quote (this is unlikely).",
+                                          "Error creating the output."};
 
 
 // https://stackoverflow.com/questions/8401777/simple-glob-in-c-on-unix-system
@@ -92,7 +93,7 @@ void err(std::string msg) {
     usage();
 }
 
-int mode_partial_report(const std::string table_filename, int npartials, bool bare) {
+int mode_partial_report(const std::string table_filename, unsigned int npartials, bool bare) {
     if(table_filename.empty()) {
         err("table filename missing");
         return EXIT_FAILURE;
@@ -301,10 +302,11 @@ int mode_partial(std::string table_filename, std::string tree_filename,
     return EXIT_SUCCESS;
 }
 
-int mode_one_off(std::string table_filename, std::string tree_filename, 
-                 std::string output_filename, Format format_val, std::string method_string, unsigned int pcoa_dims,
+int mode_one_off(const std::string &table_filename, const std::string &tree_filename, 
+                 const std::string &output_filename, const std::string &format_str, Format format_val, 
+                 const std::string &method_string, unsigned int pcoa_dims,
                  bool vaw, double g_unifrac_alpha, bool bypass_tips,
-                 unsigned int nthreads) {
+                 unsigned int nthreads, const std::string &mmap_dir) {
     if(output_filename.empty()) {
         err("output filename missing");
         return EXIT_FAILURE;
@@ -325,31 +327,38 @@ int mode_one_off(std::string table_filename, std::string tree_filename,
         return EXIT_FAILURE;
     }
 
-    mat_t *result = NULL;
-    compute_status status;
-    status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
-                     vaw, g_unifrac_alpha, bypass_tips, nthreads, &result);
-    if(status != okay || result == NULL) {
+    compute_status status = okay;
+    if (format_val==format_ascii) {
+      mat_t *result = NULL;
+
+      status = one_off(table_filename.c_str(), tree_filename.c_str(), method_string.c_str(), 
+                       vaw, g_unifrac_alpha, bypass_tips, nthreads, &result);
+      if(status != okay || result == NULL) {
         fprintf(stderr, "Compute failed in one_off: %s\n", compute_status_messages[status]);
         exit(EXIT_FAILURE);
-    }
+      }
   
-    IOStatus iostatus; 
-    if (format_val==format_hdf5_fp64) {
-     iostatus = write_mat_hdf5(output_filename.c_str(), result, pcoa_dims);
-    } else if (format_val==format_hdf5_fp32) {
-     iostatus = write_mat_hdf5_fp32(output_filename.c_str(), result, pcoa_dims);
-    } else {
-     iostatus = write_mat(output_filename.c_str(), result);
-    }
-    destroy_mat(&result);
+      IOStatus iostatus = write_mat(output_filename.c_str(), result);
+      destroy_mat(&result);
 
-    if(iostatus!=write_okay) {
+      if(iostatus!=write_okay) {
         err("Failed to write output file.");
-        return EXIT_FAILURE;
+        status = output_error;
+      }
+
+    } else {
+      const char * mmap_dir_c = mmap_dir.empty() ? NULL : mmap_dir.c_str();
+
+      status = unifrac_to_file(table_filename.c_str(), tree_filename.c_str(), output_filename.c_str(),
+                               method_string.c_str(), vaw, g_unifrac_alpha, bypass_tips, nthreads, format_str.c_str(),
+                               pcoa_dims, mmap_dir_c);
+
+      if (status != okay) {
+        fprintf(stderr, "Compute failed in one_off: %s\n", compute_status_messages[status]);
+      }
     }
 
-    return EXIT_SUCCESS;
+    return (status==okay) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 void ssu_sig_handler(int signo) {
@@ -389,22 +398,22 @@ int main(int argc, char **argv){
 #pragma acc init
 
     unsigned int nthreads;
-    const std::string &table_filename = input.getCmdOption("-i");
-    const std::string &tree_filename = input.getCmdOption("-t");
-    const std::string &output_filename = input.getCmdOption("-o");
-    const std::string &method_string = input.getCmdOption("-m");
-    const std::string &nthreads_arg = input.getCmdOption("-n");
-    const std::string &gunifrac_arg = input.getCmdOption("-a");
-    const std::string &mode_arg = input.getCmdOption("--mode");
-    const std::string &start_arg = input.getCmdOption("--start");
-    const std::string &stop_arg = input.getCmdOption("--stop");
-    const std::string &partial_pattern = input.getCmdOption("--partial-pattern");
-    const std::string &npartials = input.getCmdOption("--n-partials");
-    const std::string &report_bare = input.getCmdOption("--report-bare");
-    const std::string &format_arg = input.getCmdOption("--format");
-    const std::string &sformat_arg = input.getCmdOption("-r");
-    const std::string &pcoa_arg = input.getCmdOption("--pcoa");
-    const std::string &diskbuf_arg = input.getCmdOption("--diskbuf");
+    std::string table_filename = input.getCmdOption("-i");
+    std::string tree_filename = input.getCmdOption("-t");
+    std::string output_filename = input.getCmdOption("-o");
+    std::string method_string = input.getCmdOption("-m");
+    std::string nthreads_arg = input.getCmdOption("-n");
+    std::string gunifrac_arg = input.getCmdOption("-a");
+    std::string mode_arg = input.getCmdOption("--mode");
+    std::string start_arg = input.getCmdOption("--start");
+    std::string stop_arg = input.getCmdOption("--stop");
+    std::string partial_pattern = input.getCmdOption("--partial-pattern");
+    std::string npartials = input.getCmdOption("--n-partials");
+    std::string report_bare = input.getCmdOption("--report-bare");
+    std::string format_arg = input.getCmdOption("--format");
+    std::string sformat_arg = input.getCmdOption("-r");
+    std::string pcoa_arg = input.getCmdOption("--pcoa");
+    std::string diskbuf_arg = input.getCmdOption("--diskbuf");
 
     if(nthreads_arg.empty()) {
         nthreads = 1;
@@ -440,12 +449,22 @@ int main(int argc, char **argv){
         n_partials = 1;
     else
         n_partials = atoi(npartials.c_str());
-   
+
+    if(n_partials<1) {
+        err("--n-partials cannot be < 1");
+        return EXIT_FAILURE;
+    }
+     if(n_partials>1000000000) {
+        err("--n-partials cannot be > 1G");
+        return EXIT_FAILURE;
+    }
+
     Format format_val = format_invalid;
     if(!format_arg.empty()) {
       format_val = get_format(format_arg,method_string);
     } else {
       format_val = get_format(sformat_arg,method_string);
+      format_arg=sformat_arg; // easier to use a single variable
     }
     if(format_val==format_invalid) {
         err("Invalid format, must be one of ascii|hdf5|hdf5_fp32|hdf5_fp64");
@@ -460,13 +479,13 @@ int main(int argc, char **argv){
 
 
     if(mode_arg.empty() || mode_arg == "one-off")
-        return mode_one_off(table_filename, tree_filename, output_filename, format_val, method_string, pcoa_dims, vaw, g_unifrac_alpha, bypass_tips, nthreads);
+        return mode_one_off(table_filename, tree_filename, output_filename, format_arg, format_val, method_string, pcoa_dims, vaw, g_unifrac_alpha, bypass_tips, nthreads, diskbuf_arg);
     else if(mode_arg == "partial")
         return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
         return mode_merge_partial(output_filename, format_val, pcoa_dims, partial_pattern, diskbuf_arg);
     else if(mode_arg == "partial-report")
-        return mode_partial_report(table_filename, n_partials, bare);
+        return mode_partial_report(table_filename, uint32_t(n_partials), bare);
     else 
         err("Unknown mode. Valid options are: one-off, partial, merge-partial, partial-report");
 

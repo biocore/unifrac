@@ -14,8 +14,8 @@
 #define PARTIAL_MAGIC_V2 0x088ABA02
 
 
-typedef enum compute_status {okay=0, tree_missing, table_missing, table_empty, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
-typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
+typedef enum compute_status {okay=0, tree_missing, table_missing, table_empty, unknown_method, table_and_tree_do_not_overlap, output_error} ComputeStatus;
+typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end, write_error} IOStatus;
 typedef enum merge_status {merge_okay=0, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus;
 
 /* a result matrix
@@ -221,6 +221,34 @@ EXTERN compute_status one_off_matrix_fp32(const char* biom_filename, const char*
  */
 EXTERN ComputeStatus faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                       r_vec** result);
+
+/* Compute UniFrac and save to file
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * out_filename <const char*> the filename of the output file.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads to use.
+ * format <const char*> output format to use.
+ * pcoa_dims <uint> if not 0, number of dimensions to use or PCoA
+ * mmap_dir <const char*> if not empty, temp dir to use for disk-based memory 
+ *
+ * unifrac_to_file returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ * output_error   : failed to properly write the output file
+ */
+EXTERN ComputeStatus unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                                     const char* unifrac_method, bool variance_adjust, double alpha,
+                                     bool bypass_tips, unsigned int threads, const char* format,
+                                     unsigned int pcoa_dims, const char *mmap_dir);
 
 /* Write a matrix object
  *
