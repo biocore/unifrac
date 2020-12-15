@@ -157,18 +157,27 @@ void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids
     result->sample_ids = (char**)malloc(sizeof(char*) * n_samples_64);
     result->flags=0;
 
+    if (mmap_dir!=NULL) {
+     if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
+    }
+
     uint64_t msize = sizeof(TReal) * n_samples_64 * n_samples_64;
     if (mmap_dir==NULL) {
       result->matrix = (TReal*)malloc(msize);
     } else {
       std::string mmap_template(mmap_dir);
       mmap_template+="/su_mmap_XXXXXX";
+      // note: mkostemp will update mmap_template in place
       int fd=mkostemp((char *) mmap_template.c_str(), O_NOATIME ); 
       if (fd<0) {
          result->matrix = NULL;
          // leave error handling to the caller
       } else {
+        // remove the file name, so it will be destroyed on close
+        unlink(mmap_template.c_str());
+        // make it big enough
         ftruncate(fd,msize);
+        // now can be used, just like a malloc-ed buffer
         result->matrix = (TReal*)mmap(NULL, msize,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_NORESERVE, fd, 0);
         result->flags=(uint32_t(fd) & MMAP_FD_MASK) | MMAP_FLAG;
       }
