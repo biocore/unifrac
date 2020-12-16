@@ -19,6 +19,7 @@ from skbio import TreeNode
 import skbio.diversity
 
 from unifrac import ssu, faith_pd
+from unifrac import unweighted, unweighted_to_file, h5unifrac
 
 
 class UnifracAPITests(unittest.TestCase):
@@ -44,6 +45,18 @@ class UnifracAPITests(unittest.TestCase):
                                              tree=tree_inmem)
         obs = ssu(table, tree, 'unweighted', False, 1.0, False, 1)
         npt.assert_almost_equal(obs.data, exp.data)
+
+        obs2 = unweighted(table, tree)
+        npt.assert_almost_equal(obs2.data, exp.data)
+
+        tmpfile='/tmp/uf_ta_1.md5'
+        unweighted_to_file(table, tree, tmpfile, pcoa_dims=0)
+
+        try:
+          obs3 = h5unifrac(tmpfile)
+          npt.assert_almost_equal(obs3.data, exp.data)
+        finally:
+          os.unlink(tmpfile)
 
     def test_meta_unifrac(self):
         t1 = self.get_data_path('t1.newick')
