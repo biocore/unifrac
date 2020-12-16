@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2016-2017, UniFrac development team.
+# Copyright (c) 2016-2020, UniFrac development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -10,7 +10,9 @@ from functools import reduce
 from operator import or_
 
 import numpy as np
+import pandas as pd
 import skbio
+import h5py
 
 import unifrac as qsu
 from unifrac._meta import CONSOLIDATIONS
@@ -1307,4 +1309,95 @@ def generalized_fp32_to_file(table: str,
         return qsu.ssu_to_file(table, phylogeny, out_filename, 'generalized_fp32',
                                variance_adjusted, alpha, bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
+
+# 
+# Functions that read Unifrac from hdf5 files
+#
+
+
+def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
+    """Read UniFrac from a hdf5 file
+
+    Parameters
+    ----------
+    h5file : str
+        A filepath to a hdf5 file.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The distance matrix.
+
+    Raises
+    ------
+    OSError
+        If the hdf5 file is not found
+    KeyError
+        If the hdf5 does not have the necessary fields
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    
+    with h5py.File(h5file, "r") as f_u:
+      dm=skbio.DistanceMatrix(f_u['matrix'][:,:], [c.decode('ascii') for c in f_u['order'][:] ] )
+
+    return dm
+
+def h5pcoa(h5file: str) -> skbio.OrdinationResults:
+    """Read PCoA from a hdf5 file
+
+    Parameters
+    ----------
+    h5file : str
+        A filepath to a hdf5 file.
+
+    Returns
+    -------
+    skbio.OrdinationResults
+        The PCoA of the distance matrix
+
+    Raises
+    ------
+    OSError
+        If the hdf5 file is not found
+    KeyError
+        If the hdf5 does not have the necessary fields
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    
+    with h5py.File(h5file, "r") as f_u:
+      pcoa_method =f_u['pcoa_method'][0].decode('ascii')
+      if 'FSVD'== pcoa_method:
+        long_method_name="Approximate Principal Coordinate Analysis using FSVD"
+      else:
+        long_method_name="Possibly Approximate Principal Coordinate Analysis using %s"%pcoa_method
+      axis_labels = ["PC%d" % i for i in range(1, len(f_u['pcoa_eigvals'][:]) + 1)]
+
+      pc=skbio.OrdinationResults(
+        short_method_name="PCoA",
+        long_method_name= long_method_name,
+        eigvals=pd.Series(f_u['pcoa_eigvals'][:], index=axis_labels),
+        samples=pd.DataFrame(f_u['pcoa_samples'][:,:], 
+                             index=[c.decode('ascii') for c in f_u['order'][:] ],
+                             columns=axis_labels),
+        proportion_explained=pd.Series(f_u['pcoa_proportion_explained'][:],
+                                       index=axis_labels))
+
+    return pc
+
 
