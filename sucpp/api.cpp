@@ -525,7 +525,7 @@ inline compute_status is_fp64(const std::string &method_string, const std::strin
   } else if (format_string == "hdf5") {
     if ((method_string=="unweighted_fp32") || (method_string=="weighted_normalized_fp32") || (method_string=="weighted_unnormalized_fp32") || (method_string=="generalized_fp32")) {
        fp64 = false;
-    } else if ((method_string=="unweighted2") || (method_string=="weighted_normalized") || (method_string=="weighted_unnormalized2") || (method_string=="generalized")) {
+    } else if ((method_string=="unweighted") || (method_string=="weighted_normalized") || (method_string=="weighted_unnormalized") || (method_string=="generalized")) {
        fp64 = true;
     } else {
       return unknown_method;
