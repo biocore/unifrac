@@ -68,6 +68,8 @@ inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,       
       
        row_sum += el0 + el1 + el2 + el3 + el4 + el5 + el6 + el7; 
     }
+
+// else if not __AVX2__
 #else
 
 #ifdef __AVX__
@@ -87,8 +89,11 @@ inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,       
       
        row_sum += el0 + el1 + el2 + el3; 
     }
+
+// endif __AVX__
 #endif
 
+// endif __AVX2__
 #endif
 
     // in case there are any leftovers
