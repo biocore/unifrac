@@ -3,7 +3,11 @@
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <H5Cpp.h>
+#include <H5Dpublic.h>
 
 /*
  * test harness adapted from 
@@ -655,6 +659,67 @@ void test_merge_partial_mmap() {
     SUITE_END();
 }
 
+void test_to_file_one(const char *method) {
+
+    static const char h5name[]="/tmp/ssu_t1.h5";
+    struct stat sbuf;
+
+    ComputeStatus urc;
+    int frc;
+
+    // ensure file does not already exist
+    frc=stat(h5name,&sbuf);
+    if (frc == 0) {
+      unlink(h5name);
+      frc=stat(h5name,&sbuf);
+    }
+    ASSERT(frc != 0);
+
+    urc=unifrac_to_file("test.biom","test.tre",h5name,method,false,1.0,false,1,"hdf5",0,NULL);
+    ASSERT(urc == okay);
+
+    // first, we check it does exist
+    frc=stat(h5name,&sbuf);
+    ASSERT(frc == 0);
+
+    {
+      try {
+        H5::H5File file(h5name, H5F_ACC_RDONLY);
+        H5::DataSet mds(file.openDataSet("matrix"));
+        H5::DataSpace dataspace(mds.getSpace());
+
+        ASSERT(dataspace.isSimple() == true);
+        ASSERT(dataspace.getSimpleExtentNdims() == 2);
+
+        hsize_t dims[2];
+        dataspace.getSimpleExtentDims(dims, NULL);
+        ASSERT(dims[0] == 6);
+        ASSERT(dims[1] == 6);
+      } catch(...) {
+        int rc=1;
+        ASSERT(rc == 0); // if we get here is always an error, just to get a nice message
+      }
+    }
+
+    unlink(h5name);
+
+}
+
+void test_to_file() {
+    SUITE_START("test unifract_to_file");
+
+    test_to_file_one("unweighted");
+    test_to_file_one("unweighted_fp32");
+    test_to_file_one("weighted_normalized");
+    test_to_file_one("weighted_normalized_fp32");
+    test_to_file_one("weighted_unnormalized");
+    test_to_file_one("weighted_unnormalized_fp32");
+    test_to_file_one("generalized");
+    test_to_file_one("generalized_fp32");
+
+    SUITE_END();
+}
+
 int main(int argc, char** argv) {
     /* one_off and partial are executed as integration tests */    
 
@@ -665,6 +730,7 @@ int main(int argc, char** argv) {
     test_merge_partial_dyn_mat();
     test_merge_partial_io();
     test_merge_partial_mmap();
+    test_to_file();
 
     printf("\n");
     printf(" %i / %i suites failed\n", suites_failed, suites_run);
