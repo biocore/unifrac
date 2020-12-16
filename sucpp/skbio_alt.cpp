@@ -360,7 +360,7 @@ inline void transpose_sq_st_T(const uint64_t n, const uint64_t stride, const TRe
 // in  is cols x rows
 // out is rows x cols
 template<class TReal>
-inline void transpose_T(const uint64_t rows, const uint64_t cols, TReal *in, TReal *out) {
+inline void transpose_T(const uint64_t rows, const uint64_t cols, const TReal *in, TReal *out) {
   // To be optimizedc
   for (uint64_t i=0; i<rows; i++)
     for (uint64_t j=0; j<cols; j++)
