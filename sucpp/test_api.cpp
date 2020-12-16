@@ -706,7 +706,7 @@ void test_to_file_one(const char *method) {
 }
 
 void test_to_file() {
-    SUITE_START("test unifract_to_file");
+    SUITE_START("test unifrac_to_file");
 
     test_to_file_one("unweighted");
     test_to_file_one("unweighted_fp32");
