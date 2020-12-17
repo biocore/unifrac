@@ -1,0 +1,61 @@
+# This is a basic workflow to help you get started with Actions
+
+name: UniFrac CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:       
+  build-and-test:
+    needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: conda-incubator/setup-miniconda@v2
+      with:        
+        auto-update-conda: true
+        python-version: 3.6 
+    - name: Install 
+      shell: bash -l {0}
+      run: |
+        conda env create -f ci/conda_requirements.yml
+        conda create --yes -n unifrac python=3.6
+        conda activate unifrac
+        conda config --add channels conda-forge
+        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose lz4
+        if [[ "$(shell uname -s)" == "linux" ]]; 
+        then 
+          SED='sed -i'
+          $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
+          $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
+          $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
+        else 
+          SED='sed -i '"'"''"'"' '
+        fi
+        $SED "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
+        $SED "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++`
+        $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++`
+        export CC=`which h5c++`
+        pushd sucpp
+        make test
+        make main
+        make api
+        popd
+        pip install -e .       
+    - name: Tests
+      shell: bash -l {0}
+      run: |
+        conda activate unifrac
+        pushd sucpp
+        ./test_su
+        ./test_api
+        popd
+        nosetests
+        flake8 unifrac setup.py
