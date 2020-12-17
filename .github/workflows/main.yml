@@ -45,7 +45,8 @@ jobs:
         conda config --add channels conda-forge
         conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose lz4 
         echo "$(uname -s)"
-        ls /usr/local/bin/gcc*
+        which gcc
+        which clang
         if [[ "$(uname -s)" == "Linux" ]]; 
         then 
           export CC_FOR_BUILD=/usr/local/bin/gcc-4.9
