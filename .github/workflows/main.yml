@@ -48,13 +48,16 @@ jobs:
         which gcc
         which clang
         if [[ "$(uname -s)" == "Linux" ]]; 
-        then 
+        then
           export CC_FOR_BUILD=/usr/bin/gcc
           export CXX_FOR_BUILD=/usr/bin/g++
           SED='sed -i'
           $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
           $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
-          $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
+          $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
+          
+          sudo apt-get update && sudo apt-get install r-base
+          sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")' 
         else 
           export CC_FOR_BUILD=clang
           export CXX_FOR_BUILD=clang++
@@ -71,7 +74,8 @@ jobs:
         make main
         make api
         popd
-        pip install -e .       
+        pip install -e .   
+            
     - name: Tests
       shell: bash -l {0}
       run: |
@@ -82,3 +86,39 @@ jobs:
         popd
         nosetests
         flake8 unifrac setup.py
+        
+    - name: Sanity checks
+      shell: bash -l {0}
+      run: |
+        conda activate unifrac
+        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
+        python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
+        if [[ "$(uname -s)" == "Linux" ]]; 
+        then
+          MD5=md5sum
+        else
+          MD5='md5 -r'
+        fi
+        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
+        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
+        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
+        exp=$($MD5 ci/test.dm | awk '{ print $1 }')
+        obs=$($MD5 ci/test.dm.partial | awk '{ print $1 }')
+        python -c "assert '${obs}' == '${exp}'"
+        ./sucpp/faithpd -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.faith.obs
+        tail -n +2 ci/test.faith.obs > ci/test.faith.header-removed.obs
+        exp1=$($MD5 unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
+        obs1=$($MD5 ci/test.faith.header-removed.obs | awk '{ print $1 }')
+        python -c "assert '${obs1}' == '${exp1}'"
+        # test example API's
+        pushd sucpp
+        if [[ "$(uname -s)" == "Linux" ]]; 
+        then 
+          ./capi_test 2
+        else 
+          ./capi_test 1
+        fi
+        make rapi_test
+        popd
+        
+        
