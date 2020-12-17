@@ -73,6 +73,8 @@ jobs:
         make test
         make main
         make api
+        make capi_test
+        make rapi_test
         popd
         pip install -e .   
             
@@ -110,15 +112,6 @@ jobs:
         exp1=$($MD5 unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
         obs1=$($MD5 ci/test.faith.header-removed.obs | awk '{ print $1 }')
         python -c "assert '${obs1}' == '${exp1}'"
-        # test example API's
-        pushd sucpp
-        if [[ "$(uname -s)" == "Linux" ]]; 
-        then 
-          ./capi_test 2
-        else 
-          ./capi_test 1
-        fi
-        make rapi_test
-        popd
+
         
         
