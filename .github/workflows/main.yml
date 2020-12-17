@@ -74,7 +74,10 @@ jobs:
         make main
         make api
         make capi_test
-        make rapi_test
+        if [[ "$(uname -s)" == "Linux" ]]; 
+        then
+          make rapi_test
+        fi
         popd
         pip install -e .   
             
