@@ -40,7 +40,6 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        conda env create -f ci/conda_requirements.yml
         conda create --yes -n unifrac python=3.6
         conda activate unifrac
         conda config --add channels conda-forge
