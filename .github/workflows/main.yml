@@ -44,7 +44,7 @@ jobs:
         conda activate unifrac
         conda config --add channels conda-forge
         conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose lz4
-        if [[ "$(shell uname -s)" == "linux" ]]; 
+        if [[ "$(uname -s)" == "linux" ]]; 
         then 
           SED='sed -i'
           $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
