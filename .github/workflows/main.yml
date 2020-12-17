@@ -49,8 +49,8 @@ jobs:
         which clang
         if [[ "$(uname -s)" == "Linux" ]]; 
         then 
-          export CC_FOR_BUILD=/usr/local/bin/gcc-4.9
-          export CXX_FOR_BUILD=/usr/local/bin/g++-4.9
+          export CC_FOR_BUILD=/usr/bin/gcc
+          export CXX_FOR_BUILD=/usr/bin/g++
           SED='sed -i'
           $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
           $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
