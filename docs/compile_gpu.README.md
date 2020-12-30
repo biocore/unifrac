@@ -16,20 +16,20 @@ In case you have never used Anaconda below, here are the installation instructio
 wget https://repo.anaconda.com/archive/Anaconda3-2020.07-Linux-x86_64.sh
 chmod a+x Anaconda3-2020.07-Linux-x86_64.sh
 ./Anaconda3-2020.07-Linux-x86_64.sh
-#log out and backin
+#log out and back in
 ```
 
 ## Create a dedicated environment
 
 While it is possible to build a GPU-enabled UniFrac in any Anaconda environment, we asume a dedicated one in this document.
-We call it *unifrac-gpu*.
+We call it **unifrac-gpu**.
 
 Note: If you decide to change the used environment, you will have to make the appropriate changes to the scripts below. 
 
-To create our *unifrac-gpu* with all the needed dependencies, run:
+To create our **unifrac-gpu** with all the needed dependencies, run:
 
 ```
-# create and acctivate unifrac-gpu Anaconda environment
+# create and activate unifrac-gpu Anaconda environment
 conda create --name unifrac-gpu -c conda-forge -c bioconda unifrac
 conda activate unifrac-gpu
 conda install -c conda-forge -c bioconda gxx_linux-64=7.5.0 
@@ -40,7 +40,7 @@ conda install -c conda-forge -c bioconda hdf5-static mkl-include
 
 Currently, the only supported GPU-enabled compiler is the freely available [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk).
 
-Note that internally the NVIDIA HPC SDK relies on GCC, which makes it possible for the resulting objects to link with the libraries provided thorugh Anaconda. 
+Note that internally the NVIDIA HPC SDK relies on GCC, which makes it possible for the resulting objects to link with the libraries provided through Anaconda. 
 
 Our Anaconda environment provides GCC 7.5, but the executable names are mangled. In order to make it usable by the NVIDIA HPC SDK, we have to create a few symbolic links:
 
@@ -146,5 +146,7 @@ mv $CONDA_PREFIX/lib/libssu.so $CONDA_PREFIX/bin/libssu.so.cpu
 ```
 
 And you are all done.
-The UniFrac binariy and libraries in the Anaconda environment are now the GPU-enabled ones.
+The UniFrac binary and libraries in the Anaconda environment are now the GPU-enabled ones.
+
+Note: If you do not want the cutting edge UniFrac from git, you can get a tarball of the released versions. The first fully GPU-enabled version was [0.20.1](https://codeload.github.com/biocore/unifrac/tar.gz/0.20.1).
  
