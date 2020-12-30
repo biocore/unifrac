@@ -174,11 +174,11 @@ EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filenam
  * unknown_method : the requested method is unknown.
  * table_empty    : the table does not have any entries
  */
-EXTERN compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
-                                     const char* unifrac_method, bool variance_adjust, double alpha,
-                                     bool bypass_tips, unsigned int nthreads,
-                                     const char *mmap_dir,
-                                     mat_full_fp64_t** result);
+EXTERN ComputeStatus one_off_matrix(const char* biom_filename, const char* tree_filename,
+                                    const char* unifrac_method, bool variance_adjust, double alpha,
+                                    bool bypass_tips, unsigned int nthreads,
+                                    const char *mmap_dir,
+                                    mat_full_fp64_t** result);
 
 /* Compute UniFrac - matrix form, fp32 variant
  *
@@ -200,11 +200,11 @@ EXTERN compute_status one_off_matrix(const char* biom_filename, const char* tree
  * unknown_method : the requested method is unknown.
  * table_empty    : the table does not have any entries
  */
-EXTERN compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
-                                          const char* unifrac_method, bool variance_adjust, double alpha,
-                                          bool bypass_tips, unsigned int nthreads,
-                                          const char *mmap_dir,
-                                          mat_full_fp32_t** result);
+EXTERN ComputeStatus one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                         const char* unifrac_method, bool variance_adjust, double alpha,
+                                         bool bypass_tips, unsigned int nthreads,
+                                         const char *mmap_dir,
+                                         mat_full_fp32_t** result);
 
 
 /* compute Faith PD
