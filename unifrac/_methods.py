@@ -990,14 +990,14 @@ def weighted_normalized_fp32_to_file(table: str,
 
 
 def weighted_unnormalized_to_file(table: str,
-                                     phylogeny: str,
-                                     out_filename: str,
-                                     pcoa_dims: int = 10,
-                                     threads: int = 1,
-                                     variance_adjusted: bool = False,
-                                     bypass_tips: bool = False,
-                                     format: str = "hdf5",
-                                     buf_dirname: str = "") -> str:
+                                  phylogeny: str,
+                                  out_filename: str,
+                                  pcoa_dims: int = 10,
+                                  threads: int = 1,
+                                  variance_adjusted: bool = False,
+                                  bypass_tips: bool = False,
+                                  format: str = "hdf5",
+                                  buf_dirname: str = "") -> str:
     """Compute weighted unnormalized UniFrac and write it to file
 
     Parameters
@@ -1362,10 +1362,10 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
- 
+
     with h5py.File(h5file, "r") as f_u:
       dm=skbio.DistanceMatrix(f_u['matrix'][:,:],
-                  [c.decode('ascii') for c in f_u['order'][:] ] )
+                              [c.decode('ascii') for c in f_u['order'][:]])
 
     return dm
 
@@ -1399,7 +1399,7 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
- 
+
     with h5py.File(h5file, "r") as f_u:
       pcoa_method =f_u['pcoa_method'][0].decode('ascii')
       if 'FSVD'== pcoa_method:
@@ -1419,7 +1419,7 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
         eigvals=pd.Series(f_u['pcoa_eigvals'][:], index=axis_labels),
         samples=pd.DataFrame(f_u['pcoa_samples'][:,:],
                              index=[c.decode('ascii')
-                                    for c in f_u['order'][:] ],
+                                    for c in f_u['order'][:]],
                              columns=axis_labels),
         proportion_explained=pd.Series(
                                f_u['pcoa_proportion_explained'][:],
