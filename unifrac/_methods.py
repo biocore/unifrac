@@ -1410,7 +1410,7 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
             long_method_name = "Possibly Approximate Principal " + \
                                "Coordinate Analysis " + \
                                "using " + pcoa_method
-        axis_labels = ["PC%d" % i for i in \
+        axis_labels = ["PC%d" % i for i in
                           range(1, len(f_u['pcoa_eigvals'][:]) + 1)]
 
         pc=skbio.OrdinationResults(
