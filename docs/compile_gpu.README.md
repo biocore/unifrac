@@ -64,7 +64,7 @@ We are now ready to install the NVIDIA HPC SDK proper. Make sure you do this on 
 
 Fell free to download the latest version froom the [NVIDIA official site](https://developer.nvidia.com/hpc-sdk). 
 
-The following instructions will download and unpack version 2020_209:
+The following instructions will download and unpack version 20.9:
 
 ```
 wget https://developer.download.nvidia.com/hpc-sdk/20.9/nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
