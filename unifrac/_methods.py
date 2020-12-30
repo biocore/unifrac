@@ -584,8 +584,9 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
         'skipping_missing_values'. The default is 'skipping_missing_values'.
     method : str
         The UniFrac method to use. The available choices are:
-        'unweighted', 'unweighted_fp32', 'weighted_unnormalized', 'weighted_unnormalized_fp32',
-        'weighted_normalized', 'weighted_normalized_fp32', 'generalized' and 'generalized_fp32'.
+        'unweighted', 'unweighted_fp32', 'weighted_unnormalized',
+        'weighted_unnormalized_fp32', 'weighted_normalized',
+        'weighted_normalized_fp32', 'generalized' and 'generalized_fp32'.
     threads : int, optional
         The number of threads to split it into. Default is 1
     bypass_tips : bool, optional
@@ -762,7 +763,8 @@ def unweighted_to_file(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename, 'unweighted',
+    return qsu.ssu_to_file(table, phylogeny, out_filename,
+                           'unweighted',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
@@ -834,7 +836,8 @@ def unweighted_fp32_to_file(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename, 'unweighted_fp32',
+    return qsu.ssu_to_file(table, phylogeny, out_filename,
+                           'unweighted_fp32',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
@@ -906,7 +909,8 @@ def weighted_normalized_to_file(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized',
+    return qsu.ssu_to_file(table, phylogeny, out_filename,
+                           'weighted_normalized',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
@@ -977,7 +981,8 @@ def weighted_normalized_fp32_to_file(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized_fp32',
+    return qsu.ssu_to_file(table, phylogeny, out_filename,
+                           'weighted_normalized_fp32',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
@@ -1049,7 +1054,8 @@ def weighted_unnormalized_to_file(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_unnormalized',
+    return qsu.ssu_to_file(table, phylogeny, out_filename,
+                           'weighted_unnormalized',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
@@ -1120,7 +1126,8 @@ def weighted_unnormalized_fp32_to_file(table: str,
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_unnormalized_fp32',
+    return qsu.ssu_to_file(table, phylogeny, out_filename,
+                           'weighted_unnormalized_fp32',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
@@ -1210,12 +1217,16 @@ def generalized_to_file(table: str,
              "Weighted-normalized is being used instead as it is more "
              "optimized.",
              Warning)
-        return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized',
-                               variance_adjusted, alpha, bypass_tips, threads,
+        return qsu.ssu_to_file(table, phylogeny, out_filename,
+                               'weighted_normalized',
+                               variance_adjusted, alpha,
+                               bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
     else:
-        return qsu.ssu_to_file(table, phylogeny, out_filename, 'generalized',
-                               variance_adjusted, alpha, bypass_tips, threads,
+        return qsu.ssu_to_file(table, phylogeny, out_filename,
+                               'generalized',
+                               variance_adjusted, alpha,
+                               bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
 
 def generalized_fp32_to_file(table: str,
@@ -1302,12 +1313,16 @@ def generalized_fp32_to_file(table: str,
              "Weighted-normalized is being used instead as it is more "
              "optimized.",
              Warning)
-        return qsu.ssu_to_file(table, phylogeny, out_filename, 'weighted_normalized_fp32',
-                               variance_adjusted, alpha, bypass_tips, threads,
+        return qsu.ssu_to_file(table, phylogeny, out_filename,
+                               'weighted_normalized_fp32',
+                               variance_adjusted, alpha,
+                               bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
     else:
-        return qsu.ssu_to_file(table, phylogeny, out_filename, 'generalized_fp32',
-                               variance_adjusted, alpha, bypass_tips, threads,
+        return qsu.ssu_to_file(table, phylogeny, out_filename,
+                               'generalized_fp32',
+                               variance_adjusted, alpha,
+                               bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
 
 #
@@ -1346,7 +1361,8 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
     """
  
     with h5py.File(h5file, "r") as f_u:
-      dm=skbio.DistanceMatrix(f_u['matrix'][:,:], [c.decode('ascii') for c in f_u['order'][:] ] )
+      dm=skbio.DistanceMatrix(f_u['matrix'][:,:],
+                  [c.decode('ascii') for c in f_u['order'][:] ] )
 
     return dm
 
@@ -1383,20 +1399,27 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
     with h5py.File(h5file, "r") as f_u:
       pcoa_method =f_u['pcoa_method'][0].decode('ascii')
       if 'FSVD'== pcoa_method:
-        long_method_name="Approximate Principal Coordinate Analysis using FSVD"
+        long_method_name =
+           "Approximate Principal Coordinate Analysis using FSVD"
       else:
-        long_method_name="Possibly Approximate Principal Coordinate Analysis using %s"%pcoa_method
-      axis_labels = ["PC%d" % i for i in range(1, len(f_u['pcoa_eigvals'][:]) + 1)]
+        long_method_name =
+           "Possibly Approximate Principal Coordinate Analysis using %s" %
+             pcoa_method
+      axis_labels = ["PC%d" % i
+                        for i in
+                          range(1, len(f_u['pcoa_eigvals'][:]) + 1)]
 
       pc=skbio.OrdinationResults(
         short_method_name="PCoA",
         long_method_name= long_method_name,
         eigvals=pd.Series(f_u['pcoa_eigvals'][:], index=axis_labels),
         samples=pd.DataFrame(f_u['pcoa_samples'][:,:],
-                             index=[c.decode('ascii') for c in f_u['order'][:] ],
+                             index=[c.decode('ascii')
+                                    for c in f_u['order'][:] ],
                              columns=axis_labels),
-        proportion_explained=pd.Series(f_u['pcoa_proportion_explained'][:],
-                                       index=axis_labels))
+        proportion_explained=pd.Series(
+                               f_u['pcoa_proportion_explained'][:],
+                               index=axis_labels))
 
     return pc
 
