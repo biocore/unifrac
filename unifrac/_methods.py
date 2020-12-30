@@ -1364,8 +1364,8 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
     """
 
     with h5py.File(h5file, "r") as f_u:
-      dm=skbio.DistanceMatrix(f_u['matrix'][:,:],
-                              [c.decode('ascii') for c in f_u['order'][:]])
+        dm = skbio.DistanceMatrix(f_u['matrix'][:,:],
+                                  [c.decode('ascii') for c in f_u['order'][:]])
 
     return dm
 
