@@ -1364,7 +1364,7 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
     """
 
     with h5py.File(h5file, "r") as f_u:
-        dm = skbio.DistanceMatrix(f_u['matrix'][:,:],
+        dm = skbio.DistanceMatrix(f_u['matrix'][:,:], 
                                   [c.decode('ascii') for c in f_u['order'][:]])
 
     return dm
@@ -1402,13 +1402,13 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
 
     with h5py.File(h5file, "r") as f_u:
         pcoa_method = f_u['pcoa_method'][0].decode('ascii')
-        if 'FSVD'== pcoa_method:
-            long_method_name = \
-               "Approximate Principal Coordinate Analysis using FSVD"
+        if 'FSVD' == pcoa_method:
+            long_method_name = "Approximate Principal Coordinate Analysis" +
+                               " using FSVD"
         else:
-            long_method_name = \
-               "Possibly Approximate Principal Coordinate Analysis " +
-               "using " + pcoa_method
+            long_method_name = "Possibly Approximate Principal " +
+                               "Coordinate Analysis " +
+                               "using " + pcoa_method
         axis_labels = ["PC%d" % i for i in \
                           range(1, len(f_u['pcoa_eigvals'][:]) + 1)]
 
@@ -1419,10 +1419,9 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
             samples=pd.DataFrame(f_u['pcoa_samples'][:,:],
                                  index=[c.decode('ascii')
                                         for c in f_u['order'][:]],
-                                 columns=axis_labels),
+                                 columns=axis_labels), 
             proportion_explained=pd.Series(
                                    f_u['pcoa_proportion_explained'][:],
                                    index=axis_labels))
 
     return pc
-
