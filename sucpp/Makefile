@@ -39,7 +39,11 @@ EXEFLAGS =
 ifneq (,$(findstring pgi,$(COMPILER)))
 	MPFLAG =  -mp
 else
-	MPFLAG = -fopenmp
+	ifeq ($(PLATFORM),Darwin)
+		MPFLAG = -Xpreprocessor -fopenmp
+	else
+		MPFLAG = -fopenmp
+	endif
 endif
 
 LDDFLAGS += $(MPFLAG)
