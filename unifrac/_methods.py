@@ -1365,7 +1365,8 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
 
     with h5py.File(h5file, "r") as f_u:
         dm = skbio.DistanceMatrix(
-               f_u['matrix'][:,:], [c.decode('ascii') for c in f_u['order'][:]])
+               f_u['matrix'][:, :],
+               [c.decode('ascii') for c in f_u['order'][:]])
 
     return dm
 
@@ -1416,7 +1417,7 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
             short_method_name="PCoA",
             long_method_name= long_method_name,
             eigvals=pd.Series(f_u['pcoa_eigvals'][:], index=axis_labels),
-            samples=pd.DataFrame(f_u['pcoa_samples'][:,:],
+            samples=pd.DataFrame(f_u['pcoa_samples'][:, :],
                                  index=[c.decode('ascii')
                                         for c in f_u['order'][:]],
                                  columns=axis_labels), 
