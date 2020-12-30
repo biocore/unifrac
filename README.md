@@ -42,11 +42,15 @@ The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/
 
 ## Install (bioconda)
 
-This library can also be installed via `bioconda`:
+This library can also be installed via a combination of `conda-forge` and `bioconda`:
 
 ```
-conda install -c bioconda unifrac
+conda install -c conda-forge -c bioconda unifrac
 ```
+
+Note: Only the CPU version of the binaries is currently available in conda. 
+The GPU version must either be [locally compiled](docs/compile_gpu.README.md) 
+or obtained [from a github branch](https://github.com/sfiligoi/unifrac/blob/v0.20.1-docs/docs/install_gpu.README.txt).
 
 ## Install (pip)
 
