@@ -49,14 +49,14 @@ class UnifracAPITests(unittest.TestCase):
         obs2 = unweighted(table, tree)
         npt.assert_almost_equal(obs2.data, exp.data)
 
-        tmpfile='/tmp/uf_ta_1.md5'
+        tmpfile = '/tmp/uf_ta_1.md5'
         unweighted_to_file(table, tree, tmpfile, pcoa_dims=0)
 
         try:
-          obs3 = h5unifrac(tmpfile)
-          npt.assert_almost_equal(obs3.data, exp.data)
+            obs3 = h5unifrac(tmpfile)
+            npt.assert_almost_equal(obs3.data, exp.data)
         finally:
-          os.unlink(tmpfile)
+            os.unlink(tmpfile)
 
     def test_meta_unifrac(self):
         t1 = self.get_data_path('t1.newick')
