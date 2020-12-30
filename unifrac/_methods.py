@@ -59,7 +59,7 @@ def _validate_meta(tables, phylogenies):
                              " to be newick")
 
 
-# 
+#
 # Functions that compute Unifrac and return a memory object
 #
 
@@ -690,7 +690,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     return skbio.DistanceMatrix(dm, ids=all_ids)
 
 
-# 
+#
 # Functions that compute Unifrac and write into a file
 #
 
@@ -715,7 +715,7 @@ def unweighted_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default of 1.
@@ -787,7 +787,7 @@ def unweighted_fp32_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default of 1.
@@ -860,7 +860,7 @@ def weighted_normalized_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default of 1.
@@ -931,7 +931,7 @@ def weighted_normalized_fp32_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default of 1.
@@ -1003,7 +1003,7 @@ def weighted_unnormalized_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default is 1.
@@ -1074,7 +1074,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default is 1.
@@ -1148,7 +1148,7 @@ def generalized_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default is 1
@@ -1240,7 +1240,7 @@ def generalized_fp32_to_file(table: str,
         A filepath to the output file.
     pcoa_dims : int, optional
         Number of dimensions to use for PCoA compute.
-        if set to 0, no PCoA is computed. 
+        if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
         The number of threads to split it into. Default is 1
@@ -1310,7 +1310,7 @@ def generalized_fp32_to_file(table: str,
                                variance_adjusted, alpha, bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
 
-# 
+#
 # Functions that read Unifrac from hdf5 files
 #
 
@@ -1344,7 +1344,7 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    
+ 
     with h5py.File(h5file, "r") as f_u:
       dm=skbio.DistanceMatrix(f_u['matrix'][:,:], [c.decode('ascii') for c in f_u['order'][:] ] )
 
@@ -1379,7 +1379,7 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    
+ 
     with h5py.File(h5file, "r") as f_u:
       pcoa_method =f_u['pcoa_method'][0].decode('ascii')
       if 'FSVD'== pcoa_method:
@@ -1392,12 +1392,11 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
         short_method_name="PCoA",
         long_method_name= long_method_name,
         eigvals=pd.Series(f_u['pcoa_eigvals'][:], index=axis_labels),
-        samples=pd.DataFrame(f_u['pcoa_samples'][:,:], 
+        samples=pd.DataFrame(f_u['pcoa_samples'][:,:],
                              index=[c.decode('ascii') for c in f_u['order'][:] ],
                              columns=axis_labels),
         proportion_explained=pd.Series(f_u['pcoa_proportion_explained'][:],
                                        index=axis_labels))
 
     return pc
-
 
