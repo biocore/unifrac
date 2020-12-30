@@ -21,7 +21,7 @@ chmod a+x Anaconda3-2020.07-Linux-x86_64.sh
 
 ## Create a dedicated environment
 
-While it is possible to build a GPU-enabled UniFrac in any Anaconda environment, we asume a dedicated one in this document.
+While it is possible to build a GPU-enabled UniFrac in any Anaconda environment, we assume a dedicated one in this document.
 We call it **unifrac-gpu**.
 
 Note: If you decide to change the used environment, you will have to make the appropriate changes to the scripts below. 
