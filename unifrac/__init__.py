@@ -41,5 +41,5 @@ __all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized',
            'weighted_normalized_fp32_to_file',
            'weighted_unnormalized_fp32_to_file',
            'generalized_fp32_to_file',
-           'h5unifrac','h5pcoa',
+           'h5unifrac', 'h5pcoa',
            'ssu', 'faith_pd', 'ssu_to_file']
