@@ -768,6 +768,7 @@ def unweighted_to_file(table: str,
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
+
 def unweighted_fp32_to_file(table: str,
                             phylogeny: str,
                             out_filename: str,
@@ -914,6 +915,7 @@ def weighted_normalized_to_file(table: str,
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
+
 def weighted_normalized_fp32_to_file(table: str,
                                      phylogeny: str,
                                      out_filename: str,
@@ -1059,6 +1061,7 @@ def weighted_unnormalized_to_file(table: str,
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
 
+
 def weighted_unnormalized_fp32_to_file(table: str,
                                        phylogeny: str,
                                        out_filename: str,
@@ -1130,7 +1133,6 @@ def weighted_unnormalized_fp32_to_file(table: str,
                            'weighted_unnormalized_fp32',
                            variance_adjusted, 1.0, bypass_tips, threads,
                            format, pcoa_dims, buf_dirname)
-
 
 
 def generalized_to_file(table: str,
@@ -1228,6 +1230,7 @@ def generalized_to_file(table: str,
                                variance_adjusted, alpha,
                                bypass_tips, threads,
                                format, pcoa_dims, buf_dirname)
+
 
 def generalized_fp32_to_file(table: str,
                              phylogeny: str,
@@ -1365,6 +1368,7 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
                   [c.decode('ascii') for c in f_u['order'][:] ] )
 
     return dm
+
 
 def h5pcoa(h5file: str) -> skbio.OrdinationResults:
     """Read PCoA from a hdf5 file
