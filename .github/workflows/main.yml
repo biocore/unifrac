@@ -94,6 +94,7 @@ jobs:
         pushd sucpp
         ./test_su
         ./test_api
+        ./test_ska
         popd
         nosetests
         flake8 unifrac setup.py
