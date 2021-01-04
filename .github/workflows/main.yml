@@ -47,6 +47,7 @@ jobs:
         else
           # the system tools are unusable, hide them
           sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
+          sudo mv -f /Applications/Xcode_12.2.app /Applications/Xcode_12_2_app_org
         fi
         conda create --yes -n unifrac python=3.6
         conda activate unifrac
