@@ -69,7 +69,7 @@ jobs:
           echo "Note: Upgrading xcode"
           # Workaround for system linker issues
           sudo mv /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
-          sudoo xcode-select --install
+          sudo xcode-select --install
         fi
         which h5c++
         pushd sucpp
