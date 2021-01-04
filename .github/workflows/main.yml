@@ -44,13 +44,13 @@ jobs:
         conda activate unifrac
         conda config --add channels conda-forge
         conda config --add channels bioconda
-        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
         if [[ "$(uname -s)" == "Linux" ]];
         then
           conda install --yes gxx_linux-64=7.5.0
         else
           conda install --yes clangxx_osx-64=10.0.0
         fi 
+        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
         conda install --yes mkl-include lz4 hdf5-static
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
@@ -67,6 +67,7 @@ jobs:
           sudo apt-get update && sudo apt-get install r-base
           sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")' 
         fi
+        which h5c++
         h5c++ -v
         pushd sucpp
         make test
