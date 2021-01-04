@@ -389,7 +389,7 @@ void test_pcoa_big() {
       for(unsigned int i = 0; i < (n_samples*n_dims); i++) {
         if ((i%n_dims)<4) {
           //printf("%i %f %f %f\n",i,float(samples[i]),float(exp2[i]),float(fabs(samples[i]) - fabs(exp2[i])));
-          ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.05)
+          ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.1)
         } else {
           // any of the 3 will do
           unsigned int ibase = (i/n_dims)*n_dims;
@@ -433,7 +433,7 @@ void test_pcoa_big() {
         for(unsigned int i = 0; i < (n_samples*n_dims); i++) {
           if ((i%n_dims)<4) {
             //printf("%i %f %f %f\n",i,float(samples[i]),float(exp2[i]),float(fabs(samples[i]) - fabs(exp2[i])));
-            ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.05)
+            ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.1)
           } else {
             // any of the 3 will do
             unsigned int ibase = (i/n_dims)*n_dims;
@@ -473,7 +473,7 @@ void test_pcoa_big() {
         for(unsigned int i = 0; i < (n_samples*n_dims); i++) {
           if ((i%n_dims)<4) {
             //printf("%i %f %f %f\n",i,float(samples[i]),float(exp2[i]),float(fabs(samples[i]) - fabs(exp2[i])));
-            ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.05)
+            ASSERT( fabs(fabs(samples[i]) - fabs(exp2[i])) < 0.1)
           } else {
             // any of the 3 will do
             unsigned int ibase = (i/n_dims)*n_dims;
