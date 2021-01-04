@@ -45,9 +45,11 @@ jobs:
           sudo apt-get update && sudo apt-get install r-base
           sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
         else
+          ls -l /Applications/
+          # coonda clang does not like xcode 12
+          sudo xcode-select --switch /Applications/Xcode_11.7.app
           # the system tools are unusable, hide them
           sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
-          sudo mv -f /Applications/Xcode_12.2.app /Applications/Xcode_12_2_app_org
         fi
         conda create --yes -n unifrac python=3.6
         conda activate unifrac
