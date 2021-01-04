@@ -70,6 +70,7 @@ jobs:
           x86_64-conda-linux-gnu-gcc -v
           x86_64-conda-linux-gnu-g++ -v
         else
+          conda install --yes liblapacke
           which clang
           clang -v
         fi
