@@ -51,7 +51,7 @@ jobs:
         else
           conda install --yes clangxx_osx-64=10.0.0
         fi 
-        conda install --yes mkl-include lz4
+        conda install --yes mkl-include lz4 hdf5-static
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
