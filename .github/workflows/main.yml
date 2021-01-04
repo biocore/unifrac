@@ -68,7 +68,6 @@ jobs:
           clang -v
         fi
         which h5c++
-        h5c++ -v
         pushd sucpp
         make test
         make main
