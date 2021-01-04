@@ -44,6 +44,9 @@ jobs:
         then
           sudo apt-get update && sudo apt-get install r-base
           sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
+        else
+          # the system tools are unusable, hide them
+          sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
         fi
         conda create --yes -n unifrac python=3.6
         conda activate unifrac
@@ -66,10 +69,6 @@ jobs:
         else
           which clang
           clang -v
-          echo "Note: Upgrading xcode"
-          # Workaround for system linker issues
-          sudo mv /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
-          sudo xcode-select --install
         fi
         which h5c++
         pushd sucpp
