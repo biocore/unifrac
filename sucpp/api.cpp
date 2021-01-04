@@ -2,16 +2,17 @@
 #include "biom.hpp"
 #include "tree.hpp"
 #include "unifrac.hpp"
+#include "skbio_alt.hpp"
 #include <fstream>
 #include <iomanip>
 #include <thread>
 #include <cstring>
+#include <stdlib.h> 
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <lz4.h>
-
 
 #define MMAP_FD_MASK 0x0fff
 #define MMAP_FLAG    0x1000
@@ -147,7 +148,7 @@ void initialize_mat_no_biom(mat_t* &result, char** sample_ids, unsigned int n_sa
 
 template<class TReal, class TMat>
 void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids, unsigned int n_samples, 
-                                   const char *mmap_dir /* if NULL, use malloc */) {
+                                   const char *mmap_dir /* if NULL or "", use malloc */) {
     result = (TMat*)malloc(sizeof(mat));
     result->n_samples = n_samples;
 
@@ -156,18 +157,27 @@ void initialize_mat_full_no_biom_T(TMat* &result, const char* const * sample_ids
     result->sample_ids = (char**)malloc(sizeof(char*) * n_samples_64);
     result->flags=0;
 
+    if (mmap_dir!=NULL) {
+     if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
+    }
+
     uint64_t msize = sizeof(TReal) * n_samples_64 * n_samples_64;
     if (mmap_dir==NULL) {
       result->matrix = (TReal*)malloc(msize);
     } else {
       std::string mmap_template(mmap_dir);
       mmap_template+="/su_mmap_XXXXXX";
+      // note: mkostemp will update mmap_template in place
       int fd=mkostemp((char *) mmap_template.c_str(), O_NOATIME ); 
       if (fd<0) {
          result->matrix = NULL;
          // leave error handling to the caller
       } else {
+        // remove the file name, so it will be destroyed on close
+        unlink(mmap_template.c_str());
+        // make it big enough
         ftruncate(fd,msize);
+        // now can be used, just like a malloc-ed buffer
         result->matrix = (TReal*)mmap(NULL, msize,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_NORESERVE, fd, 0);
         result->flags=(uint32_t(fd) & MMAP_FD_MASK) | MMAP_FLAG;
       }
@@ -400,12 +410,9 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     SET_METHOD(unifrac_method, unknown_method)
     PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
 
-    // we resize to the largest number of possible stripes even if only computing
-    // partial, however we do not allocate arrays for non-computed stripes so
-    // there is a little memory waste here but should be on the order of
-    // 8 bytes * N samples per vector.
-    std::vector<double*> dm_stripes((table.n_samples + 1) / 2);
-    std::vector<double*> dm_stripes_total((table.n_samples + 1) / 2);
+    const unsigned int stripe_stop = (table.n_samples + 1) / 2;
+    std::vector<double*> dm_stripes(stripe_stop);
+    std::vector<double*> dm_stripes_total(stripe_stop);
 
     if(nthreads > dm_stripes.size()) {
         fprintf(stderr, "More threads were requested than stripes. Using %d threads.\n", dm_stripes.size());
@@ -415,7 +422,7 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     std::vector<su::task_parameters> tasks(nthreads);
     std::vector<std::thread> threads(nthreads);
 
-    set_tasks(tasks, alpha, table.n_samples, 0, 0, bypass_tips, nthreads);
+    set_tasks(tasks, alpha, table.n_samples, 0, stripe_stop, bypass_tips, nthreads);
     su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
 
     initialize_mat(*result, table, true);  // true -> is_upper_triangle
@@ -434,6 +441,144 @@ compute_status one_off(const char* biom_filename, const char* tree_filename,
     destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, 0, 0);
 
     return okay;
+}
+
+// TMat mat_full_fp32_t
+template<class TReal, class TMat>
+compute_status one_off_matrix_T(const char* biom_filename, const char* tree_filename,
+                                const char* unifrac_method, bool variance_adjust, double alpha,
+                                bool bypass_tips, unsigned int nthreads,
+                                const char *mmap_dir,  
+                                TMat** result) {
+    if (mmap_dir!=NULL) {
+     if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
+    }
+
+    CHECK_FILE(biom_filename, table_missing)
+    CHECK_FILE(tree_filename, tree_missing)
+    SET_METHOD(unifrac_method, unknown_method)
+    PARSE_SYNC_TREE_TABLE(tree_filename, table_filename)
+
+    const unsigned int stripe_stop = (table.n_samples + 1) / 2;
+    partial_mat_t *partial_mat = NULL;
+
+    {
+      std::vector<double*> dm_stripes(stripe_stop);
+      std::vector<double*> dm_stripes_total(stripe_stop);
+
+      std::vector<su::task_parameters> tasks(nthreads);
+      std::vector<std::thread> threads(nthreads);
+
+      set_tasks(tasks, alpha, table.n_samples, 0, stripe_stop, bypass_tips, nthreads);
+      su::process_stripes(table, tree_sheared, method, variance_adjust, dm_stripes, dm_stripes_total, threads, tasks);
+
+      initialize_partial_mat(partial_mat, table, dm_stripes, 0, stripe_stop, true);  // true -> is_upper_triangle
+      if ((partial_mat==NULL) || (partial_mat->stripes==NULL) || (partial_mat->sample_ids==NULL) ) {
+          fprintf(stderr, "Memory allocation error! (initialize_partial_mat)\n");
+          exit(EXIT_FAILURE);
+      }
+      destroy_stripes(dm_stripes, dm_stripes_total, table.n_samples, 0, stripe_stop);
+    }
+
+    initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mat->sample_ids, partial_mat->n_samples,mmap_dir);
+
+    if (((*result)==NULL) || ((*result)->matrix==NULL) || ((*result)->sample_ids==NULL) ) {
+        fprintf(stderr, "Memory allocation error! (initialize_mat)\n");
+        exit(EXIT_FAILURE);
+    }
+
+
+    {
+      MemoryStripes ps(partial_mat->stripes);
+      const uint32_t tile_size = (mmap_dir==NULL) ? \
+                                  (128/sizeof(TReal)) : /* keep it small for memory access, to fit in chip cache */ \
+                                  (4096/sizeof(TReal)); /* make it larger for mmap, as the limiting factor is swapping */
+      su::stripes_to_matrix_T<TReal>(ps, partial_mat->n_samples, partial_mat->stripe_total, (*result)->matrix, tile_size);
+    }
+    destroy_partial_mat(&partial_mat);
+
+    return okay;
+}
+
+
+compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
+                              const char* unifrac_method, bool variance_adjust, double alpha,
+                              bool bypass_tips, unsigned int nthreads,
+                              const char *mmap_dir,
+                              mat_full_fp64_t** result) {
+ return one_off_matrix_T<double,mat_full_fp64_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
+}
+
+compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                   const char* unifrac_method, bool variance_adjust, double alpha,
+                                   bool bypass_tips, unsigned int nthreads,
+                                   const char *mmap_dir,
+                                   mat_full_fp32_t** result) {
+ return one_off_matrix_T<float,mat_full_fp32_t>(biom_filename,tree_filename,unifrac_method,variance_adjust,alpha,bypass_tips,nthreads,mmap_dir,result);
+}
+
+inline compute_status is_fp64(const std::string &method_string, const std::string &format_string, bool &fp64) {
+  if (format_string == "hdf5_fp32") {
+    fp64 = false;
+  } else if (format_string == "hdf5_fp64") {
+    fp64 = true;
+  } else if (format_string == "hdf5") {
+    if ((method_string=="unweighted_fp32") || (method_string=="weighted_normalized_fp32") || (method_string=="weighted_unnormalized_fp32") || (method_string=="generalized_fp32")) {
+       fp64 = false;
+    } else if ((method_string=="unweighted") || (method_string=="weighted_normalized") || (method_string=="weighted_unnormalized") || (method_string=="generalized")) {
+       fp64 = true;
+    } else {
+      return unknown_method;
+    }
+  } else {
+    return unknown_method; 
+  }
+
+  return okay;
+}
+
+
+compute_status unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                               const char* unifrac_method, bool variance_adjust, double alpha,
+                               bool bypass_tips, unsigned int threads, const char* format,
+                               unsigned int pcoa_dims, const char *mmap_dir)
+{
+    bool fp64;
+    compute_status rc = is_fp64(unifrac_method, format, fp64);
+
+    if (rc==okay) {
+      if (fp64) {
+        mat_full_fp64_t* result;
+        rc = one_off_matrix(biom_filename, tree_filename,
+                            unifrac_method, variance_adjust, alpha,
+                            bypass_tips, threads, mmap_dir,
+                            &result);
+
+        if (rc==okay) {
+          // we have no alternative to hdf5 right now
+          IOStatus iostatus = write_mat_from_matrix_hdf5(out_filename, result, pcoa_dims);
+          destroy_mat_full_fp64(&result);
+
+          if (iostatus!=write_okay) rc=output_error;
+        }
+      } else {
+        mat_full_fp32_t* result;
+        rc = one_off_matrix_fp32(biom_filename, tree_filename,
+                                 unifrac_method, variance_adjust, alpha,
+                                 bypass_tips, threads, mmap_dir,
+                                 &result);
+     
+        if (rc==okay) {
+          // we have no alternative to hdf5 right now 
+          IOStatus iostatus = write_mat_from_matrix_hdf5_fp32(out_filename, result, pcoa_dims);
+          destroy_mat_full_fp32(&result);
+
+          if (iostatus!=write_okay) rc=output_error;
+        }
+      }
+    }
+
+    return rc;
 }
 
 IOStatus write_mat(const char* output_filename, mat_t* result) {
@@ -469,7 +614,7 @@ IOStatus write_mat(const char* output_filename, mat_t* result) {
     return write_okay;
 }
 
-IOStatus write_mat_from_matrix(const char* output_filename, const mat_full_fp64_t* result) {
+IOStatus write_mat_from_matrix(const char* output_filename, mat_full_fp64_t* result) {
     const double *buf2d  = result->matrix;
 
     std::ofstream output;
@@ -519,20 +664,20 @@ herr_t write_hdf5_string(hid_t output_file_id,const char *dname, const char *str
 }
 
 // Internal: Make sure TReal and real_id match
-template<class TMat>
-IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * result, hid_t real_id, unsigned int compress_level) {
+template<class TReal, class TMat>
+IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, TMat * result, hid_t real_id, unsigned int pcoa_dims) {
    /* Create a new file using default properties. */
    hid_t output_file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-   if (output_file_id<0) return open_error;
+   if (output_file_id<0) return write_error;
 
    // simple header
    if (write_hdf5_string(output_file_id,"format","BDSM")<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
    }
-   if (write_hdf5_string(output_file_id,"version","2020.06")<0) {
+   if (write_hdf5_string(output_file_id,"version","2020.12")<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
    }
 
    // save the ids
@@ -546,12 +691,6 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      H5Tset_size(datatype_id,H5T_VARIABLE);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-     if (H5Pset_deflate(dcpl_id, compress_level)<0) return open_error; // just abort on error
-
-     hsize_t     chunks[1];
-     chunks[0] = result->n_samples;
-
-     if (H5Pset_chunk (dcpl_id, 1, chunks)) return open_error; // just abort on error
 
      hid_t dataset_id = H5Dcreate1(output_file_id, "order", datatype_id, dataspace_id, dcpl_id);
 
@@ -566,7 +705,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      // check status after cleanup, for simplicity
      if (status<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
      }
    }
 
@@ -578,26 +717,12 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
 
      hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
-     if (H5Pset_deflate(dcpl_id, compress_level)<0) return open_error; // just abort on error
-
-     // shoot for a 0.75M chunk size at double, to fit in default cache
-     hsize_t     chunks[2];
-     chunks[0] = 1;
-     chunks[1] = 96*1024;
-     if ( chunks[1]>(result->n_samples) ) {
-       chunks[1] = result->n_samples;
-       chunks[0] = 96*1024/chunks[1];
-       if ( chunks[0]>(result->n_samples) ) {
-          chunks[0] = result->n_samples;
-       }
-     }
-
-     if (H5Pset_chunk (dcpl_id, 2, chunks)) return open_error; // just abort on error
 
      hid_t dataset_id = H5Dcreate2(output_file_id, "matrix",real_id, dataspace_id,
                                    H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
      herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                               result->matrix);
+
 
      H5Pclose(dcpl_id);
      H5Dclose(dataset_id);
@@ -606,8 +731,114 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
      // check status after cleanup, for simplicity
      if (status<0) {
        H5Fclose (output_file_id);
-       return open_error;
+       return write_error;
      }
+   }
+
+   if (pcoa_dims>0) {
+     // compute pcoa and save it in the file
+     // use inplace variant to keep memory use in check; we don't need matrix anymore
+     TReal * eigenvalues;
+     TReal * samples;
+     TReal * proportion_explained;
+
+     su::pcoa_inplace(result->matrix, result->n_samples, pcoa_dims, eigenvalues, samples, proportion_explained);
+
+
+     if (write_hdf5_string(output_file_id,"pcoa_method","FSVD")<0) {
+       H5Fclose (output_file_id);
+       return write_error;
+     }
+
+     // save the eigenvalues
+     {
+       hsize_t     dims[1];
+       dims[0] = pcoa_dims;
+       hid_t dataspace_id = H5Screate_simple(1, dims, NULL);
+
+       hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+
+       hid_t dataset_id = H5Dcreate2(output_file_id, "pcoa_eigvals",real_id, dataspace_id,
+                                     H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
+       herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                                eigenvalues);
+
+
+       H5Pclose(dcpl_id);
+       H5Dclose(dataset_id);
+       H5Sclose(dataspace_id);
+
+       // check status after cleanup, for simplicity
+       if (status<0) {
+         H5Fclose (output_file_id);
+         free(samples);
+         free(proportion_explained);
+         free(eigenvalues);
+         return write_error;
+       }
+     }
+
+     // save the proportion_explained
+     {
+       hsize_t     dims[1];
+       dims[0] = pcoa_dims;
+       hid_t dataspace_id = H5Screate_simple(1, dims, NULL);
+
+       hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+
+       hid_t dataset_id = H5Dcreate2(output_file_id, "pcoa_proportion_explained",real_id, dataspace_id,
+                                     H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
+       herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                                proportion_explained);
+
+
+       H5Pclose(dcpl_id);
+       H5Dclose(dataset_id);
+       H5Sclose(dataspace_id);
+
+       // check status after cleanup, for simplicity
+       if (status<0) {
+         H5Fclose (output_file_id);
+         free(samples);
+         free(proportion_explained);
+         free(eigenvalues);
+         return write_error;
+       }
+     }
+
+     // save the samples
+     {
+       hsize_t     dims[2];
+       dims[0] = result->n_samples;
+       dims[1] = pcoa_dims;
+       hid_t dataspace_id = H5Screate_simple(2, dims, NULL);
+
+       hid_t dcpl_id = H5Pcreate (H5P_DATASET_CREATE);
+
+       hid_t dataset_id = H5Dcreate2(output_file_id, "pcoa_samples",real_id, dataspace_id,
+                                     H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
+       herr_t status = H5Dwrite(dataset_id, real_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                                samples);
+
+
+       H5Pclose(dcpl_id);
+       H5Dclose(dataset_id);
+       H5Sclose(dataspace_id);
+
+       // check status after cleanup, for simplicity
+       if (status<0) {
+         H5Fclose (output_file_id);
+         free(samples);
+         free(proportion_explained);
+         free(eigenvalues);
+         return write_error;
+       }
+     }
+
+     free(samples);
+     free(proportion_explained);
+     free(eigenvalues);
+
    }
 
    H5Fclose (output_file_id);
@@ -616,7 +847,7 @@ IOStatus write_mat_from_matrix_hdf5_T(const char* output_filename, const TMat * 
 
 // Internal: Make sure TReal and real_id match
 template<class TReal, class TMat>
-IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int compress_level) {
+IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_id, unsigned int pcoa_dims) {
      // compute the matrix
      TMat mat_full;
      mat_full.n_samples = result->n_samples;
@@ -631,42 +862,26 @@ IOStatus write_mat_hdf5_T(const char* output_filename, mat_t* result,hid_t real_
      mat_full.sample_ids = result->sample_ids; // just link
 
      condensed_form_to_matrix_T(result->condensed_form, n_samples, mat_full.matrix);
-     IOStatus err =  write_mat_from_matrix_hdf5_T(output_filename, &mat_full, real_id, compress_level);
+     IOStatus err =  write_mat_from_matrix_hdf5_T<TReal,TMat>(output_filename, &mat_full, real_id, pcoa_dims);
 
      free(mat_full.matrix);
      return err;
 }
 
-IOStatus write_mat_hdf5(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
+IOStatus write_mat_hdf5(const char* output_filename, mat_t* result, unsigned int pcoa_dims) {
+  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,pcoa_dims);
 }
 
-IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result) {
-  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
+IOStatus write_mat_hdf5_fp32(const char* output_filename, mat_t* result, unsigned int pcoa_dims) {
+  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,pcoa_dims);
 }
 
-IOStatus write_mat_hdf5_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
+IOStatus write_mat_from_matrix_hdf5(const char* output_filename, mat_full_fp64_t* result, unsigned int pcoa_dims) {
+  return write_mat_from_matrix_hdf5_T<double,mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,pcoa_dims);
 }
 
-IOStatus write_mat_hdf5_fp32_compressed(const char* output_filename, mat_t* result, unsigned int compress_level) {
-  return write_mat_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
-}
-
-IOStatus write_mat_from_matrix_hdf5(const char* output_filename, const mat_full_fp64_t* result) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,0);
-}
-
-IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, const mat_full_fp32_t* result) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,0);
-}
-
-IOStatus write_mat_from_matrix_hdf5_compressed(const char* output_filename, const mat_full_fp64_t* result, unsigned int compress_level) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp64_t>(output_filename,result,H5T_IEEE_F64LE,compress_level);
-}
-
-IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* output_filename, const mat_full_fp32_t* result, unsigned int compress_level) {
-  return write_mat_from_matrix_hdf5_T<mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,compress_level);
+IOStatus write_mat_from_matrix_hdf5_fp32(const char* output_filename, mat_full_fp32_t* result, unsigned int pcoa_dims) {
+  return write_mat_from_matrix_hdf5_T<float,mat_full_fp32_t>(output_filename,result,H5T_IEEE_F32LE,pcoa_dims);
 }
 
 IOStatus write_vec(const char* output_filename, r_vec* result) {
@@ -687,7 +902,7 @@ IOStatus write_vec(const char* output_filename, r_vec* result) {
 
 IOStatus write_partial(const char* output_filename, const partial_mat_t* result) {
     int fd = open(output_filename, O_WRONLY | O_CREAT | O_TRUNC,  S_IRUSR |  S_IWUSR );
-    if (fd==-1) return open_error;
+    if (fd==-1) return write_error;
 
     int cnt = -1;
 
@@ -727,10 +942,10 @@ IOStatus write_partial(const char* output_filename, const partial_mat_t* result)
       header[7] = sample_id_length_compressed;
 
       cnt=write(fd,header, 8 * sizeof(uint32_t));
-      if (cnt<1)  {close(fd); return open_error;}
+      if (cnt<1)  {close(fd); return write_error;}
 
       cnt=write(fd,cmp_buf, sample_id_length_compressed);
-      if (cnt<1)  {close(fd); return open_error;}
+      if (cnt<1)  {close(fd); return write_error;}
 
       free(cmp_buf);
       free(samples_buf);
@@ -750,7 +965,7 @@ IOStatus write_partial(const char* output_filename, const partial_mat_t* result)
         *cmp_buf_size_p = cmp_size;
 
         cnt=write(fd, cmp_buf_raw, cmp_size+sizeof(uint32_t));
-        if (cnt<1) {return open_error;}
+        if (cnt<1) {return write_error;}
       }
 
       free(cmp_buf_raw);
@@ -1161,8 +1376,12 @@ class PartialStripes : public su::ManagedStripes {
 
 template<class TReal, class TMat>
 MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_partials, 
-                                      const char *mmap_dir, /* if NULL, use malloc */
+                                      const char *mmap_dir, /* if NULL or "", use malloc */
                                       TMat** result /* out */ ) {
+    if (mmap_dir!=NULL) {
+     if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
+    }
+
     MergeStatus err = check_partial(partial_mats, n_partials);
     if (err!=merge_okay) return err;
 
@@ -1197,4 +1416,60 @@ MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats,
   return merge_partial_to_matrix_T<float,mat_full_fp32_t>(partial_mats, n_partials, mmap_dir, result);
 }
 
+
+// skbio_alt pass-thoughs
+
+
+// Find eigen values and vectors
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
+
+void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors) {
+  su::find_eigens_fast(n_samples, n_dims, centered, *eigenvalues, *eigenvectors);
+}
+
+void find_eigens_fast_fp32(const uint32_t n_samples, const uint32_t n_dims, float * centered, float **eigenvalues, float **eigenvectors) {
+  su::find_eigens_fast(n_samples, n_dims, centered, *eigenvalues, *eigenvectors);
+}
+
+/*
+    Perform Principal Coordinate Analysis.
+
+    Principal Coordinate Analysis (PCoA) is a method similar
+    to Principal Components Analysis (PCA) with the difference that PCoA
+    operates on distance matrices, typically with non-euclidian and thus
+    ecologically meaningful distances like UniFrac in microbiome research.
+
+    In ecology, the euclidean distance preserved by Principal
+    Component Analysis (PCA) is often not a good choice because it
+    deals poorly with double zeros (Species have unimodal
+    distributions along environmental gradients, so if a species is
+    absent from two sites at the same site, it can't be known if an
+    environmental variable is too high in one of them and too low in
+    the other, or too low in both, etc. On the other hand, if an
+    species is present in two sites, that means that the sites are
+    similar.).
+
+    Note that the returned eigenvectors are not normalized to unit length.
+*/
+
+// mat       - in, result of unifrac compute
+// n_samples - in, size of the matrix (n x n)
+// n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
+// eigenvalues - out, alocated buffer of size n_dims
+// samples     - out, alocated buffer of size n_dims x n_samples
+// proportion_explained - out, allocated buffer of size n_dims
+
+void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double * *eigenvalues, double * *samples, double * *proportion_explained) {
+  su::pcoa(mat, n_samples, n_dims, *eigenvalues, *samples, *proportion_explained);
+}
+
+void pcoa_fp32(const float * mat, const uint32_t n_samples, const uint32_t n_dims, float * *eigenvalues, float * *samples, float * *proportion_explained) {
+  su::pcoa(mat, n_samples, n_dims, *eigenvalues, *samples, *proportion_explained);
+}
+
+void pcoa_mixed(const double * mat, const uint32_t n_samples, const uint32_t n_dims, float * *eigenvalues, float * *samples, float * *proportion_explained) {
+  su::pcoa(mat, n_samples, n_dims, *eigenvalues, *samples, *proportion_explained);
+}
 

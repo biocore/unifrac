@@ -40,35 +40,41 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          sudo apt-get update && sudo apt-get install r-base
+          sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
+        else
+          ls -l /Applications/
+          # coonda clang does not like xcode 12
+          sudo xcode-select --switch /Applications/Xcode_11.7.app
+          # the system tools are unusable, hide them
+          sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
+        fi
         conda create --yes -n unifrac python=3.6
         conda activate unifrac
         conda config --add channels conda-forge
-        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose lz4 
-        echo "$(uname -s)"
-        which gcc
-        which clang
-        if [[ "$(uname -s)" == "Linux" ]]; 
+        conda config --add channels bioconda
+        if [[ "$(uname -s)" == "Linux" ]];
         then
-          export CC_FOR_BUILD=/usr/bin/gcc
-          export CXX_FOR_BUILD=/usr/bin/g++
-          SED='sed -i'
-          $SED 's/\(H5BLD_CXXFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
-          $SED 's/\(H5BLD_CPPFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++` 
-          $SED 's/\(H5BLD_LDFLAGS="\)\(.*\)\("\)/\1 \3/' `which h5c++`
-          
-          sudo apt-get update && sudo apt-get install r-base
-          sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")' 
-        else 
-          export CC_FOR_BUILD=clang
-          export CXX_FOR_BUILD=clang++
-          SED='sed -i '"'"''"'"' '
+          conda install --yes gxx_linux-64=7.5.0
+        else
+          conda install --yes clangxx_osx-64=10.0.0
+        fi 
+        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
+        conda install --yes mkl-include lz4 hdf5-static
+        echo "$(uname -s)"
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          which x86_64-conda-linux-gnu-gcc
+          x86_64-conda-linux-gnu-gcc -v
+          x86_64-conda-linux-gnu-g++ -v
+        else
+          conda install --yes liblapacke
+          which clang
+          clang -v
         fi
-        $CC_FOR_BUILD -v 
-        $CXX_FOR_BUILD -v
-        $SED "s|^CXXBASE=.*|CXXBASE=$CXX_FOR_BUILD|" `which h5c++` 
-        $SED "s|^CXXLINKERBASE=.*|CXXLINKERBASE=$CXX_FOR_BUILD|" `which h5c++`
-        $SED 's/^STATIC_AVAILABLE=.*/STATIC_AVAILABLE="no"/' `which h5c++`
-        export CC=`which h5c++`
+        which h5c++
         pushd sucpp
         make test
         make main
@@ -88,6 +94,7 @@ jobs:
         pushd sucpp
         ./test_su
         ./test_api
+        ./test_ska
         popd
         nosetests
         flake8 unifrac setup.py
