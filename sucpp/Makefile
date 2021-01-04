@@ -81,16 +81,23 @@ ifeq (,$(findstring pgi,$(COMPILER)))
 	CPPFLAGS += -Wextra -Wno-unused-parameter
 endif
 
+ifeq ($(PLATFORM),Darwin)
+        BLASLIB=-llapacke -lcblas
+else
+        BLASLIB=-lcblas
+endif
+
+
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
 test: tree.o test_su.cpp biom.o unifrac.o skbio_alt.o api.o
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o skbio_alt.o api.o -llz4 -lcblas -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska skbio_alt.o tree.o biom.o unifrac.o api.o -llz4 -lcblas -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o skbio_alt.o api.o -llz4 -lcblas -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska skbio_alt.o tree.o biom.o unifrac.o api.o -llz4 $(BLASLIB) -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
 
 main: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 -lcblas -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 -lcblas -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 $(BLASLIB) -lpthread
+	$(CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 $(BLASLIB) -lpthread
 	cp ssu ${PREFIX}/bin/
 	cp faithpd ${PREFIX}/bin/
 
@@ -105,11 +112,11 @@ rapi_test: main
 	echo CXX1X=h5c++ > ~/.R/Makevars
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
-	echo LDFLAGS=-llz4 -lcblas >> ~/.R/Makevars
+	echo LDFLAGS=-llz4 $(BLASLIB) >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
 api: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 -lcblas -L$(PREFIX)/lib
+	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
 
 capi_test: api
