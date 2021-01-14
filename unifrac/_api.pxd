@@ -19,7 +19,8 @@ cdef extern from "../sucpp/api.hpp":
         table_missing,
         table_empty,
         unknown_method,
-        table_and_tree_do_not_overlap
+        table_and_tree_do_not_overlap,
+        output_error
 
     compute_status one_off(const char* biom_filename, const char* tree_filename, 
                                const char* unifrac_method, bool variance_adjust, double alpha,
@@ -31,3 +32,9 @@ cdef extern from "../sucpp/api.hpp":
     void destroy_mat(mat** result)
 
     void destroy_results_vec(results_vec** result)
+
+    compute_status unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                                     const char* unifrac_method, bool variance_adjust, double alpha,
+                                     bool bypass_tips, unsigned int threads, const char* format,
+                                     unsigned int pcoa_dims, const char *mmap_dir)
+

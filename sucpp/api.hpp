@@ -14,8 +14,8 @@
 #define PARTIAL_MAGIC_V2 0x088ABA02
 
 
-typedef enum compute_status {okay=0, tree_missing, table_missing, table_empty, unknown_method, table_and_tree_do_not_overlap} ComputeStatus;
-typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end} IOStatus;
+typedef enum compute_status {okay=0, tree_missing, table_missing, table_empty, unknown_method, table_and_tree_do_not_overlap, output_error} ComputeStatus;
+typedef enum io_status {read_okay=0, write_okay, open_error, read_error, magic_incompatible, bad_header, unexpected_end, write_error} IOStatus;
 typedef enum merge_status {merge_okay=0, incomplete_stripe_set, sample_id_consistency, square_mismatch, partials_mismatch, stripes_overlap} MergeStatus;
 
 /* a result matrix
@@ -131,7 +131,7 @@ void destroy_partial_mat(partial_mat_t** result);
 void destroy_partial_dyn_mat(partial_dyn_mat_t** result);
 void destroy_results_vec(r_vec** result);
 
-/* Compute UniFrac
+/* Compute UniFrac - condensed form
  *
  * biom_filename <const char*> the filename to the biom table.
  * tree_filename <const char*> the filename to the correspodning tree.
@@ -154,6 +154,58 @@ EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filenam
                              const char* unifrac_method, bool variance_adjust, double alpha,
                              bool bypass_tips, unsigned int threads, mat_t** result);
 
+/* Compute UniFrac - matrix form
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads/blocks to use.
+ * mmap_dir <const char*> If not NULL, area to use for temp memory storage
+ * result <mat_full_fp64_t**> the resulting distance matrix in matrix form, this is initialized within the method so using **
+ *
+ * one_off_matrix returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ */
+EXTERN ComputeStatus one_off_matrix(const char* biom_filename, const char* tree_filename,
+                                    const char* unifrac_method, bool variance_adjust, double alpha,
+                                    bool bypass_tips, unsigned int nthreads,
+                                    const char *mmap_dir,
+                                    mat_full_fp64_t** result);
+
+/* Compute UniFrac - matrix form, fp32 variant
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads/blocks to use.
+ * mmap_dir <const char*> If not NULL, area to use for temp memory storage
+ * result <mat_full_fp32_t**> the resulting distance matrix in matrix form, this is initialized within the method so using **
+ *
+ * one_off_matrix_fp32 returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ */
+EXTERN ComputeStatus one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                         const char* unifrac_method, bool variance_adjust, double alpha,
+                                         bool bypass_tips, unsigned int nthreads,
+                                         const char *mmap_dir,
+                                         mat_full_fp32_t** result);
+
 
 /* compute Faith PD
  * biom_filename <const char*> the filename to the biom table.
@@ -170,6 +222,34 @@ EXTERN ComputeStatus one_off(const char* biom_filename, const char* tree_filenam
 EXTERN ComputeStatus faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                       r_vec** result);
 
+/* Compute UniFrac and save to file
+ *
+ * biom_filename <const char*> the filename to the biom table.
+ * tree_filename <const char*> the filename to the correspodning tree.
+ * out_filename <const char*> the filename of the output file.
+ * unifrac_method <const char*> the requested unifrac method.
+ * variance_adjust <bool> whether to apply variance adjustment.
+ * alpha <double> GUniFrac alpha, only relevant if method == generalized.
+ * bypass_tips <bool> disregard tips, reduces compute by about 50%
+ * threads <uint> the number of threads to use.
+ * format <const char*> output format to use.
+ * pcoa_dims <uint> if not 0, number of dimensions to use or PCoA
+ * mmap_dir <const char*> if not empty, temp dir to use for disk-based memory 
+ *
+ * unifrac_to_file returns the following error codes:
+ *
+ * okay           : no problems encountered
+ * table_missing  : the filename for the table does not exist
+ * tree_missing   : the filename for the tree does not exist
+ * unknown_method : the requested method is unknown.
+ * table_empty    : the table does not have any entries
+ * output_error   : failed to properly write the output file
+ */
+EXTERN ComputeStatus unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                                     const char* unifrac_method, bool variance_adjust, double alpha,
+                                     bool bypass_tips, unsigned int threads, const char* format,
+                                     unsigned int pcoa_dims, const char *mmap_dir);
+
 /* Write a matrix object
  *
  * filename <const char*> the file to write into
@@ -185,47 +265,25 @@ EXTERN IOStatus write_mat(const char* filename, mat_t* result);
  *
  * filename <const char*> the file to write into
  * result <mat_t*> the results object
+ * pcoa_dims <uint> PCoAdimensions to compute, if >0
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_hdf5(const char* filename, mat_t* result);
+EXTERN IOStatus write_mat_hdf5(const char* filename, mat_t* result, unsigned int pcoa_dims);
 
 /* Write a matrix object using hdf5 format, using fp32 precision
  *
  * filename <const char*> the file to write into
  * result <mat_t*> the results object
+ * pcoa_dims <uint> PCoAdimensions to compute, if >0
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_hdf5_fp32(const char* filename, mat_t* result);
-
-/* Write a matrix object using hdf5 format
- *
- * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_hdf5_compressed(const char* filename, mat_t* result, unsigned int compress_level);
-
-/* Write a matrix object using hdf5 format, using fp32 precision
- *
- * filename <const char*> the file to write into
- * result <mat_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_hdf5_fp32_compressed(const char* filename, mat_t* result, unsigned int compress_level);
+EXTERN IOStatus write_mat_hdf5_fp32(const char* filename, mat_t* result, unsigned int pcoa_dims);
 
 /* Write a matrix object
  *
@@ -236,54 +294,32 @@ EXTERN IOStatus write_mat_hdf5_fp32_compressed(const char* filename, mat_t* resu
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix(const char* filename, const mat_full_fp64_t* result);
+EXTERN IOStatus write_mat_from_matrix(const char* filename, mat_full_fp64_t* result);
 
 
 /* Write a matrix object from buffer using hdf5 format
  *
  * filename <const char*> the file to write into
  * result <mat_full_t*> the results object
+ * pcoa_dims <uint> PCoAdimensions to compute, if >0
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, const mat_full_fp64_t* result);
+EXTERN IOStatus write_mat_from_matrix_hdf5(const char* filename, mat_full_fp64_t* result, unsigned int pcoa_dims);
 
 /* Write a matrix object from buffer using hdf5 format, using fp32 precision
  *
  * filename <const char*> the file to write into
  * result <mat_full_fp32_t*> the results object
+ * pcoa_dims <uint> PCoAdimensions to compute, if >0
  *
  * The following error codes are returned:
  *
  * write_okay : no problems
  */
-EXTERN IOStatus write_mat_from_matrix_hdf5_fp32(const char* filename, const mat_full_fp32_t* result);
-
-/* Write a matrix object from buffer using hdf5 format
- *
- * filename <const char*> the file to write into
- * result <mat_full_fp64_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_from_matrix_hdf5_compressed(const char* filename, const mat_full_fp64_t* result, unsigned int compress_level);
-
-/* Write a matrix object from buffer using hdf5 format, using fp32 precision
- *
- * filename <const char*> the file to write into
- * result <mat_full_fp32_t*> the results object
- * compress_level - 0=no compression, 1-9 higher is slower
- *
- * The following error codes are returned:
- *
- * write_okay : no problems
- */
-EXTERN IOStatus write_mat_from_matrix_hdf5_fp32_compressed(const char* filename, const mat_full_fp32_t* result, unsigned int compress_level);
+EXTERN IOStatus write_mat_from_matrix_hdf5_fp32(const char* filename, mat_full_fp32_t* result, unsigned int pcoa_dims);
 
 /* Write a series
  *
@@ -507,6 +543,25 @@ MergeStatus merge_partial_to_mmap_matrix(partial_dyn_mat_t* * partial_mats, int 
  * square_mismatch       : inconsistency on denotation of square matrix
  */
 MergeStatus merge_partial_to_mmap_matrix_fp32(partial_dyn_mat_t* * partial_mats, int n_partials, const char *mmap_dir, mat_full_fp32_t** result);
+
+
+// Find eigen values and vectors
+// Based on N. Halko, P.G. Martinsson, Y. Shkolnisky, and M. Tygert.
+//     Original Paper: https://arxiv.org/abs/1007.5510
+// centered == n x n, must be symmetric, Note: will be used in-place as temp buffer
+void find_eigens_fast(const uint32_t n_samples, const uint32_t n_dims, double * centered, double **eigenvalues, double **eigenvectors);
+void find_eigens_fast_p32(const uint32_t n_samples, const uint32_t n_dims,float * centered, float **eigenvalues, float **eigenvectors);
+
+// Perform Principal Coordinate Analysis
+// mat       - in, result of unifrac compute
+// n_samples - in, size of the matrix (n x n)
+// n_dims    - in, Dimensions to reduce the distance matrix to. This number determines how many eigenvectors and eigenvalues will be returned.
+// eigenvalues - out, alocated buffer of size n_dims
+// samples     - out, alocated buffer of size n_dims x n_samples
+// proportion_explained - out, allocated buffer of size n_dims
+void pcoa(const double * mat, const uint32_t n_samples, const uint32_t n_dims, double **eigenvalues, double **samples, double **proportion_explained);
+void pcoa_fp32(const float * mat, const uint32_t n_samples, const uint32_t n_dims, float * *eigenvalues, float * *samples, float * *proportion_explained);
+void pcoa_mixed(const double * mat, const uint32_t n_samples, const uint32_t n_dims, float * *eigenvalues, float * *samples, float * *proportion_explained);
 
 
 #ifdef __cplusplus
