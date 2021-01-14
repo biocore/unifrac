@@ -231,6 +231,94 @@ The methods can also be used directly through the command line after install:
         For Variance Adjusted UniFrac, please see: 
             Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
 
+    >>> print(unifrac.unweighted_fp32_to_file.__doc__)
+    Compute Unweighted UniFrac using fp32 math and write to file
+
+        Parameters
+        ----------
+        table : str
+            A filepath to a BIOM-Format 2.1 file.
+        phylogeny : str
+            A filepath to a Newick formatted tree.
+        out_filename : str
+            A filepath to the output file.
+        pcoa_dims : int, optional
+            Number of dimensions to use for PCoA compute.
+            if set to 0, no PCoA is computed.
+            Defaults of 10.
+        threads : int, optional
+            The number of threads to split it into. Default of 1.
+        variance_adjusted : bool, optional
+            Adjust for varianace or not. Default is False.
+        bypass_tips : bool, optional
+            Bypass the tips of the tree in the computation. This reduces compute
+            by about 50%, but is an approximation.
+        format : str, optional
+            Output format to use. Defaults to "hdf5".
+        buf_dirname : str, optional
+            If set, the directory where the disk buffer is hosted,
+            can be used to reduce the amount of memory needed.
+
+        Returns
+        -------
+        str
+            A filepath to the output file.
+
+        Raises
+        ------
+        IOError
+            If the tree file is not found
+            If the table is not found
+            If the output file cannot be created
+        ValueError
+            If the table does not appear to be BIOM-Format v2.1.
+            If the phylogeny does not appear to be in Newick format.
+
+        Notes
+        -----
+        Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+        UniFrac was originally described in [2]_, and while its application to
+        Unweighted UniFrac was not described, factoring in the variance adjustment
+        is still feasible and so it is exposed.
+
+        References
+        ----------
+        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+           (2005).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
+
+    >>> print(unifrac.h5unifrac.__doc__)
+    Read UniFrac from a hdf5 file
+
+        Parameters
+        ----------
+        h5file : str
+            A filepath to a hdf5 file.
+
+        Returns
+        -------
+        skbio.DistanceMatrix
+            The distance matrix.
+
+        Raises
+        ------
+        OSError
+            If the hdf5 file is not found
+        KeyError
+            If the hdf5 does not have the necessary fields
+
+        References
+        ----------
+        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+           (2005).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
+
     $ which faithpd
     /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/faithpd
     $ faithpd --help
