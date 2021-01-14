@@ -195,20 +195,20 @@ The methods can also be used directly through the command line after install:
         -f		[OPTIONAL] Bypass tips, reduces compute by about 50%.
         --vaw	[OPTIONAL] Variance adjusted, default is to not adjust for variance.
         --mode	[OPTIONAL] Mode of operation:
-                            one-off : [DEFAULT] compute UniFrac.
-                            partial : Compute UniFrac over a subset of stripes.
-                            partial-report : Start and stop suggestions for partial compute.
-                            merge-partial : Merge partial UniFrac results.
+                                one-off : [DEFAULT] compute UniFrac.
+                                partial : Compute UniFrac over a subset of stripes.
+                                partial-report : Start and stop suggestions for partial compute.
+                                merge-partial : Merge partial UniFrac results.
         --start	[OPTIONAL] If mode==partial, the starting stripe.
         --stop	[OPTIONAL] If mode==partial, the stopping stripe.
         --partial-pattern	[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge.
         --n-partials	[OPTIONAL] If mode==partial-report, the number of partitions to compute.
         --report-bare	[OPTIONAL] If mode==partial-report, produce barebones output.
         --format|-r	[OPTIONAL]  Output format:
-                                     ascii : [DEFAULT] Original ASCII format.
-                                     hfd5 : HFD5 format.  May be fp32 or fp64, depending on method.
-                                     hdf5_fp32 : HFD5 format, using fp32 precision.
-                                     hdf5_fp64 : HFD5 format, using fp64 precision.
+                                 ascii : [DEFAULT] Original ASCII format.
+                                 hfd5 : HFD5 format.  May be fp32 or fp64, depending on method.
+                                 hdf5_fp32 : HFD5 format, using fp32 precision.
+                                 hdf5_fp64 : HFD5 format, using fp64 precision.
         --pcoa	[OPTIONAL] Number of PCoA dimensions to compute (default: 10, do not compute if 0)
         --diskbuf	[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe).
 
