@@ -98,58 +98,65 @@ To use Stacked Faith through QIIME2, given similar artifacts, you can use:
 The library can be accessed directly from within Python. If operating in this mode, the API methods are expecting a filepath to a BIOM-Format V2.1.0 table, and a filepath to a Newick formatted phylogeny.
 
     $ python
-    Python 3.5.4 | packaged by conda-forge | (default, Aug 10 2017, 01:41:15)
-    [GCC 4.2.1 Compatible Apple LLVM 6.1.0 (clang-602.0.53)] on darwin
+    Python 3.7.8 | packaged by conda-forge | (default, Nov 27 2020, 19:24:58) 
+    [GCC 9.3.0] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
-    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'generalized', 'meta', 'pkg_resources', 'ssu', 'stacked_faith', 'unweighted', 'weighted_normalized', 'weighted_unnormalized']
-    >>> print(unifrac.unweighted.__doc__)
-    Compute Unweighted UniFrac
+    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', 
+     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 
+     'faith_pd', 
+     'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_to_file', 
+     'h5pcoa', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_to_file', 
+     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_to_file', 
+     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 'weighted_normalized_to_file', 
+     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 'weighted_unnormalized_to_file']
+    >>> print(unifrac.unweighted_fp32.__doc__)
+    Compute Unweighted UniFrac using fp32 math
 
-    Parameters
-    ----------
-    table : str
-        A filepath to a BIOM-Format 2.1 file.
-    phylogeny : str
-        A filepath to a Newick formatted tree.
-    threads : int, optional
-        The number of threads to use. Default of 1.
-    variance_adjusted : bool, optional
-        Adjust for varianace or not. Default is False.
-    bypass_tips : bool
-        Bypass the tips of the tree in the computation. This reduces compute
-        by about 50%, but is an approximation.
+        Parameters
+        ----------
+        table : str
+            A filepath to a BIOM-Format 2.1 file.
+        phylogeny : str
+            A filepath to a Newick formatted tree.
+        threads : int, optional
+            The number of threads to split it into. Default of 1.
+        variance_adjusted : bool, optional
+            Adjust for varianace or not. Default is False.
+        bypass_tips : bool, optional
+            Bypass the tips of the tree in the computation. This reduces compute
+            by about 50%, but is an approximation.
 
-    Returns
-    -------
-    skbio.DistanceMatrix
-        The resulting distance matrix.
+        Returns
+        -------
+        skbio.DistanceMatrix
+            The resulting distance matrix.
 
-    Raises
-    ------
-    IOError
-        If the tree file is not found
-        If the table is not found
-    ValueError
-        If the table does not appear to be BIOM-Format v2.1.
-        If the phylogeny does not appear to be in Newick format.
+        Raises
+        ------
+        IOError
+            If the tree file is not found
+            If the table is not found
+        ValueError
+            If the table does not appear to be BIOM-Format v2.1.
+            If the phylogeny does not appear to be in Newick format.
 
-    Notes
-    -----
-    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
-    UniFrac was originally described in [2]_, and while its application to
-    Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+        Notes
+        -----
+        Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+        UniFrac was originally described in [2]_, and while its application to
+        Unweighted UniFrac was not described, factoring in the variance adjustment
+        is still feasible and so it is exposed.
 
-    References
-    ----------
-    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
-       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
-       (2005).
-    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
-       powerful beta diversity measure for comparing communities based on
-       phylogeny. BMC Bioinformatics 12:118 (2011).
+        References
+        ----------
+        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+           (2005).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
 
 	>>> print(unifrac.faith_pd.__doc__)
 	Execute a call to the Stacked Faith API in the UniFrac package
