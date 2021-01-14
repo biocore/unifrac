@@ -181,27 +181,48 @@ The methods can also be used directly through the command line after install:
     $ which ssu
     /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/ssu
     $ ssu --help
-    usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]
+    usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [-f]  [--vaw]
+        [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]
+        [--n-partials number_of_partitions] [--report-bare] [--format|-r out-mode]
 
         -i		The input BIOM table.
         -t		The input phylogeny in newick.
-        -m		The method, [unweighted | weighted_normalized | weighted_unnormalized | generalized].
+        -m		The method, [unweighted | weighted_normalized | weighted_unnormalized | generalized | 
+                                     unweighted_fp32 | weighted_normalized_fp32 | weighted_unnormalized_fp32 | generalized_fp32].
         -o		The output distance matrix.
         -n		[OPTIONAL] The number of threads, default is 1.
         -a		[OPTIONAL] Generalized UniFrac alpha, default is 1.
         -f		[OPTIONAL] Bypass tips, reduces compute by about 50%.
         --vaw	[OPTIONAL] Variance adjusted, default is to not adjust for variance.
+        --mode	[OPTIONAL] Mode of operation:
+        		    one-off : [DEFAULT] compute UniFrac.
+        		    partial : Compute UniFrac over a subset of stripes.
+        		    partial-report : Start and stop suggestions for partial compute.
+        		    merge-partial : Merge partial UniFrac results.
+        --start	[OPTIONAL] If mode==partial, the starting stripe.
+        --stop	[OPTIONAL] If mode==partial, the stopping stripe.
+        --partial-pattern	[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge.
+        --n-partials	[OPTIONAL] If mode==partial-report, the number of partitions to compute.
+        --report-bare	[OPTIONAL] If mode==partial-report, produce barebones output.
+        --format|-r	[OPTIONAL]  Output format:
+        		    ascii : [DEFAULT] Original ASCII format.
+        		    hfd5 : HFD5 format.  May be fp32 or fp64, depending on method.
+        		    hdf5_fp32 : HFD5 format, using fp32 precision.
+        		    hdf5_fp64 : HFD5 format, using fp64 precision.
+        --pcoa	[OPTIONAL] Number of PCoA dimensions to compute (default: 10, do not compute if 0)
+        --diskbuf	[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe).
 
-    Citations:
-        For UniFrac, please see:
-            Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
-            Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
-            Hamady et al. ISME 2010; DOI: 10.1038/ismej.2009.97
-            Lozupone et al. ISME 2011; DOI: 10.1038/ismej.2010.133
-        For Generalized UniFrac, please see:
-            Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342
-        For Variance Adjusted UniFrac, please see:
-            Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
+   Citations: 
+       For UniFrac, please see:
+           McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
+           Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
+           Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
+           Hamady et al. ISME 2010; DOI: 10.1038/ismej.2009.97
+           Lozupone et al. ISME 2011; DOI: 10.1038/ismej.2010.133
+       For Generalized UniFrac, please see: 
+           Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342
+       For Variance Adjusted UniFrac, please see: 
+           Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
 
     $ which faithpd
     /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/faithpd
