@@ -4,7 +4,7 @@ The binaries provided through conda should work on all major platforms.
 However, you may be able to get slightly faster results by locally compiling your own binaries.
 
 Note: UniFrac supports only Linux and MacOS builds.
-One can however run on Windoows systems, too, using [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+One can however run on Windows systems, too, using [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 
 
 ## Anaconda 

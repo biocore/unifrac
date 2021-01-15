@@ -1,7 +1,7 @@
 # Compiling a GPU-enabled version of UniFrac
 
 Note: The GPU-enabled version is currenlty only supported on Linux systems.
-One can however run on Windoows systems, too, using [CUDA-enabled WSL2](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
+One can however run on Windows systems, too, using [CUDA-enabled WSL2](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
 
 
 ## Anaconda 
