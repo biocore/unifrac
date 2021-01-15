@@ -57,7 +57,7 @@ On MacOs, you will need the conda provided clang compiler:
 ```
 # MacOS only
 conda install -c conda-forge -c bioconda clangxx_osx-64=10.0.0
-# Also add library whichh is not imported automatically
+# Also add library which is not imported automatically
 conda install -c conda-forge -c bioconda liblapacke
 ```
 
@@ -65,6 +65,9 @@ Finally, on both Linux and MacOS, add two additinal compile-only dependencies:
 ```
 conda install -c conda-forge -c bioconda hdf5-static mkl-include
 ```
+
+*Note:* On MacOS, the conda-provided clang is not compatible with XCode 12. 
+        If you have it installed, you must either remove it or [downgrade to XCode 11](https://developer.apple.com/download/more/?=command%20line%20tools). 
 
 ## Compile UniFrac
 
