@@ -1,7 +1,7 @@
 # Compiling a GPU-enabled version of UniFrac
 
 Note: The GPU-enabled version is currenlty only supported on Linux systems.
-One can however run on Windoows systems, too, using [CUDA-enabled WSL2](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
+One can however run on Windows systems, too, using [CUDA-enabled WSL2](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
 
 
 ## Anaconda 
@@ -36,7 +36,7 @@ conda install -c conda-forge -c bioconda gxx_linux-64=7.5.0
 conda install -c conda-forge -c bioconda hdf5-static mkl-include
 ```
 
-## Installing the NVIDIA HPC DK
+## Installing the NVIDIA HPC SDK
 
 Currently, the only supported GPU-enabled compiler is the freely available [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk).
 

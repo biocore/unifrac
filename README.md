@@ -3,7 +3,7 @@
 
 [![Build Status](https://travis-ci.com/biocore/unifrac.svg?branch=master)](https://travis-ci.com/biocore/unifrac)
 
-The *de facto* repository for high-performance phylogenetic diversity calculations. The methods in this repository are based on an implementation of the [Strided State UniFrac](https://www.nature.com/articles/s41592-018-0187-8) algorithm which is faster, and uses less memory than [Fast UniFrac](http://www.nature.com/ismej/journal/v4/n1/full/ismej200997a.html). Strided State UniFrac supports [Unweighted UniFrac](http://aem.asm.org/content/71/12/8228.abstract), [Weighted UniFrac](http://aem.asm.org/content/73/5/1576), [Generalized UniFrac](https://academic.oup.com/bioinformatics/article/28/16/2106/324465/Associating-microbiome-composition-with), [Variance Adjusted UniFrac](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-118) and [meta UniFrac](http://www.pnas.org/content/105/39/15076.short).
+The *de facto* repository for high-performance phylogenetic diversity calculations. The methods in this repository are based on an implementation of the [Strided State UniFrac](https://www.nature.com/articles/s41592-018-0187-8) algorithm which is faster, and uses less memory than [Fast UniFrac](http://www.nature.com/ismej/journal/v4/n1/full/ismej200997a.html). Strided State UniFrac supports [Unweighted UniFrac](http://aem.asm.org/content/71/12/8228.abstract), [Weighted UniFrac](http://aem.asm.org/content/73/5/1576), [Generalized UniFrac](https://academic.oup.com/bioinformatics/article/28/16/2106/324465/Associating-microbiome-composition-with), [Variance Adjusted UniFrac](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-118) and [meta UniFrac](http://www.pnas.org/content/105/39/15076.short), in both double and single precision (fp32).
 This repository also includes Stacked Faith (manuscript in preparation), a method for calculating Faith's PD that is faster and uses less memory than the Fast UniFrac-based [reference implementation](http://scikit-bio.org/).
 
 This repository produces a C API exposed via a shared library which can be linked against by any programming language. 
@@ -49,8 +49,10 @@ conda install -c conda-forge -c bioconda unifrac
 ```
 
 Note: Only the CPU version of the binaries is currently available in conda. 
-The GPU version must either be [locally compiled](docs/compile_gpu.README.md) 
+The GPU version must either be [locally compiled using freely-available NVIDIA HPC SDK](docs/compile_gpu.README.md) 
 or obtained [from a github branch](https://github.com/sfiligoi/unifrac/blob/v0.20.1-docs/docs/install_gpu.README.txt).
+
+Note: If you desire a fully optimized the binaries for your CPU, you can [compile them locally](docs/compile_cpu.README.md).
 
 ## Install (pip)
 
@@ -98,58 +100,153 @@ To use Stacked Faith through QIIME2, given similar artifacts, you can use:
 The library can be accessed directly from within Python. If operating in this mode, the API methods are expecting a filepath to a BIOM-Format V2.1.0 table, and a filepath to a Newick formatted phylogeny.
 
     $ python
-    Python 3.5.4 | packaged by conda-forge | (default, Aug 10 2017, 01:41:15)
-    [GCC 4.2.1 Compatible Apple LLVM 6.1.0 (clang-602.0.53)] on darwin
+    Python 3.7.8 | packaged by conda-forge | (default, Nov 27 2020, 19:24:58) 
+    [GCC 9.3.0] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
-    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'generalized', 'meta', 'pkg_resources', 'ssu', 'stacked_faith', 'unweighted', 'weighted_normalized', 'weighted_unnormalized']
-    >>> print(unifrac.unweighted.__doc__)
-    Compute Unweighted UniFrac
+    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', 
+     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 
+     'faith_pd', 
+     'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_to_file', 
+     'h5pcoa', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_to_file', 
+     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_to_file', 
+     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 'weighted_normalized_to_file', 
+     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 'weighted_unnormalized_to_file']
+    >>> print(unifrac.unweighted_fp32.__doc__)
+    Compute Unweighted UniFrac using fp32 math
 
-    Parameters
-    ----------
-    table : str
-        A filepath to a BIOM-Format 2.1 file.
-    phylogeny : str
-        A filepath to a Newick formatted tree.
-    threads : int, optional
-        The number of threads to use. Default of 1.
-    variance_adjusted : bool, optional
-        Adjust for varianace or not. Default is False.
-    bypass_tips : bool
-        Bypass the tips of the tree in the computation. This reduces compute
-        by about 50%, but is an approximation.
+        Parameters
+        ----------
+        table : str
+            A filepath to a BIOM-Format 2.1 file.
+        phylogeny : str
+            A filepath to a Newick formatted tree.
+        threads : int, optional
+            The number of threads to split it into. Default of 1.
+        variance_adjusted : bool, optional
+            Adjust for varianace or not. Default is False.
+        bypass_tips : bool, optional
+            Bypass the tips of the tree in the computation. This reduces compute
+            by about 50%, but is an approximation.
 
-    Returns
-    -------
-    skbio.DistanceMatrix
-        The resulting distance matrix.
+        Returns
+        -------
+        skbio.DistanceMatrix
+            The resulting distance matrix.
 
-    Raises
-    ------
-    IOError
-        If the tree file is not found
-        If the table is not found
-    ValueError
-        If the table does not appear to be BIOM-Format v2.1.
-        If the phylogeny does not appear to be in Newick format.
+        Raises
+        ------
+        IOError
+            If the tree file is not found
+            If the table is not found
+        ValueError
+            If the table does not appear to be BIOM-Format v2.1.
+            If the phylogeny does not appear to be in Newick format.
 
-    Notes
-    -----
-    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
-    UniFrac was originally described in [2]_, and while its application to
-    Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+        Notes
+        -----
+        Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+        UniFrac was originally described in [2]_, and while its application to
+        Unweighted UniFrac was not described, factoring in the variance adjustment
+        is still feasible and so it is exposed.
 
-    References
-    ----------
-    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
-       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
-       (2005).
-    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
-       powerful beta diversity measure for comparing communities based on
-       phylogeny. BMC Bioinformatics 12:118 (2011).
+        References
+        ----------
+        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+           (2005).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
+
+    >>> print(unifrac.unweighted_fp32_to_file.__doc__)
+    Compute Unweighted UniFrac using fp32 math and write to file
+
+        Parameters
+        ----------
+        table : str
+            A filepath to a BIOM-Format 2.1 file.
+        phylogeny : str
+            A filepath to a Newick formatted tree.
+        out_filename : str
+            A filepath to the output file.
+        pcoa_dims : int, optional
+            Number of dimensions to use for PCoA compute.
+            if set to 0, no PCoA is computed.
+            Defaults of 10.
+        threads : int, optional
+            The number of threads to split it into. Default of 1.
+        variance_adjusted : bool, optional
+            Adjust for varianace or not. Default is False.
+        bypass_tips : bool, optional
+            Bypass the tips of the tree in the computation. This reduces compute
+            by about 50%, but is an approximation.
+        format : str, optional
+            Output format to use. Defaults to "hdf5".
+        buf_dirname : str, optional
+            If set, the directory where the disk buffer is hosted,
+            can be used to reduce the amount of memory needed.
+
+        Returns
+        -------
+        str
+            A filepath to the output file.
+
+        Raises
+        ------
+        IOError
+            If the tree file is not found
+            If the table is not found
+            If the output file cannot be created
+        ValueError
+            If the table does not appear to be BIOM-Format v2.1.
+            If the phylogeny does not appear to be in Newick format.
+
+        Notes
+        -----
+        Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+        UniFrac was originally described in [2]_, and while its application to
+        Unweighted UniFrac was not described, factoring in the variance adjustment
+        is still feasible and so it is exposed.
+
+        References
+        ----------
+        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+           (2005).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
+
+    >>> print(unifrac.h5unifrac.__doc__)
+    Read UniFrac from a hdf5 file
+
+        Parameters
+        ----------
+        h5file : str
+            A filepath to a hdf5 file.
+
+        Returns
+        -------
+        skbio.DistanceMatrix
+            The distance matrix.
+
+        Raises
+        ------
+        OSError
+            If the hdf5 file is not found
+        KeyError
+            If the hdf5 does not have the necessary fields
+
+        References
+        ----------
+        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+           (2005).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
 
 	>>> print(unifrac.faith_pd.__doc__)
 	Execute a call to the Stacked Faith API in the UniFrac package
@@ -181,26 +278,47 @@ The methods can also be used directly through the command line after install:
     $ which ssu
     /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/ssu
     $ ssu --help
-    usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [--vaw]
+    usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [-f]  [--vaw]
+        [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]
+        [--n-partials number_of_partitions] [--report-bare] [--format|-r out-mode]
 
         -i		The input BIOM table.
         -t		The input phylogeny in newick.
-        -m		The method, [unweighted | weighted_normalized | weighted_unnormalized | generalized].
+        -m		The method, [unweighted | weighted_normalized | weighted_unnormalized | generalized | 
+                                 unweighted_fp32 | weighted_normalized_fp32 | weighted_unnormalized_fp32 | generalized_fp32].
         -o		The output distance matrix.
         -n		[OPTIONAL] The number of threads, default is 1.
         -a		[OPTIONAL] Generalized UniFrac alpha, default is 1.
         -f		[OPTIONAL] Bypass tips, reduces compute by about 50%.
         --vaw	[OPTIONAL] Variance adjusted, default is to not adjust for variance.
+        --mode	[OPTIONAL] Mode of operation:
+                                one-off : [DEFAULT] compute UniFrac.
+                                partial : Compute UniFrac over a subset of stripes.
+                                partial-report : Start and stop suggestions for partial compute.
+                                merge-partial : Merge partial UniFrac results.
+        --start	[OPTIONAL] If mode==partial, the starting stripe.
+        --stop	[OPTIONAL] If mode==partial, the stopping stripe.
+        --partial-pattern	[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge.
+        --n-partials	[OPTIONAL] If mode==partial-report, the number of partitions to compute.
+        --report-bare	[OPTIONAL] If mode==partial-report, produce barebones output.
+        --format|-r	[OPTIONAL]  Output format:
+                                 ascii : [DEFAULT] Original ASCII format.
+                                 hfd5 : HFD5 format.  May be fp32 or fp64, depending on method.
+                                 hdf5_fp32 : HFD5 format, using fp32 precision.
+                                 hdf5_fp64 : HFD5 format, using fp64 precision.
+        --pcoa	[OPTIONAL] Number of PCoA dimensions to compute (default: 10, do not compute if 0)
+        --diskbuf	[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe).
 
-    Citations:
+    Citations: 
         For UniFrac, please see:
+            McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
             Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
             Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
             Hamady et al. ISME 2010; DOI: 10.1038/ismej.2009.97
             Lozupone et al. ISME 2011; DOI: 10.1038/ismej.2010.133
-        For Generalized UniFrac, please see:
+        For Generalized UniFrac, please see: 
             Chen et al. Bioinformatics 2012; DOI: 10.1093/bioinformatics/bts342
-        For Variance Adjusted UniFrac, please see:
+        For Variance Adjusted UniFrac, please see: 
             Chang et al. BMC Bioinformatics 2011; DOI: 10.1186/1471-2105-12-118
 
     $ which faithpd
