@@ -36,7 +36,7 @@ conda install -c conda-forge -c bioconda gxx_linux-64=7.5.0
 conda install -c conda-forge -c bioconda hdf5-static mkl-include
 ```
 
-## Installing the NVIDIA HPC DK
+## Installing the NVIDIA HPC SDK
 
 Currently, the only supported GPU-enabled compiler is the freely available [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk).
 
