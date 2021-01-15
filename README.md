@@ -52,6 +52,8 @@ Note: Only the CPU version of the binaries is currently available in conda.
 The GPU version must either be [locally compiled](docs/compile_gpu.README.md) 
 or obtained [from a github branch](https://github.com/sfiligoi/unifrac/blob/v0.20.1-docs/docs/install_gpu.README.txt).
 
+Note: If you desire a fully optimized the binaries for your CPU, you can [compile them locally](docs/compile_cpu.README.md).
+
 ## Install (pip)
 
 ```
