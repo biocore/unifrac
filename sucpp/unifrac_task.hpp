@@ -10,10 +10,9 @@
 #ifndef __UNIFRAC_TASKS
 #define __UNIFRAC_TASKS 1
 
-namespace su {
-
-
 #ifdef _OPENACC
+
+#define SUCMP_NM su_acc
 
   #ifndef SMALLGPU
   // defaultt on larger alignment, which improves performance on GPUs like V100
@@ -25,9 +24,14 @@ namespace su {
 
 #else
 
+#define SUCMP_NM su_cpu
+
+
 // CPUs don't need such a big alignment
 #define UNIFRAC_BLOCK 16
 #endif
+
+namespace SUCMP_NM {
 
     // Note: This adds a copy, which is suboptimal
     //       But was the easiest way to get a contiguous buffer
@@ -261,7 +265,7 @@ namespace su {
     template<> inline  unsigned int UnifracTaskBase<double,uint64_t>::get_emb_els(unsigned int max_embs) {return (max_embs+63)/64;}
     template<> inline  unsigned int UnifracTaskBase<float,uint64_t>::get_emb_els(unsigned int max_embs) {return (max_embs+63)/64;}
 
-    /* void su::unifrac tasks
+    /* void unifrac tasks
      *
      * all methods utilize the same function signature. that signature is as follows:
      *
@@ -426,7 +430,7 @@ namespace su {
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
 
-    /* void su::unifrac_vaw tasks
+    /* void unifrac_vaw tasks
      *
      * all methods utilize the same function signature. that signature is as follows:
      *
