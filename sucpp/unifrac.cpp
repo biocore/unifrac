@@ -468,7 +468,7 @@ void progressbar(float progress) {
 }
 
 template<class TFloat>
-void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, const biom &table) {
+void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, const biom_interface &table) {
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
     TFloat * counts = NULL;
@@ -522,7 +522,7 @@ void initialize_stripes(std::vector<double*> &dm_stripes,
 // Computes Faith's PD for the samples in  `table` over the phylogenetic
 // tree given by `tree`.
 // Assure that tree does not contain ids that are not in table
-void su::faith_pd(biom &table,
+void su::faith_pd(biom_interface &table,
                   BPTree &tree,
                   double* result) {
     PropStack<double> propstack(table.n_samples);
@@ -549,7 +549,7 @@ void su::faith_pd(biom &table,
 }
 
 template<class TaskT, class TFloat>
-void unifracTT(const biom &table,
+void unifracTT(const biom_interface &table,
                const BPTree &tree,
                const bool want_total,
                std::vector<double*> &dm_stripes,
@@ -714,7 +714,7 @@ void unifracTT(const biom &table,
     free(lengths);
 }
 
-void su::unifrac(biom &table,
+void su::unifrac(biom_interface &table,
                  BPTree &tree,
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
@@ -754,7 +754,7 @@ void su::unifrac(biom &table,
 
 
 template<class TaskT, class TFloat>
-void unifrac_vawTT(const biom &table,
+void unifrac_vawTT(const biom_interface &table,
                    const BPTree &tree,
                           const bool want_total,
                           std::vector<double*> &dm_stripes,
@@ -878,7 +878,7 @@ void unifrac_vawTT(const biom &table,
     free(sample_total_counts);
 }
 
-void su::unifrac_vaw(biom &table,
+void su::unifrac_vaw(biom_interface &table,
                      BPTree &tree,
                      Method unifrac_method,
                      std::vector<double*> &dm_stripes,
@@ -920,7 +920,7 @@ template<class TFloat>
 void su::set_proportions(TFloat* __restrict__ props,
                          const BPTree &tree,
                          uint32_t node,
-                         const biom &table,
+                         const biom_interface &table,
                          PropStack<TFloat> &ps,
                          bool normalize) {
     if(tree.isleaf(node)) {
@@ -957,13 +957,13 @@ void su::set_proportions(TFloat* __restrict__ props,
 template void su::set_proportions(float* __restrict__ props,
                                   const BPTree &tree,
                                   uint32_t node,
-                                  const biom &table,
+                                  const biom_interface &table,
                                   PropStack<float> &ps,
                                   bool normalize);
 template void su::set_proportions(double* __restrict__ props,
                                   const BPTree &tree,
                                   uint32_t node,
-                                  const biom &table,
+                                  const biom_interface &table,
                                   PropStack<double> &ps,
                                   bool normalize);
 
@@ -971,7 +971,7 @@ template<class TFloat>
 void su::set_proportions_range(TFloat* __restrict__ props,
                                const BPTree &tree,
                                uint32_t node,
-                               const biom &table, 
+                               const biom_interface &table, 
                                unsigned int start, unsigned int end,
                                PropStack<TFloat> &ps,
                                bool normalize) {
@@ -1001,14 +1001,14 @@ void su::set_proportions_range(TFloat* __restrict__ props,
 template void su::set_proportions_range(float* __restrict__ props,
                                         const BPTree &tree,
                                         uint32_t node,
-                                        const biom &table,
+                                        const biom_interface &table,
                                         unsigned int start, unsigned int end,
                                         PropStack<float> &ps,
                                         bool normalize);
 template void su::set_proportions_range(double* __restrict__ props,
                                         const BPTree &tree,
                                         uint32_t node,
-                                        const biom &table,
+                                        const biom_interface &table,
                                         unsigned int start, unsigned int end,
                                         PropStack<double> &ps,
                                         bool normalize);
@@ -1034,7 +1034,7 @@ std::vector<double*> su::make_strides(unsigned int n_samples) {
 }
 
 
-void su::process_stripes(biom &table,
+void su::process_stripes(biom_interface &table,
                          BPTree &tree_sheared,
                          Method method,
                          bool variance_adjust,
