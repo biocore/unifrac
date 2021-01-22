@@ -26,6 +26,29 @@
 
 using namespace SUCMP_NM;
 
+template<class TFloat>
+inline void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, const su::biom_interface &table) {
+    const unsigned int n_samples = task_p->n_samples;
+    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
+    TFloat * counts = NULL;
+    int err = 0;
+    err = posix_memalign((void **)&counts, 4096, sizeof(TFloat) * n_samples_r);
+    if(counts == NULL || err != 0) {
+        fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
+                sizeof(TFloat) * n_samples_r, err, __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    for(unsigned int i = 0; i < n_samples; i++) {
+        counts[i] = table.sample_counts[i];
+    }
+   // avoid NaNs
+   for(unsigned int i = n_samples; i < n_samples_r; i++) {
+       counts[i] = 0.0;
+   }
+
+   _counts=counts;
+}
+
 template<class TaskT, class TFloat>
 inline void unifracTT(const su::biom_interface &table,
                       const su::BPTree &tree,
@@ -242,7 +265,7 @@ inline void unifrac_vawTT(const su::biom_interface &table,
 
     TFloat *sample_total_counts;
 
-    su::initialize_sample_counts(sample_total_counts, task_p, table);
+    initialize_sample_counts(sample_total_counts, task_p, table);
 #pragma acc enter data copyin(sample_total_counts[:n_samples_r])
     su::initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 

@@ -57,9 +57,6 @@ namespace su {
                          bool want_total,
                          const su::task_parameters* task_p);
 
- uint64_t initialize_sample_counts(double*& _counts, const su::task_parameters* task_p, const biom_interface &table);
- uint64_t initialize_sample_counts(float*& _counts, const su::task_parameters* task_p, const biom_interface &table);
-
 }
 
 #endif

@@ -11,11 +11,11 @@
 #include <vector>
 #include <unordered_map>
 #include <thread>
-#include "unifrac_task.hpp"
 #include <pthread.h>
 
 #ifndef __UNIFRAC
 
+#include "task_parameters.hpp"
 #include "biom_interface.hpp"
 
     namespace su {

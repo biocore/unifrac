@@ -453,38 +453,6 @@ void progressbar(float progress) {
     std::cout.flush();
 }
 
-template<class TFloat>
-uint64_t initialize_sample_countsTT(TFloat*& _counts, const su::task_parameters* task_p, const biom_interface &table) {
-    const unsigned int n_samples = task_p->n_samples;
-    const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
-    TFloat * counts = NULL;
-    int err = 0;
-    err = posix_memalign((void **)&counts, 4096, sizeof(TFloat) * n_samples_r);
-    if(counts == NULL || err != 0) {
-        fprintf(stderr, "Failed to allocate %zd bytes, err %d; [%s]:%d\n",
-                sizeof(TFloat) * n_samples_r, err, __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    for(unsigned int i = 0; i < n_samples; i++) {
-        counts[i] = table.sample_counts[i];
-    }
-   // avoid NaNs
-   for(unsigned int i = n_samples; i < n_samples_r; i++) {
-       counts[i] = 0.0;
-   }
-
-   _counts=counts;
-
-   return n_samples_r;
-}
-
-uint64_t su::initialize_sample_counts(double*& _counts, const su::task_parameters* task_p, const biom_interface &table) {
-   return initialize_sample_countsTT(_counts, task_p, table);
-}
-uint64_t su::initialize_sample_counts(float*& _counts, const su::task_parameters* task_p, const biom_interface &table) {
-   return initialize_sample_countsTT(_counts, task_p, table);
-}
-
 void su::initialize_stripes(std::vector<double*> &dm_stripes,
                             std::vector<double*> &dm_stripes_total,
                             bool want_total,
