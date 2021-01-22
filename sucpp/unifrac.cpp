@@ -1,5 +1,14 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2016-2021, UniFrac development team.
+ * All rights reserved.
+ *
+ * See LICENSE file for more details
+ */
+
 #include "tree.hpp"
-#include "biom.hpp"
+#include "biom_interface.hpp"
 #include "unifrac.hpp"
 #include "affinity.hpp"
 #include <unordered_map>
@@ -17,7 +26,7 @@
 static pthread_mutex_t printf_mutex;
 static bool* report_status;
 
-std::string su::test_table_ids_are_subset_of_tree(su::biom &table, su::BPTree &tree) {
+std::string su::test_table_ids_are_subset_of_tree(su::biom_interface &table, su::BPTree &tree) {
     std::unordered_set<std::string> tip_names = tree.get_tip_names();
     std::unordered_set<std::string>::const_iterator hit;
     std::string a_missing_name = "";

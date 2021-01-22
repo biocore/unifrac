@@ -1,24 +1,26 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2016-2021, UniFrac development team.
+ * All rights reserved.
+ *
+ * See LICENSE file for more details
+ */
+
+
+#ifndef _UNIFRAC_BIOM_H
+#define _UNIFRAC_BIOM_H
+
 #include <H5Cpp.h>
 #include <H5Dpublic.h>
 #include <vector>
 #include <unordered_map>
 
+#include "biom_interface.hpp"
+
 namespace su {
-    class biom {
+    class biom : public biom_interface {
         public:
-            // cache the IDs contained within the table
-            std::vector<std::string> sample_ids;
-            std::vector<std::string> obs_ids;
-
-            // cache both index pointers into both CSC and CSR representations
-            std::vector<uint32_t> sample_indptr;
-            std::vector<uint32_t> obs_indptr;
-
-            uint32_t n_samples;  // the number of samples
-            uint32_t n_obs;      // the number of observations
-            uint32_t nnz;        // the total number of nonzero entries
-            double *sample_counts;
-
             /* default constructor
              *
              * @param filename The path to the BIOM table to read
@@ -29,7 +31,7 @@ namespace su {
              *
              * Temporary arrays are freed
              */
-            ~biom();
+            virtual ~biom();
 
             /* get a dense vector of observation data
              *
@@ -107,3 +109,6 @@ namespace su {
             template<class TFloat> void get_obs_data_range_TT(const std::string &id, unsigned int start, unsigned int end, bool normalize, TFloat* out) const;
     };
 }
+
+#endif /* _UNIFRAC_BIOM_H */
+
