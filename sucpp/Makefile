@@ -90,6 +90,11 @@ endif
 
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
+UFCMP=unifrac_cmp_cpu.o
+ifdef ACC_CXX
+	UFCMP+= unifrac_cmp_acc.o
+endif
+
 test: test_su.cpp test_ska.cpp test_api.cpp libssu.so
 	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su -lssu -lpthread
 	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska -lssu -lpthread
@@ -115,8 +120,8 @@ rapi_test: main
 	echo LDFLAGS=-llz4 $(BLASLIB) >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
-libssu.so: tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o
-	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
+libssu.so: tree.o biom.o $(UFCMP) unifrac.o cmd.o skbio_alt.o api.o
+	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o $(UFCMP) unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
 
 api: libssu.so
@@ -131,8 +136,11 @@ api.o: api.cpp api.hpp unifrac.hpp skbio_alt.hpp biom.hpp tree.hpp
 unifrac.o: unifrac.cpp unifrac.hpp unifrac_internal.hpp unifrac_cmp.hpp biom_interface.hpp tree.hpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
-unifrac_cmp.o: unifrac_cmp.cpp unifrac_cmp.hpp unifrac_internal.hpp unifrac.hpp unifrac_task.cpp unifrac_task.hpp biom_interface.hpp tree.hpp
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+unifrac_cmp_cpu.o: unifrac_cmp.cpp unifrac_cmp.hpp unifrac_internal.hpp unifrac.hpp unifrac_task.cpp unifrac_task.hpp biom_interface.hpp tree.hpp
+	$(CXX) $(CPPFLAGS) -Wno-unknown-pragmas -c $< -o $@
+
+unifrac_cmp_acc.o: unifrac_cmp.cpp unifrac_cmp.hpp unifrac_internal.hpp unifrac.hpp unifrac_task.cpp unifrac_task.hpp biom_interface.hpp tree.hpp
+	$(ACC_CXX) $(ACC_CPPFLAGS) -c $< -o $@
 
 
 %.o: %.cpp %.hpp
