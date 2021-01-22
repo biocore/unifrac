@@ -18,12 +18,20 @@
 #include <stdarg.h>
 #include <algorithm>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "unifrac_internal.hpp"
 
 // We will always have the CPU version
 #define SUCMP_NM  su_cpu
 #include "unifrac_cmp.hpp"
+#undef SUCMP_NM
+
+#ifdef UNIFRAC_ENABLE_ACC
+#define SUCMP_NM  su_acc
+#include "unifrac_cmp.hpp"
+#undef SUCMP_NM
+#endif
 
 
 static pthread_mutex_t printf_mutex;
@@ -534,13 +542,53 @@ void su::faith_pd(biom_interface &table,
     }
 }
 
+
+#ifdef UNIFRAC_ENABLE_ACC
+
+// test only once, then use persistent value
+static int proc_use_acc = -1;
+
+inline bool use_acc() {
+ if (proc_use_acc!=-10) return (proc_use_acc!=0);
+ int has_nvidia_gpu_rc = access("/proc/driver/nvidia/gpus", F_OK);
+
+ if (has_nvidia_gpu_rc != 0) {
+   printf("INFO: GPU not found, using CPU\n");
+   proc_use_acc=0;
+   return false;
+ }
+
+ if (const char* env_p = std::getenv("UNIFRAC_USE_GPU")) {
+   std::string env_s(env_p);
+   if ((env_s=="NO") || (env_s=="N") || (env_s=="no") || (env_s=="n") ||
+       (env_s=="NEVER") || (env_s=="never")) {
+     printf("INFO: Use of GPU explicitly disabled, using CPU\n");
+     proc_use_acc=0;
+     return false;
+   }
+ }
+
+ printf("INFO: Using GPU\n");
+ proc_use_acc=1;
+ return true;
+}
+#endif
+
 void su::unifrac(biom_interface &table,
                  BPTree &tree,
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
                  const su::task_parameters* task_p) {
-  su_cpu::unifrac(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+#ifdef UNIFRAC_ENABLE_ACC
+  if (use_acc()) {
+    su_acc::unifrac(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+  } else {
+#else
+  if (true) {
+#endif
+    su_cpu::unifrac(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+  }
 }
 
 
@@ -550,7 +598,15 @@ void su::unifrac_vaw(biom_interface &table,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
                      const su::task_parameters* task_p) {
-  su_cpu::unifrac_vaw(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+#ifdef UNIFRAC_ENABLE_ACC
+  if (use_acc()) {
+   su_acc::unifrac_vaw(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+  } else {
+#else
+  if (true) {
+#endif
+   su_cpu::unifrac_vaw(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+  }
 }
 
 template<class TFloat>

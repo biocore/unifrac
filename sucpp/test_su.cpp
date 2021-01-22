@@ -1808,8 +1808,6 @@ void test_bptree_constructor_newline_bug() {
 }
 
 int main(int argc, char** argv) {
-#pragma acc init
-
     test_bptree_constructor_simple();
     test_bptree_constructor_newline_bug();
     test_bptree_constructor_from_existing();

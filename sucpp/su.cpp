@@ -395,8 +395,6 @@ int main(int argc, char **argv){
         return EXIT_SUCCESS;
     }
 
-#pragma acc init
-
     unsigned int nthreads;
     std::string table_filename = input.getCmdOption("-i");
     std::string tree_filename = input.getCmdOption("-t");
