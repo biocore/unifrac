@@ -468,7 +468,7 @@ void progressbar(float progress) {
 }
 
 template<class TFloat>
-void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, const biom_interface &table) {
+uint64_t initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_p, const biom_interface &table) {
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
     TFloat * counts = NULL;
@@ -487,8 +487,9 @@ void initialize_sample_counts(TFloat*& _counts, const su::task_parameters* task_
        counts[i] = 0.0;
    }
 
-#pragma acc enter data copyin(counts[:n_samples_r])
    _counts=counts;
+
+   return n_samples_r;
 }
 
 void initialize_stripes(std::vector<double*> &dm_stripes,
@@ -786,6 +787,7 @@ void unifrac_vawTT(const biom_interface &table,
     TFloat *sample_total_counts;
 
     initialize_sample_counts<TFloat>(sample_total_counts, task_p, table);
+#pragma acc enter data copyin(sample_total_counts[:n_samples_r])
     initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), sample_total_counts, max_emb, task_p);
