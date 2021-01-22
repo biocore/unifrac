@@ -90,14 +90,14 @@ endif
 
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
-test: tree.o test_su.cpp biom.o unifrac_cmp.o unifrac.o skbio_alt.o api.o
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o unifrac_cmp.o unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska skbio_alt.o tree.o biom.o unifrac_cmp.o unifrac.o api.o -llz4 $(BLASLIB) -lpthread
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o unifrac_cmp.o unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
+test: test_su.cpp test_ska.cpp test_api.cpp libssu.so
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su -lssu -lpthread
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska -lssu -lpthread
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api -lssu -lpthread
 
-main: tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 $(BLASLIB) -lpthread
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 $(BLASLIB) -lpthread
+main: su.cpp faithpd.cpp libssu.so
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu -lssu -lpthread
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd -lssu -lpthread
 	cp ssu ${PREFIX}/bin/
 	cp faithpd ${PREFIX}/bin/
 
@@ -115,9 +115,11 @@ rapi_test: main
 	echo LDFLAGS=-llz4 $(BLASLIB) >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
-api: tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o
+libssu.so: tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o
 	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac_cmp.o unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
+
+api: libssu.so
 
 capi_test: api
 	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
