@@ -20,6 +20,9 @@
 #include <pthread.h>
 
 #include "unifrac_internal.hpp"
+
+// We will always have the CPU version
+#define SUCMP_NM  su_cpu
 #include "unifrac_cmp.hpp"
 
 
@@ -531,26 +534,24 @@ void su::faith_pd(biom_interface &table,
     }
 }
 
-/*
- * Defined in unifrac_cmd.cpp
 void su::unifrac(biom_interface &table,
                  BPTree &tree,
                  Method unifrac_method,
                  std::vector<double*> &dm_stripes,
                  std::vector<double*> &dm_stripes_total,
-                 const su::task_parameters* task_p)
+                 const su::task_parameters* task_p) {
+  su_cpu::unifrac(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+}
 
-*/
 
-/*
- *  Defined in unifrac_cmd.cpp
 void su::unifrac_vaw(biom_interface &table,
                      BPTree &tree,
                      Method unifrac_method,
                      std::vector<double*> &dm_stripes,
                      std::vector<double*> &dm_stripes_total,
-                     const su::task_parameters* task_p)
- */
+                     const su::task_parameters* task_p) {
+  su_cpu::unifrac_vaw(table, tree, unifrac_method, dm_stripes, dm_stripes_total, task_p);
+}
 
 template<class TFloat>
 void su::set_proportions(TFloat* __restrict__ props,

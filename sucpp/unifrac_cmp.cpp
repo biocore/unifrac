@@ -16,20 +16,23 @@
 #include <algorithm>
 
 #include "unifrac_internal.hpp"
+
+#include "unifrac_task.hpp"
+// Note: unifrac_task.hpp defines SUCMP_NM, needed by unifrac_cmp.hpp
 #include "unifrac_cmp.hpp"
 
 // embed in this file, to properly instantiate the templatized functions
 #include "unifrac_task.cpp"
 
-using namespace su;
+using namespace SUCMP_NM;
 
 template<class TaskT, class TFloat>
-void unifracTT(const biom_interface &table,
-               const BPTree &tree,
-               const bool want_total,
-               std::vector<double*> &dm_stripes,
-               std::vector<double*> &dm_stripes_total,
-               const su::task_parameters* task_p) {
+inline void unifracTT(const su::biom_interface &table,
+                      const su::BPTree &tree,
+                      const bool want_total,
+                      std::vector<double*> &dm_stripes,
+                      std::vector<double*> &dm_stripes_total,
+                      const su::task_parameters* task_p) {
     int err;
     // no processor affinity whenusing openacc or openmp
 
@@ -41,11 +44,11 @@ void unifracTT(const biom_interface &table,
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
 
-    PropStackMulti<TFloat> propstack_multi(table.n_samples);
+    su::PropStackMulti<TFloat> propstack_multi(table.n_samples);
 
     const unsigned int max_emb =  TaskT::RECOMMENDED_MAX_EMBS;
 
-    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
+    su::initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total),max_emb,task_p);
 
@@ -113,7 +116,7 @@ void unifracTT(const biom_interface &table,
           // chunk the progress to maximize cache reuse
 #pragma omp parallel for 
           for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
-            PropStack<TFloat> &propstack = propstack_multi.get_prop_stack(ck);
+            su::PropStack<TFloat> &propstack = propstack_multi.get_prop_stack(ck);
             const unsigned int tstart = propstack_multi.get_start(ck);
             const unsigned int tend = propstack_multi.get_end(ck);
             unsigned int my_filled_emb = 0;
@@ -124,7 +127,7 @@ void unifracTT(const biom_interface &table,
               my_k++;
 
               TFloat *node_proportions = propstack.pop(node);
-              set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
+              su::set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
 
               if(task_p->bypass_tips && tree.isleaf(node))
                   continue;
@@ -176,35 +179,35 @@ void unifracTT(const biom_interface &table,
     free(lengths);
 }
 
-void su::unifrac(biom_interface &table,
-                 BPTree &tree,
-                 Method unifrac_method,
-                 std::vector<double*> &dm_stripes,
-                 std::vector<double*> &dm_stripes_total,
-                 const su::task_parameters* task_p) {
+void SUCMP_NM::unifrac(const su::biom_interface &table,
+                       const su::BPTree &tree,
+                       su::Method unifrac_method,
+                       std::vector<double*> &dm_stripes,
+                       std::vector<double*> &dm_stripes_total,
+                        const su::task_parameters* task_p) {
     switch(unifrac_method) {
-        case unweighted:
+        case su::unweighted:
             unifracTT<SUCMP_NM::UnifracUnweightedTask<double>,double>(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_normalized:
+        case su::weighted_normalized:
             unifracTT<SUCMP_NM::UnifracNormalizedWeightedTask<double>,double>(   table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_unnormalized:
+        case su::weighted_unnormalized:
             unifracTT<SUCMP_NM::UnifracUnnormalizedWeightedTask<double>,double>( table, tree, false, dm_stripes,dm_stripes_total,task_p);
             break;
-        case generalized:
+        case su::generalized:
             unifracTT<SUCMP_NM::UnifracGeneralizedTask<double>,double>(          table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case unweighted_fp32:
+        case su::unweighted_fp32:
             unifracTT<SUCMP_NM::UnifracUnweightedTask<float >,float>(            table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_normalized_fp32:
+        case su::weighted_normalized_fp32:
             unifracTT<SUCMP_NM::UnifracNormalizedWeightedTask<float >,float>(    table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_unnormalized_fp32:
+        case su::weighted_unnormalized_fp32:
             unifracTT<SUCMP_NM::UnifracUnnormalizedWeightedTask<float >,float>(  table, tree, false, dm_stripes,dm_stripes_total,task_p);
             break;
-        case generalized_fp32:
+        case su::generalized_fp32:
             unifracTT<SUCMP_NM::UnifracGeneralizedTask<float >,float>(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         default:
@@ -216,8 +219,8 @@ void su::unifrac(biom_interface &table,
 
 
 template<class TaskT, class TFloat>
-void unifrac_vawTT(const biom_interface &table,
-                   const BPTree &tree,
+inline void unifrac_vawTT(const su::biom_interface &table,
+                          const su::BPTree &tree,
                           const bool want_total,
                           std::vector<double*> &dm_stripes,
                           std::vector<double*> &dm_stripes_total,
@@ -232,8 +235,8 @@ void unifrac_vawTT(const biom_interface &table,
     const unsigned int n_samples = task_p->n_samples;
     const uint64_t  n_samples_r = ((n_samples + UNIFRAC_BLOCK-1)/UNIFRAC_BLOCK)*UNIFRAC_BLOCK; // round up
 
-    PropStackMulti<TFloat> propstack_multi(table.n_samples);
-    PropStackMulti<TFloat> countstack_multi(table.n_samples);
+    su::PropStackMulti<TFloat> propstack_multi(table.n_samples);
+    su::PropStackMulti<TFloat> countstack_multi(table.n_samples);
 
     const unsigned int max_emb = TaskT::RECOMMENDED_MAX_EMBS;
 
@@ -241,7 +244,7 @@ void unifrac_vawTT(const biom_interface &table,
 
     su::initialize_sample_counts(sample_total_counts, task_p, table);
 #pragma acc enter data copyin(sample_total_counts[:n_samples_r])
-    initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
+    su::initialize_stripes(std::ref(dm_stripes), std::ref(dm_stripes_total), want_total, task_p);
 
     TaskT taskObj(std::ref(dm_stripes), std::ref(dm_stripes_total), sample_total_counts, max_emb, task_p);
 
@@ -264,8 +267,8 @@ void unifrac_vawTT(const biom_interface &table,
           // chunk the progress to maximize cache reuse
 #pragma omp parallel for 
           for (unsigned int ck=0; ck<num_prop_chunks; ck++) {
-            PropStack<TFloat> &propstack = propstack_multi.get_prop_stack(ck);
-            PropStack<TFloat> &countstack = countstack_multi.get_prop_stack(ck);
+            su::PropStack<TFloat> &propstack = propstack_multi.get_prop_stack(ck);
+            su::PropStack<TFloat> &countstack = countstack_multi.get_prop_stack(ck);
             const unsigned int tstart = propstack_multi.get_start(ck);
             const unsigned int tend = propstack_multi.get_end(ck);
             unsigned int my_filled_emb = 0;
@@ -278,8 +281,8 @@ void unifrac_vawTT(const biom_interface &table,
               TFloat *node_proportions = propstack.pop(node);
               TFloat *node_counts = countstack.pop(node);
 
-              set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
-              set_proportions_range(node_counts, tree, node, table, tstart, tend, countstack, false);
+              su::set_proportions_range(node_proportions, tree, node, table, tstart, tend, propstack);
+              su::set_proportions_range(node_counts, tree, node, table, tstart, tend, countstack, false);
 
               if(task_p->bypass_tips && tree.isleaf(node))
                   continue;
@@ -330,35 +333,35 @@ void unifrac_vawTT(const biom_interface &table,
     free(sample_total_counts);
 }
 
-void su::unifrac_vaw(biom_interface &table,
-                     BPTree &tree,
-                     Method unifrac_method,
-                     std::vector<double*> &dm_stripes,
-                     std::vector<double*> &dm_stripes_total,
-                     const su::task_parameters* task_p) {
+void SUCMP_NM::unifrac_vaw(const su::biom_interface &table,
+                           const su::BPTree &tree,
+                           su::Method unifrac_method,
+                           std::vector<double*> &dm_stripes,
+                           std::vector<double*> &dm_stripes_total,
+                           const su::task_parameters* task_p) {
     switch(unifrac_method) {
-        case unweighted:
+        case su::unweighted:
             unifrac_vawTT<SUCMP_NM::UnifracVawUnweightedTask<double>,double>(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_normalized:
+        case su::weighted_normalized:
             unifrac_vawTT<SUCMP_NM::UnifracVawNormalizedWeightedTask<double>,double>(   table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_unnormalized:
+        case su::weighted_unnormalized:
             unifrac_vawTT<SUCMP_NM::UnifracVawUnnormalizedWeightedTask<double>,double>( table, tree, false, dm_stripes,dm_stripes_total,task_p);
             break;
-        case generalized:
+        case su::generalized:
             unifrac_vawTT<SUCMP_NM::UnifracVawGeneralizedTask<double>,double>(          table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case unweighted_fp32:
+        case su::unweighted_fp32:
             unifrac_vawTT<SUCMP_NM::UnifracVawUnweightedTask<float >,float >(           table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_normalized_fp32:
+        case su::weighted_normalized_fp32:
             unifrac_vawTT<SUCMP_NM::UnifracVawNormalizedWeightedTask<float >,float >(   table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
-        case weighted_unnormalized_fp32:
+        case su::weighted_unnormalized_fp32:
             unifrac_vawTT<SUCMP_NM::UnifracVawUnnormalizedWeightedTask<float >,float >( table, tree, false, dm_stripes,dm_stripes_total,task_p);
             break;
-        case generalized_fp32:
+        case su::generalized_fp32:
             unifrac_vawTT<SUCMP_NM::UnifracVawGeneralizedTask<float >,float >(          table, tree, true,  dm_stripes,dm_stripes_total,task_p);
             break;
         default:

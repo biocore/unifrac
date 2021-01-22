@@ -13,6 +13,7 @@
 #include <vector>
 #include "biom_interface.hpp"
 #include "task_parameters.hpp"
+#include "unifrac.hpp"
 
 namespace su {
  // helper reporting function
