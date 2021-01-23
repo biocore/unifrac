@@ -113,6 +113,16 @@ rapi_test: main
 	echo LDFLAGS=-llz4 $(BLASLIB) >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
+ifeq ($(PLATFORM),Darwin)
+
+# We never use ACC under MacOS, so keep it simple
+
+libssu.so: tree.o biom.o unifrac.o unifrac_cmp_cpu.o cmd.o skbio_alt.o api.o 
+	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o unifrac_cmp_cpu.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB)
+	cp libssu.so ${PREFIX}/lib/
+
+else
+
 libssu.so: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LIBS)
 	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LINK) -lc -lhdf5_cpp -llz4 $(BLASLIB)
 	cp libssu.so ${PREFIX}/lib/
@@ -124,6 +134,8 @@ libssu_cpu.so: unifrac_cmp_cpu.o
 libssu_acc.so: unifrac_cmp_acc.o
 	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -lc
 	cp libssu_acc.so ${PREFIX}/lib/
+
+endif
 
 api: libssu.so
 
