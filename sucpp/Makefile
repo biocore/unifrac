@@ -90,9 +90,11 @@ endif
 
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
-UFCMP=unifrac_cmp_cpu.o
+UFCMP_LIBS=libssu_cpu.so
+UFCMP_LINK=-lssu_cpu
 ifdef ACC_CXX
-	UFCMP+= unifrac_cmp_acc.o
+	UFCMP+= libssu_acc.so
+	UFCMP_LINK+= -lssu_acc
 endif
 
 test: test_su.cpp test_ska.cpp test_api.cpp libssu.so
@@ -120,9 +122,14 @@ rapi_test: main
 	echo LDFLAGS=-llz4 $(BLASLIB) >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
-libssu.so: tree.o biom.o $(UFCMP) unifrac.o cmd.o skbio_alt.o api.o
-	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o $(UFCMP) unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
+libssu.so: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LIBS)
+	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LINK) -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
 	cp libssu.so ${PREFIX}/lib/
+
+libssu_cpu.so: unifrac_cmp_cpu.o
+	$(H5CXX) $(LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -L$(PREFIX)/lib
+	cp libssu_cpu.so ${PREFIX}/lib/
+
 
 api: libssu.so
 
