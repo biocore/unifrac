@@ -127,7 +127,7 @@ libssu.so: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LIBS)
 	cp libssu.so ${PREFIX}/lib/
 
 libssu_cpu.so: unifrac_cmp_cpu.o
-	$(H5CXX) $(LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -L$(PREFIX)/lib
+	$(CXX) $(LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -L$(PREFIX)/lib
 	cp libssu_cpu.so ${PREFIX}/lib/
 
 
