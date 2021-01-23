@@ -29,7 +29,7 @@
                 uint32_t defaultsize;
             public:
                 PropStack(uint32_t vecsize);
-                ~PropStack();
+                virtual ~PropStack();
                 TFloat* pop(uint32_t i);
                 void push(uint32_t i);
                 TFloat* get(uint32_t i);
