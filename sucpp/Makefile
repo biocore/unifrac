@@ -138,6 +138,7 @@ libssu_acc.so: unifrac_cmp_acc.o
 endif
 
 api: libssu.so
+	# api == libssu.so
 
 capi_test: api
 	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
