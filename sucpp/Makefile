@@ -48,7 +48,10 @@ else
 endif
 
 
+LDDFLAGS += -L$(CONDA_PREFIX)/lib
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
+
+BASE_LDDFLAGS = $(LDDFLAGS) -Wl,-rpath-link,$(PREFIX)/lib
 
 UFCMP_LIBS=libssu_cpu.so
 UFCMP_LINK=-lssu_cpu
@@ -77,7 +80,8 @@ ifdef ACC_CXX
         # optional info
         ACC_CPPFLAGS += -Minfo=accel
 
-        ACC_LDDFLAGS = -shared -mp -acc -Bstatic_pgi
+        # use the GNU OMP library to avoid conflicts
+        ACC_LDDFLAGS = -shared -mp -acc -Wl,-rpath-link,$(PREFIX)/lib -L$(CONDA_PREFIX)/lib -lgomp -Bstatic_pgi
 
         ifeq ($(PERFORMING_CONDA_BUILD),True)
                 ACC_CPPFLAGS += -tp=px
@@ -110,15 +114,15 @@ rapi_test: main
 	Rscript R_interface/rapi_test.R
 	
 libssu.so: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LIBS)
-	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LINK) -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
+	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LINK) -lc -lhdf5_cpp -llz4 $(BLASLIB)
 	cp libssu.so ${PREFIX}/lib/
 
 libssu_cpu.so: unifrac_cmp_cpu.o
-	$(CXX) $(LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -L$(PREFIX)/lib -lc -fPIC
+	$(CXX) $(BASE_LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -lc
 	cp libssu_cpu.so ${PREFIX}/lib/
 
 libssu_acc.so: unifrac_cmp_acc.o
-	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -Wl,-rpath-link,$(PREFIX)/lib -L$(PREFIX)/lib -lgomp -lc -fPIC
+	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -lc
 	cp libssu_acc.so ${PREFIX}/lib/
 
 api: libssu.so
@@ -144,5 +148,5 @@ unifrac_cmp_acc.o: unifrac_cmp.cpp unifrac_cmp.hpp unifrac_internal.hpp unifrac.
 	$(H5CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	-rm -f *.o ssu
+	-rm -f *.o *.so ssu faithpd test_su test_api test_ska
 
