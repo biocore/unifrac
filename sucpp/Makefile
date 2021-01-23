@@ -4,22 +4,14 @@ PLATFORM := $(shell uname -s)
 COMPILER := $(shell ($(H5CXX) -v 2>&1) | tr A-Z a-z )
 
 ifdef DEBUG
-	ifneq (,$(findstring pgi,$(COMPILER)))
-		OPT = -g
-	else
-		OPT = -O0 -DDEBUG=1 --debug -g -ggdb
-	endif
+	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
 else
-	ifneq (,$(findstring pgi,$(COMPILER)))
-		OPT = -fast
-	else
-	  ifneq (,$(findstring gcc,$(COMPILER)))
-		OPT = -O4
-		TGTFLAGS = -fwhole-program
-	  else
-		OPT = -O3
-	  endif
-	endif
+  ifneq (,$(findstring gcc,$(COMPILER)))
+	OPT = -O4
+	TGTFLAGS = -fwhole-program
+  else
+	OPT = -O3
+  endif
 endif
 
 ifeq ($(PREFIX),)
@@ -36,50 +28,18 @@ endif
 
 EXEFLAGS =
 
-ifneq (,$(findstring pgi,$(COMPILER)))
-	MPFLAG =  -mp
-else
-	MPFLAG = -fopenmp
-endif
+MPFLAG = -fopenmp
 
 LDDFLAGS += $(MPFLAG)
 CPPFLAGS += $(MPFLAG)
 
-ifndef NOGPU
-	ifneq (,$(findstring pgi,$(COMPILER)))
-		CPPFLAGS += -acc
-	        ifeq ($(PERFORMING_CONDA_BUILD),True)
-	            CPPFLAGS += -ta=tesla:ccall
-		else
-	            CPPFLAGS += -ta=tesla
-                endif
-		# optional info
-		CPPFLAGS += -Minfo=accel
-	        LDDFLAGS += -shlib -acc -Bstatic_pgi
-	        EXEFLAGS += -Bstatic_pgi
-	endif	
-	ifdef SMALLGPU
-		CPPFLAGS += -DSMALLGPU
-	endif
-
-endif
-
-ifneq (,$(findstring pgi,$(COMPILER)))
-	ifeq ($(PERFORMING_CONDA_BUILD),True)
-		CPPFLAGS += -tp=px
-	endif
+ifeq ($(PERFORMING_CONDA_BUILD),True)
+	CPPFLAGS += -mtune=generic
 else
-	ifeq ($(PERFORMING_CONDA_BUILD),True)
-		CPPFLAGS += -mtune=generic
-	else
-         	CPPFLAGS += -mfma -march=native
-	endif
+       	CPPFLAGS += -mfma -march=native
 endif
 
-ifeq (,$(findstring pgi,$(COMPILER)))
-	# basically, not gcc
-	CPPFLAGS += -Wextra -Wno-unused-parameter
-endif
+CPPFLAGS += -Wextra -Wno-unused-parameter
 
 ifeq ($(PLATFORM),Darwin)
         BLASLIB=-llapacke -lcblas
@@ -93,8 +53,35 @@ CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 UFCMP_LIBS=libssu_cpu.so
 UFCMP_LINK=-lssu_cpu
 ifdef ACC_CXX
-	UFCMP+= libssu_acc.so
+	# Tell the generic code we will be building the ACC code, too
+	CPPFLAGS += -DUNIFRAC_ENABLE_ACC=1
+
+	UFCMP_LIBS+= libssu_acc.so
 	UFCMP_LINK+= -lssu_acc
+
+	ACC_CPPFLAGS += -mp -acc
+	ACC_CPPFLAGS += -Wall  -std=c++11 -pedantic -I. -fPIC -L$(CONDA_PREFIX)/lib
+
+	ifdef DEBUG
+                ACC_OPT = -g
+	else
+                ACC_OPT = -fast
+	endif
+        ACC_CPPFLAGS += $(ACC_OPT)
+
+        ifeq ($(PERFORMING_CONDA_BUILD),True)
+          ACC_CPPFLAGS += -ta=tesla:ccall
+        else
+          ACC_CPPFLAGS += -ta=tesla
+        endif
+        # optional info
+        ACC_CPPFLAGS += -Minfo=accel
+
+        ACC_LDDFLAGS = -shared -mp -acc -Bstatic_pgi
+
+        ifeq ($(PERFORMING_CONDA_BUILD),True)
+                ACC_CPPFLAGS += -tp=px
+        endif
 endif
 
 test: test_su.cpp test_ska.cpp test_api.cpp libssu.so
@@ -127,9 +114,12 @@ libssu.so: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LIBS)
 	cp libssu.so ${PREFIX}/lib/
 
 libssu_cpu.so: unifrac_cmp_cpu.o
-	$(CXX) $(LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -L$(PREFIX)/lib
+	$(CXX) $(LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -L$(PREFIX)/lib -lc -fPIC
 	cp libssu_cpu.so ${PREFIX}/lib/
 
+libssu_acc.so: unifrac_cmp_acc.o
+	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -L$(PREFIX)/lib -lc -fPIC
+	cp libssu_acc.so ${PREFIX}/lib/
 
 api: libssu.so
 
