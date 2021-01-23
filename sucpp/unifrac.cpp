@@ -520,8 +520,20 @@ inline bool use_acc() {
  if (proc_use_acc!=-1) return (proc_use_acc!=0);
  int has_nvidia_gpu_rc = access("/proc/driver/nvidia/gpus", F_OK);
 
+ bool print_info = false;
+
+ if (const char* env_p = std::getenv("UNIFRAC_GPU_INFO")) {
+   print_info = true;
+   std::string env_s(env_p);
+   if ((env_s=="NO") || (env_s=="N") || (env_s=="no") || (env_s=="n") ||
+       (env_s=="NEVER") || (env_s=="never")) {
+     print_info = false;
+   }
+ }
+
+
  if (has_nvidia_gpu_rc != 0) {
-   printf("INFO (unifrac): GPU not found, using CPU\n");
+   if (print_info) printf("INFO (unifrac): GPU not found, using CPU\n");
    proc_use_acc=0;
    return false;
  }
@@ -530,13 +542,13 @@ inline bool use_acc() {
    std::string env_s(env_p);
    if ((env_s=="NO") || (env_s=="N") || (env_s=="no") || (env_s=="n") ||
        (env_s=="NEVER") || (env_s=="never")) {
-     printf("INFO (unifrac): Use of GPU explicitly disabled, using CPU\n");
+     if (print_info) printf("INFO (unifrac): Use of GPU explicitly disabled, using CPU\n");
      proc_use_acc=0;
      return false;
    }
  }
 
- printf("INFO (unifrac): Using GPU\n");
+ if (print_info) printf("INFO (unifrac): Using GPU\n");
  proc_use_acc=1;
  return true;
 }
