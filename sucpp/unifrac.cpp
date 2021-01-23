@@ -517,11 +517,11 @@ void su::faith_pd(biom_interface &table,
 static int proc_use_acc = -1;
 
 inline bool use_acc() {
- if (proc_use_acc!=-10) return (proc_use_acc!=0);
+ if (proc_use_acc!=-1) return (proc_use_acc!=0);
  int has_nvidia_gpu_rc = access("/proc/driver/nvidia/gpus", F_OK);
 
  if (has_nvidia_gpu_rc != 0) {
-   printf("INFO: GPU not found, using CPU\n");
+   printf("INFO (unifrac): GPU not found, using CPU\n");
    proc_use_acc=0;
    return false;
  }
@@ -530,13 +530,13 @@ inline bool use_acc() {
    std::string env_s(env_p);
    if ((env_s=="NO") || (env_s=="N") || (env_s=="no") || (env_s=="n") ||
        (env_s=="NEVER") || (env_s=="never")) {
-     printf("INFO: Use of GPU explicitly disabled, using CPU\n");
+     printf("INFO (unifrac): Use of GPU explicitly disabled, using CPU\n");
      proc_use_acc=0;
      return false;
    }
  }
 
- printf("INFO: Using GPU\n");
+ printf("INFO (unifrac): Using GPU\n");
  proc_use_acc=1;
  return true;
 }
