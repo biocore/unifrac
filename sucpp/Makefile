@@ -118,7 +118,7 @@ libssu_cpu.so: unifrac_cmp_cpu.o
 	cp libssu_cpu.so ${PREFIX}/lib/
 
 libssu_acc.so: unifrac_cmp_acc.o
-	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -L$(PREFIX)/lib -lc -fPIC
+	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -Wl,-rpath-link,$(PREFIX)/lib -L$(PREFIX)/lib -lgomp -lc -fPIC
 	cp libssu_acc.so ${PREFIX}/lib/
 
 api: libssu.so
