@@ -54,8 +54,6 @@ mkdir conda_nv_bins
   done )
 
 mkdir setup_scripts
-echo "conda activate unifrac-gpu " \
-  > setup_scripts/setup_conda_nv_bins.sh
 echo "PATH=${PWD}/conda_nv_bins:\$PATH" \
   >> setup_scripts/setup_conda_nv_bins.sh
 ```
@@ -87,39 +85,20 @@ sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
 sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/install_cuda
 
+export NVHPC_INSTALL_DIR=$PWD/hpc_sdk
+export NVHPC_SILENT=true
+
 (cd nvhpc_*; ./install)
+
+# If you prefer an interactive install, do not export the above NVHPC env and
 # Select "Single system install"
 # Expand $PWD/hpc_sdk as install dir
 
-echo "PATH=\$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`" \
-  > setup_scripts/setup_nv_hpc_bins.sh
-
-# h5c++ patch
-mkdir conda_h5
-cp $CONDA_PREFIX/bin/h5c++ conda_h5/
-
-# This works on linux with gcc ..
-sed -i \
-  "s#x86_64-conda.*-linux-gnu-c++#pgc++ -I`ls -d $PWD/hpc_sdk/*/202*/compilers/include`#g" \
-  conda_h5/h5c++ 
-sed -i \
-  's#H5BLD_CXXFLAGS=".*"#H5BLD_CXXFLAGS=" -fvisibility-inlines-hidden -std=c++17 -fPIC -O2 -I${includedir}"#g'  \
-  conda_h5/h5c++
-sed -i \
-  's#H5BLD_CPPFLAGS=".*"#H5BLD_CPPFLAGS=" -I${includedir} -DNDEBUG -D_FORTIFY_SOURCE=2 -O2"#g' \
-  conda_h5/h5c++
-sed -i \
-  's#H5BLD_LDFLAGS=".*"#H5BLD_LDFLAGS=" -L${prefix}/x86_64-conda-linux-gnu/sysroot/usr/lib64/ -L${libdir} -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,-rpath,\\\\\\$ORIGIN/../x86_64-conda-linux-gnu/sysroot/usr/lib64/ -Wl,-rpath,\\\\\\$ORIGIN/../lib -Wl,-rpath,${prefix}/x86_64-conda-linux-gnu/sysroot/usr/lib64/ -Wl,-rpath,${libdir}"#g' \
- conda_h5/h5c++
-
-cat > setup_nv_h5.sh  << EOF
+cat > setup_nv.sh  << EOF
 source $PWD/setup_scripts/setup_conda_nv_bins.sh
-source $PWD/setup_scripts/setup_nv_hpc_bins.sh
 
-PATH=${PWD}/conda_h5:\$PATH
-
-# pgc++ does not define it, but gcc libraries expect it
-export CPPFLAGS=-D__GCC_ATOMIC_TEST_AND_SET_TRUEVAL=0
+export PATH=\$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`
+export ACC_CXX=pgc++
 
 EOF
 ```
@@ -133,20 +112,32 @@ In order to compile UniFrac, you will need both the Anaconda dependencies, the N
 The first two you setup above, and can enable with the helper script; the later can be imported (once) with git.
 
 ```
-source setup_nv_h5.sh
+source setup_nv.sh
+
+# save original version of binaries
+mkdir $CONDA_PREFIX/bin/org
+mkdir $CONDA_PREFIX/lib/org
+
+mv $CONDA_PREFIX/bin/ssu $CONDA_PREFIX/bin/org/
+mv $CONDA_PREFIX/bin/faithpd $CONDA_PREFIX/bin/org/
+mv $CONDA_PREFIX/lib/libssu*.so $CONDA_PREFIX/lib/org/
 
 git clone https://github.com/biocore/unifrac.git
-
-# save CPU version of binaries
-mv $CONDA_PREFIX/bin/ssu $CONDA_PREFIX/bin/ssu.cpu
-mv $CONDA_PREFIX/bin/faithpd $CONDA_PREFIX/bin/faithpd.cpu
-mv $CONDA_PREFIX/lib/libssu.so $CONDA_PREFIX/bin/libssu.so.cpu
-
 (cd unifrac/sucpp/ && make && make main && make api)
 ```
 
 And you are all done.
 The UniFrac binary and libraries in the Anaconda environment are now the GPU-enabled ones.
 
-Note: If you do not want the cutting edge UniFrac from git, you can get a tarball of the released versions. The first fully GPU-enabled version was [0.20.1](https://codeload.github.com/biocore/unifrac/tar.gz/0.20.1).
- 
+*Note:* The produced binary has both GPU and CPU unifrac code paths. 
+The GPU path will be used if a GPU is detected, and use the CPU code path else.
+You can forecefully disable the GPU with:
+```
+export UNIFRAC_USE_GPU=N
+```
+
+If you want to know which path is being used, enabe info messages with:
+```
+export UNIFRAC_GPU_INFO=Y
+```
+
