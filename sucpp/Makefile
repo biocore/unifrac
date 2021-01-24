@@ -56,8 +56,9 @@ ifeq ($(PLATFORM),Darwin)
 else
   LDDFLAGS += -Wl,-rpath-link,$(PREFIX)/lib
 endif
-BASE_LDDFLAGS = $(LDDFLAGS) 
-
+BASE_LDDFLAGS = $(LDDFLAGS)
+ 
+R_LDFLAGS = -llz4 $(BLASLIB)
 
 UFCMP_LIBS=libssu_cpu.so
 UFCMP_LINK=-lssu_cpu
@@ -67,6 +68,8 @@ ifdef ACC_CXX
 
 	UFCMP_LIBS+= libssu_acc.so
 	UFCMP_LINK+= -lssu_acc
+
+        R_LDFLAGS += -lssu_acc
 
 	ACC_CPPFLAGS += -mp -acc
 	ACC_CPPFLAGS += -Wall  -std=c++11 -pedantic -I. -fPIC -L$(CONDA_PREFIX)/lib
@@ -125,7 +128,7 @@ main: ssu faithpd
 
 rapi_test: main
 	mkdir -p ~/.R
-	if [ -a ~/.R/Makevars ] ; \
+	if [ -e ~/.R/Makevars ] ; \
 	then \
 		echo "WARNING: OVERWRITING ~/.R/Makevars" ; \
 		echo "The original Makevars file has been copied to ~/.R/Makevars" ;\
@@ -134,7 +137,7 @@ rapi_test: main
 	echo CXX1X=h5c++ > ~/.R/Makevars
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
-	echo LDFLAGS=-llz4 $(BLASLIB) >> ~/.R/Makevars
+	echo LDFLAGS=$(R_LDFLAGS) >> ~/.R/Makevars
 	Rscript R_interface/rapi_test.R
 	
 ifeq ($(PLATFORM),Darwin)
