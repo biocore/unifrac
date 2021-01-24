@@ -95,16 +95,28 @@ ifdef ACC_CXX
         endif
 endif
 
-test: test_su.cpp test_ska.cpp test_api.cpp libssu.so
+test_su: test_su.cpp libssu.so
 	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su -lssu -lpthread
+
+test_ska: test_ska.cpp libssu.so
 	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska -lssu -lpthread
+
+test_api: test_api.cpp libssu.so
 	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api -lssu -lpthread
 
-main: su.cpp faithpd.cpp libssu.so
+test: test_su test_ska test_api
+	# test = (su,ska,api)
+
+ssu: su.cpp libssu.so
 	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu -lssu -lpthread
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd -lssu -lpthread
 	cp ssu ${PREFIX}/bin/
+
+faithpd: faithpd.cpp libssu.so
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd -lssu -lpthread
 	cp faithpd ${PREFIX}/bin/
+
+main: ssu faithpd
+	# main == (ssu,faithpd)
 
 rapi_test: main
 	mkdir -p ~/.R
