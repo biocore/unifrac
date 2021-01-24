@@ -95,14 +95,20 @@ ifdef ACC_CXX
         endif
 endif
 
+ifeq ($(PLATFORM),Darwin)
+  TEST_DEPS = -lssu
+else
+  TEST_DEPS = -lssu -lssu_internal
+endif
+
 test_su: test_su.cpp libssu.so
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su -lssu -lpthread
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su $(TEST_DEPS) -lpthread
 
 test_ska: test_ska.cpp libssu.so
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska -lssu -lpthread
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska $(TEST_DEPS) -lpthread
 
 test_api: test_api.cpp libssu.so
-	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api -lssu -lpthread
+	$(H5CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api $(TEST_DEPS) -lpthread
 
 test: test_su test_ska test_api
 	# test = (su,ska,api)
