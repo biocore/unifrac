@@ -115,13 +115,14 @@ jobs:
         make api
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          # the ACC_CXX not needed anymore
+          # capi_test needs standard gcc
+          ACCPATH=$PATH
           export PATH=$ORGPATH
-          unset ACC_CXX
         fi
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
+          export PATH=$ACCPATH
           make rapi_test
         fi
         popd
