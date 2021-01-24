@@ -11,14 +11,31 @@
 #define __UNIFRAC_INTERNAL 1
 
 #include <vector>
+#include <stack>
+#include <unordered_map>
 #include "biom_interface.hpp"
 #include "task_parameters.hpp"
 #include "unifrac.hpp"
 
 namespace su {
- // helper reporting function
+ // helper reporting functions
+ void register_report_status();
+ void remove_report_status();
  void try_report(const su::task_parameters* task_p, unsigned int k, unsigned int max_k);
 
+ template<class TFloat>
+ class PropStack {
+   private:
+     std::stack<TFloat*> prop_stack;
+     std::unordered_map<uint32_t, TFloat*> prop_map;
+     uint32_t defaultsize;
+   public:
+     PropStack(uint32_t vecsize);
+     virtual ~PropStack();
+     TFloat* pop(uint32_t i);
+     void push(uint32_t i);
+     TFloat* get(uint32_t i);
+ };
 
  // Helper class with default constructor
  // The default is small enough to fit in L1 cache
@@ -52,10 +69,27 @@ namespace su {
     PropStackFixed<TFloat> &get_prop_stack(uint32_t idx) {return multi[idx];}
  };
 
+ template<class TFloat>
+ void set_proportions(TFloat* __restrict__ props,
+                      const BPTree &tree, uint32_t node,
+                      const biom_interface &table,
+                      PropStack<TFloat> &ps,
+                      bool normalize = true);
+
+ template<class TFloat>
+ void set_proportions_range(TFloat* __restrict__ props,
+                            const BPTree &tree, uint32_t node,
+                            const biom_interface &table,unsigned int start, unsigned int end,
+                            PropStack<TFloat> &ps,
+                            bool normalize = true);
+
+
  void initialize_stripes(std::vector<double*> &dm_stripes,
                          std::vector<double*> &dm_stripes_total,
                          bool want_total,
                          const su::task_parameters* task_p);
+
+  std::vector<double*> make_strides(unsigned int n_samples);
 
 }
 

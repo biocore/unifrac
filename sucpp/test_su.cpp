@@ -3,6 +3,7 @@
 #include "tree.hpp"
 #include "biom.hpp"
 #include "unifrac.hpp"
+#include "unifrac_internal.hpp"
 #include <cmath>
 #include <unordered_set>
 #include <string.h>

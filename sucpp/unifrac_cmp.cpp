@@ -9,7 +9,6 @@
 
 #include "tree.hpp"
 #include "biom_interface.hpp"
-#include "unifrac.hpp"
 #include <unordered_map>
 #include <cstdlib>
 #include <thread>

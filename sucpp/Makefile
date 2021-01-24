@@ -20,7 +20,8 @@ endif
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
-	LDDFLAGS = -dynamiclib -install_name @rpath/libssu.so
+	LDDFLAGS = -dynamiclib 
+        #-install_name @rpath/libssu.so
 else
 	AVX2 := $(shell grep "^flags" /proc/cpuinfo | head -n 1 | grep -c avx2)
 	LDDFLAGS = -shared
@@ -51,7 +52,13 @@ endif
 LDDFLAGS += -L$(CONDA_PREFIX)/lib
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
-BASE_LDDFLAGS = $(LDDFLAGS) -Wl,-rpath-link,$(PREFIX)/lib
+ifeq ($(PLATFORM),Darwin)
+  LDDFLAGS += -Wl,-rpath,$(PREFIX)/lib
+else
+  LDDFLAGS += -Wl,-rpath-link,$(PREFIX)/lib
+endif
+BASE_LDDFLAGS = $(LDDFLAGS) 
+
 
 UFCMP_LIBS=libssu_cpu.so
 UFCMP_LINK=-lssu_cpu
@@ -117,22 +124,26 @@ ifeq ($(PLATFORM),Darwin)
 
 # We never use ACC under MacOS, so keep it simple
 
-libssu.so: tree.o biom.o unifrac.o unifrac_cmp_cpu.o cmd.o skbio_alt.o api.o 
-	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o unifrac_cmp_cpu.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB)
+libssu.so: tree.o biom.o unifrac.o unifrac_internal.o unifrac_cmp_cpu.o cmd.o skbio_alt.o api.o 
+	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o unifrac_internal.o unifrac_cmp_cpu.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB)
 	cp libssu.so ${PREFIX}/lib/
 
 else
 
-libssu.so: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LIBS)
-	$(H5CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UFCMP_LINK) -lc -lhdf5_cpp -llz4 $(BLASLIB)
+libssu.so: unifrac.o cmd.o api.o $(UFCMP_LIBS) libssu_internal.so
+	$(H5CXX) $(LDDFLAGS) -o libssu.so unifrac.o cmd.o api.o $(UFCMP_LINK) -lssu_internal -lc -llz4 
 	cp libssu.so ${PREFIX}/lib/
 
-libssu_cpu.so: unifrac_cmp_cpu.o
-	$(CXX) $(BASE_LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -lc
+libssu_internal.so: tree.o biom.o skbio_alt.o unifrac_internal.o
+	$(H5CXX) $(LDDFLAGS) -o libssu_internal.so tree.o biom.o skbio_alt.o unifrac_internal.o -lc -lhdf5_cpp $(BLASLIB)
+	cp libssu_internal.so ${PREFIX}/lib/
+
+libssu_cpu.so: unifrac_cmp_cpu.o libssu_internal.so
+	$(CXX) $(BASE_LDDFLAGS) -o libssu_cpu.so unifrac_cmp_cpu.o -lssu_internal -lc
 	cp libssu_cpu.so ${PREFIX}/lib/
 
-libssu_acc.so: unifrac_cmp_acc.o
-	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -lc
+libssu_acc.so: unifrac_cmp_acc.o libssu_internal.so
+	$(ACC_CXX) $(ACC_LDDFLAGS) -o libssu_acc.so unifrac_cmp_acc.o -lssu_internal -lc
 	cp libssu_acc.so ${PREFIX}/lib/
 
 endif

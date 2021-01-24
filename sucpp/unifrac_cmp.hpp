@@ -15,7 +15,6 @@
 #include "tree.hpp"
 #include "biom_interface.hpp"
 
-#include "unifrac.hpp"
 #include "unifrac_internal.hpp"
 
 namespace SUCMP_NM {

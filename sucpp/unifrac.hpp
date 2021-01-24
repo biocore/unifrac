@@ -21,20 +21,6 @@
     namespace su {
         enum Method {unweighted, weighted_normalized, weighted_unnormalized, generalized, unweighted_fp32, weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32};
 
-        template<class TFloat> 
-        class PropStack {
-            private:
-                std::stack<TFloat*> prop_stack;
-                std::unordered_map<uint32_t, TFloat*> prop_map;
-                uint32_t defaultsize;
-            public:
-                PropStack(uint32_t vecsize);
-                virtual ~PropStack();
-                TFloat* pop(uint32_t i);
-                void push(uint32_t i);
-                TFloat* get(uint32_t i);
-        };
-
         void faith_pd(biom_interface &table, BPTree &tree, double* result);
 
         std::string test_table_ids_are_subset_of_tree(biom_interface &table, BPTree &tree);
@@ -87,22 +73,6 @@
         template<class TReal> void condensed_form_to_matrix_T(const double*  __restrict__ cf, const uint32_t n, TReal*  __restrict__ buf2d);
         void condensed_form_to_matrix(const double*  __restrict__ cf, const uint32_t n, double*  __restrict__ buf2d);
         void condensed_form_to_matrix_fp32(const double*  __restrict__ cf, const uint32_t n, float*  __restrict__ buf2d);
-
-        template<class TFloat>
-        void set_proportions(TFloat* __restrict__ props, 
-                             const BPTree &tree, uint32_t node, 
-                             const biom_interface &table, 
-                             PropStack<TFloat> &ps,
-                             bool normalize = true);
-
-        template<class TFloat>
-        void set_proportions_range(TFloat* __restrict__ props,
-                                   const BPTree &tree, uint32_t node,
-                                   const biom_interface &table,unsigned int start, unsigned int end,
-                                   PropStack<TFloat> &ps,
-                                   bool normalize = true);
-
-        std::vector<double*> make_strides(unsigned int n_samples);
 
         inline uint64_t comb_2(uint64_t N) {
             // based off of _comb_int_long
