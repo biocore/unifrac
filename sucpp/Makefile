@@ -20,8 +20,7 @@ endif
 
 ifeq ($(PLATFORM),Darwin)
 	AVX2 := $(shell sysctl -a | grep -c AVX2)
-	LDDFLAGS = -dynamiclib 
-        #-install_name @rpath/libssu.so
+	LDDFLAGS = -dynamiclib -install_name @rpath/libssu.so
 else
 	AVX2 := $(shell grep "^flags" /proc/cpuinfo | head -n 1 | grep -c avx2)
 	LDDFLAGS = -shared
