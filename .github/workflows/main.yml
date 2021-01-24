@@ -105,7 +105,7 @@ jobs:
 
           (cd nvhpc_*_x86_64_*; ./install)
 
-          export PATH=\$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`
+          export PATH=$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`
           export ACC_CXX=pgc++
         fi
         pushd sucpp
