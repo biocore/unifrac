@@ -148,12 +148,12 @@ libssu.so: tree.o biom.o unifrac.o unifrac_internal.o unifrac_cmp_cpu.o cmd.o sk
 
 else
 
-libssu.so: unifrac.o cmd.o api.o $(UFCMP_LIBS) libssu_internal.so
-	$(H5CXX) $(LDDFLAGS) -o libssu.so unifrac.o cmd.o api.o $(UFCMP_LINK) -lssu_internal -lc -llz4 
+libssu.so: biom.o unifrac.o cmd.o api.o $(UFCMP_LIBS) libssu_internal.so
+	$(H5CXX) $(LDDFLAGS) -o libssu.so biom.o unifrac.o cmd.o api.o $(UFCMP_LINK) -lssu_internal -lc -llz4 
 	cp libssu.so ${PREFIX}/lib/
 
-libssu_internal.so: tree.o biom.o skbio_alt.o unifrac_internal.o
-	$(H5CXX) $(LDDFLAGS) -o libssu_internal.so tree.o biom.o skbio_alt.o unifrac_internal.o -lc -lhdf5_cpp $(BLASLIB)
+libssu_internal.so: tree.o skbio_alt.o unifrac_internal.o
+	$(H5CXX) $(LDDFLAGS) -o libssu_internal.so tree.o skbio_alt.o unifrac_internal.o -lc -lhdf5_cpp $(BLASLIB)
 	cp libssu_internal.so ${PREFIX}/lib/
 
 libssu_cpu.so: unifrac_cmp_cpu.o libssu_internal.so
