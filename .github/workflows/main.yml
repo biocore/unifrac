@@ -80,7 +80,7 @@ jobs:
           # Enable OpenACC build
           curl -s -S -o nvhpc_2020.tar.gz  https://developer.download.nvidia.com/hpc-sdk/20.9/nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
           tar xpzf nvhpc_2020.tar.gz
-          rm -f nvhpc_2020.0.tar.gz
+          rm -f nvhpc_2020.tar.gz
 
           mkdir conda_nv_bins
           (cd conda_nv_bins && for f in \
@@ -103,7 +103,7 @@ jobs:
           export NVHPC_INSTALL_DIR=$PWD/hpc_sdk
           export NVHPC_SILENT=true
 
-          (cd nvhpc_*; ./install)
+          (cd nvhpc_*_x86_64_*; ./install)
 
           export PATH=\$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`
           export ACC_CXX=pgc++
