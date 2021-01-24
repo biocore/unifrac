@@ -141,7 +141,7 @@ api: libssu.so
 	# api == libssu.so
 
 capi_test: api
-	$(CPP) -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
+	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
 	export LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 api.o: api.cpp api.hpp unifrac.hpp skbio_alt.hpp biom.hpp tree.hpp
