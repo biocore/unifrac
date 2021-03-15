@@ -148,5 +148,9 @@ mv $CONDA_PREFIX/lib/libssu.so $CONDA_PREFIX/bin/libssu.so.cpu
 And you are all done.
 The UniFrac binary and libraries in the Anaconda environment are now the GPU-enabled ones.
 
-Note: If you do not want the cutting edge UniFrac from git, you can get a tarball of the released versions. The first fully GPU-enabled version was [0.20.1](https://codeload.github.com/biocore/unifrac/tar.gz/0.20.1).
- 
+## Compiling an older version of Unifrac for GPUs
+
+If you do not want the cutting edge UniFrac from git, you will have to use version-specific instructions:
+* [0.20.1 GPU compile instructions](https://github.com/sfiligoi/unifrac/blob/v0.20.1-docs/docs/compile_gpu.README.txt)
+* [0.20.2 GPU compile instructions](https://github.com/sfiligoi/unifrac/blob/v0.20.2-docs/docs/compile_gpu.README.md)
+

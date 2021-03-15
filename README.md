@@ -45,12 +45,12 @@ The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/
 This library can also be installed via a combination of `conda-forge` and `bioconda`:
 
 ```
-conda install -c conda-forge -c bioconda unifrac
+conda create --name unifrac -c conda-forge -c bioconda unifrac
 ```
 
 Note: Only the CPU version of the binaries is currently available in conda. 
 The GPU version must either be [locally compiled using freely-available NVIDIA HPC SDK](docs/compile_gpu.README.md) 
-or obtained [from a github branch](https://github.com/sfiligoi/unifrac/blob/v0.20.1-docs/docs/install_gpu.README.txt).
+or obtained [from a github branch](https://github.com/sfiligoi/unifrac/blob/v0.20.2-docs/docs/install_gpu.README.md).
 
 Note: If you desire a fully optimized the binaries for your CPU, you can [compile them locally](docs/compile_cpu.README.md).
 
