@@ -75,12 +75,15 @@ Assuming you are in the environment above, fetch the UniFrac source code and per
 The binaries will be automatically put in the conda path.
 
 ```
-git clone https://github.com/biocore/unifrac.git
+# save original version of binaries
+mkdir $CONDA_PREFIX/bin/org
+mkdir $CONDA_PREFIX/lib/org
 
-# save CPU version of binaries
-mv $CONDA_PREFIX/bin/ssu $CONDA_PREFIX/bin/ssu.cpu
-mv $CONDA_PREFIX/bin/faithpd $CONDA_PREFIX/bin/faithpd.cpu
-mv $CONDA_PREFIX/lib/libssu.so $CONDA_PREFIX/bin/libssu.so.cpu
+mv $CONDA_PREFIX/bin/ssu $CONDA_PREFIX/bin/org/
+mv $CONDA_PREFIX/bin/faithpd $CONDA_PREFIX/bin/org/
+mv $CONDA_PREFIX/lib/libssu*.so $CONDA_PREFIX/lib/org/
+
+git clone https://github.com/biocore/unifrac.git
 
 (cd unifrac/sucpp/ && make && make main && make api)
 ```

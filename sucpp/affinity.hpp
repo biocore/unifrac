@@ -42,7 +42,7 @@ CPU_COUNT(cpu_set_t *cs) { return __builtin_popcount(cs->count); }
 
 #define CPU_SETSIZE 32
 
-int sched_getaffinity(pid_t pid, size_t cpu_size, cpu_set_t *cpu_set)
+static int sched_getaffinity(pid_t pid, size_t cpu_size, cpu_set_t *cpu_set)
 {
   int32_t core_count = 0;
   size_t  len = sizeof(core_count);
@@ -58,7 +58,7 @@ int sched_getaffinity(pid_t pid, size_t cpu_size, cpu_set_t *cpu_set)
   return 0;
 }
 
-int pthread_setaffinity_np(pthread_t thread, size_t cpu_size,
+static int pthread_setaffinity_np(pthread_t thread, size_t cpu_size,
                            cpu_set_t *cpu_set)
 {
   thread_port_t mach_thread;
@@ -79,7 +79,7 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpu_size,
 #define handle_error_en(en, msg) \
        do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
-int bind_to_core(int core) {
+static int bind_to_core(int core) {
     /* bind the calling thread to the requested core
      *
      * The use of this method is for better NUMA utilization. The 

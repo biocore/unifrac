@@ -75,13 +75,54 @@ jobs:
           clang -v
         fi
         which h5c++
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          ORGPATH=$PATH
+          # Enable OpenACC build
+          curl -s -S -o nvhpc_2020.tar.gz  https://developer.download.nvidia.com/hpc-sdk/20.9/nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
+          tar xpzf nvhpc_2020.tar.gz
+          rm -f nvhpc_2020.tar.gz
+
+          mkdir conda_nv_bins
+          (cd conda_nv_bins && for f in \
+              ar as c++ cc cpp g++ gcc ld nm ranlib strip; \
+           do \
+             ln -s `which x86_64-conda-linux-gnu-${f}` ${f}; \
+           done )
+
+          PATH=${PWD}/conda_nv_bins:$PATH
+
+          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
+            nvhpc_*/install_components/install 
+          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
+            nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
+          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
+            nvhpc_*/install_components/*/*/compilers/bin/addlocalrc
+          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
+            nvhpc_*/install_components/install_cuda
+
+          export NVHPC_INSTALL_DIR=$PWD/hpc_sdk
+          export NVHPC_SILENT=true
+
+          (cd nvhpc_*_x86_64_*; ./install)
+
+          export PATH=$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`
+          export ACC_CXX=pgc++
+        fi
         pushd sucpp
         make test
         make main
         make api
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          # capi_test needs standard gcc
+          ACCPATH=$PATH
+          export PATH=$ORGPATH
+        fi
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
+          export PATH=$ACCPATH
           make rapi_test
         fi
         popd
@@ -92,6 +133,7 @@ jobs:
       run: |
         conda activate unifrac
         pushd sucpp
+        export UNIFRAC_GPU_INFO=Y
         ./test_su
         ./test_api
         ./test_ska

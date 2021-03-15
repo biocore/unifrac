@@ -1,3 +1,15 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2016-2021, UniFrac development team.
+ * All rights reserved.
+ *
+ * See LICENSE file for more details
+ */
+
+#ifndef __UNIFRAC_TREE_H
+#define __UNIFRAC_TREE_H 1
+
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -121,3 +133,6 @@ namespace su {
             int32_t enclose(uint32_t i) const;
     };
 }
+
+#endif /* UNIFRAC_TREE_H */
+
