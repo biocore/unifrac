@@ -141,3 +141,9 @@ If you want to know which path is being used, enabe info messages with:
 export UNIFRAC_GPU_INFO=Y
 ```
 
+## Compiling an older version of Unifrac for GPUs
+
+If you do not want the cutting edge UniFrac from git, you will have to use version-specific instructions:
+* [0.20.1 GPU compile instructions](https://github.com/sfiligoi/unifrac/blob/v0.20.1-docs/docs/compile_gpu.README.txt)
+* [0.20.2 GPU compile instructions](https://github.com/sfiligoi/unifrac/blob/v0.20.2-docs/docs/compile_gpu.README.md)
+

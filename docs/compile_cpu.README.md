@@ -91,5 +91,5 @@ git clone https://github.com/biocore/unifrac.git
 And you are all done.
 The UniFrac binary and libraries in the Anaconda environment are now the locally compiled ones.
 
-Note: If you do not want the cutting edge UniFrac from git, you can get a tarball of the released versions. These instructions have been tested with version [0.20.1](https://codeload.github.com/biocore/unifrac/tar.gz/0.20.1).
+Note: If you do not want the cutting edge UniFrac from git, you can get a tarball of the released versions. These instructions have been tested with version [0.20.2](https://codeload.github.com/biocore/unifrac/tar.gz/0.20.2).
 
