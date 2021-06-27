@@ -136,7 +136,7 @@ inline void F_matrix_inplace(const TReal * __restrict__ row_means, const TReal g
       uint32_t tcol_max = std::min(tcol+512, n_samples);
 
       for (uint32_t row=trow; row<trow_max; row++) {
-        TReal *  __restrict__ centered_row = centered + uint_64_t(n_samples)*row;
+        TReal *  __restrict__ centered_row = centered + uint64_t(n_samples)*row;
         const TReal gr_mean = global_mean - row_means[row];
 
         for (uint32_t col=tcol; col<tcol_max; col++) {
@@ -377,7 +377,7 @@ inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, 
 
   int rc;
 
-  TReal *S = (TReal *) malloc(unit64_t(n_samples)*sizeof(TReal));  // take worst case size as a start
+  TReal *S = (TReal *) malloc(uint64_t(n_samples)*sizeof(TReal));  // take worst case size as a start
   TReal *Ut = NULL;
 
   {
