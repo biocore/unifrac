@@ -30,8 +30,8 @@ inline void E_matrix_means(const TRealIn * mat, const uint32_t n_samples,       
 
 #pragma omp parallel for shared(mat,centered,row_means) reduction(+: global_sum)
   for (uint32_t row=0; row<n_samples; row++) {
-    const TRealIn * mat_row = mat + n_samples*row;
-    TReal         * centered_row = centered + n_samples*row;
+    const TRealIn * mat_row = mat + uint64_t(n_samples)*row;
+    TReal         * centered_row = centered + uint64_t(n_samples)*row;
 
     TReal row_sum = 0.0;
 
@@ -136,7 +136,7 @@ inline void F_matrix_inplace(const TReal * __restrict__ row_means, const TReal g
       uint32_t tcol_max = std::min(tcol+512, n_samples);
 
       for (uint32_t row=trow; row<trow_max; row++) {
-        TReal *  __restrict__ centered_row = centered + n_samples*row;
+        TReal *  __restrict__ centered_row = centered + uint_64_t(n_samples)*row;
         const TReal gr_mean = global_mean - row_means[row];
 
         for (uint32_t col=tcol; col<tcol_max; col++) {
@@ -155,7 +155,7 @@ template<class TRealIn, class TReal>
 inline void mat_to_centered_T(const TRealIn * mat, const uint32_t n_samples, TReal * centered) {
 
    TReal global_mean;
-   TReal *row_means = (TReal *) malloc(n_samples*sizeof(TReal));
+   TReal *row_means = (TReal *) malloc(uint64_t(n_samples)*sizeof(TReal));
    E_matrix_means(mat, n_samples, centered, row_means, global_mean);
    F_matrix_inplace(row_means, global_mean, centered, n_samples);
    free(row_means);
@@ -377,7 +377,7 @@ inline void find_eigens_fast_T(const uint32_t n_samples, const uint32_t n_dims, 
 
   int rc;
 
-  TReal *S = (TReal *) malloc(n_samples*sizeof(TReal));  // take worst case size as a start
+  TReal *S = (TReal *) malloc(unit64_t(n_samples)*sizeof(TReal));  // take worst case size as a start
   TReal *Ut = NULL;
 
   {
