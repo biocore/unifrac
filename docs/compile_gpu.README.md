@@ -80,6 +80,8 @@ sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/install 
 sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
+sed -i -e "s#print_line 'set LOCALRC=YES;'#print_line 'set LOCALRC=YES;';print_line 'set DEFSTDOBJDIR=$CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot/usr/lib64;'#g" \
+  nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
 sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/install_cuda
 
