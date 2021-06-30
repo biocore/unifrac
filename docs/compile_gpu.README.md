@@ -8,14 +8,14 @@ One can however run on Windows systems, too, using [CUDA-enabled WSL2](https://d
 
 UniFrac has several dependencies, which we assume come via [Anaconda](https://www.anaconda.com/products/individual).
 
-The instructions below has been tested with version [2020.07](https://repo.anaconda.com/archive/Anaconda3-2020.07-Linux-x86_64.sh).
+The instructions below has been tested with version [2021.05](https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh).
 
 In case you have never used Anaconda below, here are the installation instruction:
 
 ```
-wget https://repo.anaconda.com/archive/Anaconda3-2020.07-Linux-x86_64.sh
-chmod a+x Anaconda3-2020.07-Linux-x86_64.sh
-./Anaconda3-2020.07-Linux-x86_64.sh
+wget https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh
+chmod a+x Anaconda3-2021.05-Linux-x86_64.sh
+./Anaconda3-2021.05-Linux-x86_64.sh
 #log out and back in
 ```
 
@@ -30,9 +30,9 @@ To create our **unifrac-gpu** with all the needed dependencies, run:
 
 ```
 # create and activate unifrac-gpu Anaconda environment
-conda create --name unifrac-gpu -c conda-forge -c bioconda unifrac
+conda create --name unifrac-gpu -c conda-forge -c bioconda python=3.6 unifrac
 conda activate unifrac-gpu
-conda install -c conda-forge -c bioconda gxx_linux-64=7.5.0 
+conda install -c conda-forge -c bioconda gxx_linux-64=9.3
 conda install -c conda-forge -c bioconda hdf5-static mkl-include
 ```
 
@@ -42,7 +42,7 @@ Currently, the only supported GPU-enabled compiler is the freely available [NVID
 
 Note that internally the NVIDIA HPC SDK relies on GCC, which makes it possible for the resulting objects to link with the libraries provided through Anaconda. 
 
-Our Anaconda environment provides GCC 7.5, but the executable names are mangled. In order to make it usable by the NVIDIA HPC SDK, we have to create a few symbolic links:
+Our Anaconda environment provides GCC 9.3, but the executable names are mangled. In order to make it usable by the NVIDIA HPC SDK, we have to create a few symbolic links:
 
 ```
 # Create GCC symbolic links
@@ -62,12 +62,12 @@ We are now ready to install the NVIDIA HPC SDK proper. Make sure you do this on 
 
 Fell free to download the latest version froom the [NVIDIA official site](https://developer.nvidia.com/hpc-sdk). 
 
-The following instructions will download and unpack version 20.9:
+The following instructions will download and unpack version 21.5:
 
 ```
-wget https://developer.download.nvidia.com/hpc-sdk/20.9/nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
-tar xpzf nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
-rm -f nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
+wget https://developer.download.nvidia.com/hpc-sdk/21.5/nvhpc_2021_215_Linux_x86_64_cuda_multi.tar.gz
+tar xpzf nvhpc_2021_215_Linux_x86_64_cuda_multi.tar.gz
+rm -f nvhpc_2021_215_Linux_x86_64_cuda_multi.tar.gz
 ```
 
 Once you have the install directory unpacked, you need to patch the installer to use the right GCC version; then you are ready to run the actual installer:
@@ -80,8 +80,6 @@ sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/install 
 sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
-sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
-  nvhpc_*/install_components/*/*/compilers/bin/addlocalrc
 sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
   nvhpc_*/install_components/install_cuda
 

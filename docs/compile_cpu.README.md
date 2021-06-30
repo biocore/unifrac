@@ -11,23 +11,23 @@ One can however run on Windows systems, too, using [WSL2](https://docs.microsoft
 
 UniFrac has several dependencies, which we assume come via [Anaconda](https://www.anaconda.com/products/individual).
 
-The instructions below has been tested with version 2020.07.
+The instructions below has been tested with version 2021.05.
 
 In case you have never used Anaconda below, here are the installation instruction:
 
 ### On Linux:
 ```
-wget https://repo.anaconda.com/archive/Anaconda3-2020.07-Linux-x86_64.sh
-chmod a+x Anaconda3-2020.07-Linux-x86_64.sh
-./Anaconda3-2020.07-Linux-x86_64.sh
+wget https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh
+chmod a+x Anaconda3-2021.05-Linux-x86_64.sh
+./Anaconda3-2021.05-Linux-x86_64.sh
 #log out and back in
 ```
 
 ### On MacOS:
 ```
-curl -o Anaconda3-2020.07-MacOSX-x86_64.sh  https://repo.anaconda.com/archive/Anaconda3-2020.07-MacOSX-x86_64.sh
-chmod a+x Anaconda3-2020.07-MacOSX-x86_64.sh 
-./Anaconda3-2020.07-MacOSX-x86_64.sh 
+curl -o Anaconda3-2021.05-MacOSX-x86_64.sh  https://repo.anaconda.com/archive/Anaconda3-2021.05-MacOSX-x86_64.sh
+chmod a+x Anaconda3-2021.05-MacOSX-x86_64.sh
+./Anaconda3-2021.05-MacOSX-x86_64.sh
 #log out and back in
 ```
 
@@ -50,7 +50,7 @@ conda activate unifrac-cpu
 On linux, you will need the conda provided gcc compiler:
 ```
 # Linux only
-conda install -c conda-forge -c bioconda gxx_linux-64=7.5.0
+conda install -c conda-forge -c bioconda gxx_linux-64=9.3
 ```
 
 On MacOs, you will need the conda provided clang compiler:
