@@ -51,7 +51,7 @@ jobs:
           # the system tools are unusable, hide them
           sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
         fi
-        conda create --yes -n unifrac python=3.6
+        conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6
         conda activate unifrac
         conda config --add channels conda-forge
         conda config --add channels bioconda
