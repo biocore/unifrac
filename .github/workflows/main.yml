@@ -57,7 +57,7 @@ jobs:
         conda config --add channels bioconda
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda install --yes gxx_linux-64=7.5.0
+          conda install --yes gxx_linux-64=9.3
         else
           conda install --yes clangxx_osx-64=10.0.0
         fi 
@@ -79,9 +79,9 @@ jobs:
         then
           ORGPATH=$PATH
           # Enable OpenACC build
-          curl -s -S -o nvhpc_2020.tar.gz  https://developer.download.nvidia.com/hpc-sdk/20.9/nvhpc_2020_209_Linux_x86_64_cuda_11.0.tar.gz
-          tar xpzf nvhpc_2020.tar.gz
-          rm -f nvhpc_2020.tar.gz
+          curl -s -S -o nvhpc_2021.tar.gz https://developer.download.nvidia.com/hpc-sdk/21.5/nvhpc_2021_215_Linux_x86_64_cuda_multi.tar.gz
+          tar xpzf nvhpc_2021.tar.gz
+          rm -f nvhpc_2021.tar.gz
 
           mkdir conda_nv_bins
           (cd conda_nv_bins && for f in \
@@ -96,8 +96,8 @@ jobs:
             nvhpc_*/install_components/install 
           sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
             nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
-          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
-            nvhpc_*/install_components/*/*/compilers/bin/addlocalrc
+          sed -i -e "s#print_line 'set LOCALRC=YES;'#print_line 'set LOCALRC=YES;';print_line 'set DEFSTDOBJDIR=$CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot/usr/lib64;'#g" \
+            nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
           sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
             nvhpc_*/install_components/install_cuda
 
