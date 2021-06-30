@@ -83,9 +83,10 @@ mv $CONDA_PREFIX/bin/ssu $CONDA_PREFIX/bin/org/
 mv $CONDA_PREFIX/bin/faithpd $CONDA_PREFIX/bin/org/
 mv $CONDA_PREFIX/lib/libssu*.so $CONDA_PREFIX/lib/org/
 
-git clone https://github.com/biocore/unifrac.git
+mv $CONDA_PREFIX/lib/python3.6/site-packages/unifrac $CONDA_PREFIX/lib/python3.6/site-packages/unifrac.org
 
-(cd unifrac/sucpp/ && make && make main && make api)
+git clone https://github.com/biocore/unifrac.git
+(cd unifrac/ && export USE_CYTHON=True && python setup.py build && python setup.py install)
 ```
 
 And you are all done.
