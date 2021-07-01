@@ -621,6 +621,7 @@ IOStatus write_mat_from_matrix(const char* output_filename, mat_full_fp64_t* res
     output.open(output_filename);
 
     double v;
+    const uint64_t n_samples_64 = result->n_samples; // 64-bit to avoid overflow
 
     for(unsigned int i = 0; i < result->n_samples; i++)
         output << "\t" << result->sample_ids[i];
@@ -629,7 +630,7 @@ IOStatus write_mat_from_matrix(const char* output_filename, mat_full_fp64_t* res
     for(unsigned int i = 0; i < result->n_samples; i++) {
         output << result->sample_ids[i];
         for(unsigned int j = 0; j < result->n_samples; j++) {
-            v = buf2d[i*result->n_samples+j];
+            v = buf2d[i*n_samples_64+j];
             output << std::setprecision(16) << "\t" << v;
         }
         output << std::endl;
