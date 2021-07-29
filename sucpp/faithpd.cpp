@@ -23,12 +23,13 @@ void usage() {
 
 }
 
-const char* compute_status_messages[6] = {"No error.",
+const char* compute_status_messages[7] = {"No error.",
                                           "The tree file cannot be found.",
                                           "The table file cannot be found.",
-                                          "The table file contains an empty table."
+                                          "The table file contains an empty table.",
                                           "An unknown method was requested.",
-                                          "Table observation IDs are not a subset of the tree tips. This error can also be triggered if a node name contains a single quote (this is unlikely)."};
+                                          "Table observation IDs are not a subset of the tree tips. This error can also be triggered if a node name contains a single quote (this is unlikely).",
+                                          "Error creating the output."};
 
 void err(std::string msg) {
     std::cerr << "ERROR: " << msg << std::endl << std::endl;
