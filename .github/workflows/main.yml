@@ -53,6 +53,8 @@ jobs:
           conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 \
               libgomp=9.3 libgcc-ng=9.3 libgcc-devel_linux-64=9.3 libstdcxx-ng=9.3 gxx_linux-64=9.3 \
               libgfortran5=9.3 libgfortran-ng=9.3
+          # HACK: Add missing lib64 link
+          ln -s /usr/share/miniconda/envs/unifrac/lib /usr/share/miniconda/envs/unifrac/lib64
         else
           conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 clangxx_osx-64=10.0.0
         fi
