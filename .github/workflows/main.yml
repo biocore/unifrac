@@ -62,12 +62,17 @@ jobs:
         conda config --add channels bioconda
         conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
         conda install --yes mkl-include lz4 hdf5-static
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          conda install --yes r-base r-rcpp
+        fi
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
           which x86_64-conda-linux-gnu-gcc
           x86_64-conda-linux-gnu-gcc -v
           x86_64-conda-linux-gnu-g++ -v
+          which Rscript
         else
           conda install --yes liblapacke
           which clang
