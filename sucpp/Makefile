@@ -51,10 +51,13 @@ endif
 LDDFLAGS += -L$(CONDA_PREFIX)/lib
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
+CAPILDDFLAGS = -L$(CONDA_PREFIX)/lib
 ifeq ($(PLATFORM),Darwin)
   LDDFLAGS += -Wl,-rpath,$(PREFIX)/lib
+  CAPILDDFLAGS += -Wl,-rpath,$(PREFIX)/lib
 else
   LDDFLAGS += -Wl,-rpath-link,$(PREFIX)/lib
+  CAPILDDFLAGS += -Wl,-rpath,$(PREFIX)/lib -Wl,-rpath-link,$(PREFIX)/lib
 endif
 BASE_LDDFLAGS = $(LDDFLAGS)
  
@@ -172,7 +175,7 @@ api: libssu.so
 	# api == libssu.so
 
 capi_test: api
-	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -Wl,-rpath-link,${PREFIX}/lib -o capi_test
+	gcc -std=c99 capi_test.c ${CAPILDDFLAGS} -lssu -o capi_test
 	export LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
 
 api.o: api.cpp api.hpp unifrac.hpp skbio_alt.hpp biom.hpp tree.hpp
