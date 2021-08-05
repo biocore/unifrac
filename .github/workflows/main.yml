@@ -50,9 +50,7 @@ jobs:
         fi
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 \
-              libgomp=9.3 libgcc-ng=9.3 libgcc-devel_linux-64=9.3 libstdcxx-ng=9.3 gxx_linux-64=9.3 \
-              libgfortran5=9.3 libgfortran-ng=9.3
+          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 gxx_linux-64=9.3
         else
           conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 clangxx_osx-64=10.0.0
         fi
