@@ -51,16 +51,15 @@ jobs:
           # the system tools are unusable, hide them
           sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
         fi
-        conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 gxx_linux-64=9.3
+        else
+          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 clangxx_osx-64=10.0.0
+        fi
         conda activate unifrac
         conda config --add channels conda-forge
         conda config --add channels bioconda
-        if [[ "$(uname -s)" == "Linux" ]];
-        then
-          conda install --yes gxx_linux-64=9.3
-        else
-          conda install --yes clangxx_osx-64=10.0.0
-        fi 
         conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
         conda install --yes mkl-include lz4 hdf5-static
         echo "$(uname -s)"

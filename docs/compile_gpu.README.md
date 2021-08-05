@@ -30,9 +30,8 @@ To create our **unifrac-gpu** with all the needed dependencies, run:
 
 ```
 # create and activate unifrac-gpu Anaconda environment
-conda create --name unifrac-gpu -c conda-forge -c bioconda python=3.6 unifrac
+conda create --name unifrac-gpu -c conda-forge -c bioconda python=3.6 unifrac gxx_linux-64=9.3
 conda activate unifrac-gpu
-conda install -c conda-forge -c bioconda gxx_linux-64=9.3
 conda install -c conda-forge -c bioconda hdf5-static mkl-include
 ```
 
