@@ -53,7 +53,7 @@ jobs:
         fi
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 gxx_linux-64=9.3
+          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 gxx_linux-64=9.3 r-base r-rcpp
         else
           conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 clangxx_osx-64=10.0.0
         fi
@@ -61,11 +61,6 @@ jobs:
         conda config --add channels conda-forge
         conda config --add channels bioconda
         conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
-        conda install --yes mkl-include lz4 hdf5-static
-        if [[ "$(uname -s)" == "Linux" ]];
-        then
-          conda install --yes r-base r-rcpp
-        fi
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
