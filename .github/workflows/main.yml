@@ -53,7 +53,7 @@ jobs:
         fi
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 gxx_linux-64=7.3.0
+          conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 gxx_linux-64=9.3
         else
           conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6 clangxx_osx-64=10.0.0
         fi
@@ -115,7 +115,6 @@ jobs:
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
-          conda install --yes r-base r-rcpp
           make rapi_test
         fi
         popd
