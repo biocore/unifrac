@@ -59,8 +59,8 @@ jobs:
         conda activate unifrac
         conda config --add channels conda-forge
         conda config --add channels bioconda
-        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
-        conda install --yes mkl-include lz4 hdf5-static
+        conda install --yes -c conda-forge cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
+        conda install --yes -c conda-forge mkl-include lz4 hdf5-static
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
@@ -114,7 +114,7 @@ jobs:
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
-          conda install --yes r-base
+          conda install --yes -c conda-forge r-base
           R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
           make rapi_test
         fi
