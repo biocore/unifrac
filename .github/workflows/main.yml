@@ -114,7 +114,7 @@ jobs:
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
-          conda install --yes -c conda-forge r-base
+          conda install --yes -c conda-forge r-base=4.1.0
           R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
           make rapi_test
         fi
