@@ -141,7 +141,12 @@ rapi_test: main
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
 	echo LDFLAGS=$(R_LDFLAGS) >> ~/.R/Makevars
-	Rscript R_interface/rapi_test.R
+        echo "======= Makevars ===="
+        cat ~/.R/Makevars
+        echo "======= env ====="
+        env
+        echo "================="
+	Rscript --verbose R_interface/rapi_test.R
 	
 ifeq ($(PLATFORM),Darwin)
 
