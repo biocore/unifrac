@@ -68,7 +68,6 @@ jobs:
           which x86_64-conda-linux-gnu-gcc
           x86_64-conda-linux-gnu-gcc -v
           x86_64-conda-linux-gnu-g++ -v
-          which Rscript
         else
           conda install --yes liblapacke
           which clang
