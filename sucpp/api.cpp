@@ -1252,7 +1252,7 @@ IOStatus read_partial_one_stripe(partial_dyn_mat_t* result, uint32_t stripe_idx)
 
 
 template<class TPMat>
-MergeStatus check_partial(const TPMat* const * partial_mats, int n_partials) {
+MergeStatus check_partial(const TPMat* const * partial_mats, int n_partials, bool verbose) {
     if(n_partials <= 0) {
         fprintf(stderr, "Zero or less partials.\n");
         exit(EXIT_FAILURE);
@@ -1266,25 +1266,45 @@ MergeStatus check_partial(const TPMat* const * partial_mats, int n_partials) {
     for(int i = 0; i < n_partials; i++) {
         if(partial_mats[i]->n_samples != n_samples) {
             free(stripe_map);
+            if (verbose) {
+                fprintf(stderr, "Wrong number of samples in %i, %i!=%i\n",
+                        i,int(partial_mats[i]->n_samples),int(n_samples));
+            }
             return partials_mismatch;
         }
 
         if(partial_mats[0]->stripe_total != partial_mats[i]->stripe_total) {
             free(stripe_map);
+            if (verbose) {
+                fprintf(stderr, "Wrong number of stripes in %i, %i!=%i\n",
+                        i,int(partial_mats[0]->stripe_total), int(partial_mats[i]->stripe_total));
+            }
             return partials_mismatch;
         }
         if(partial_mats[0]->is_upper_triangle != partial_mats[i]->is_upper_triangle) {
             free(stripe_map);
+            if (verbose) {
+                fprintf(stderr, "Wrong number of is_upper_triangle in %i, %i!=%i\n",
+                        i,int(partial_mats[0]->is_upper_triangle),int(partial_mats[i]->is_upper_triangle));
+            }
             return square_mismatch;
         }
         for(int j = 0; j < n_samples; j++) {
             if(strcmp(partial_mats[0]->sample_ids[j], partial_mats[i]->sample_ids[j]) != 0) {
                 free(stripe_map);
+                if (verbose) {
+                    fprintf(stderr, "Wrong number of sample id %i in %i, %s!=%s\n",
+                            j,i,partial_mats[0]->sample_ids[j], partial_mats[i]->sample_ids[j]);
+                }
                 return sample_id_consistency;
             }
         }
         for(int j = partial_mats[i]->stripe_start; j < partial_mats[i]->stripe_stop; j++) {
             if(stripe_map[j]) {
+                if (verbose) {
+                    fprintf(stderr, "Overlap in %i vs %i\n",
+                            i,j);
+                }
                 free(stripe_map);
                 return stripes_overlap;
             }
@@ -1295,14 +1315,23 @@ MergeStatus check_partial(const TPMat* const * partial_mats, int n_partials) {
     free(stripe_map);
 
     if(stripe_count != partial_mats[0]->stripe_total) {
+        if (verbose) {
+            fprintf(stderr, "Insufficient number of stripes found, %i!=%i\n",
+                    int(stripe_count), int(partial_mats[0]->stripe_total));
+        }
         return incomplete_stripe_set;
     }
 
     return merge_okay;
 }
 
+MergeStatus validate_partial(const partial_dyn_mat_t* const * partial_mats, int n_partials) {
+    return check_partial(partial_mats, n_partials, true);
+}
+
+
 MergeStatus merge_partial(partial_mat_t** partial_mats, int n_partials, unsigned int nthreads, mat_t** result) {
-    MergeStatus err = check_partial(partial_mats, n_partials);
+    MergeStatus err = check_partial(partial_mats, n_partials, false);
     if (err!=merge_okay) return err;
 
     int n_samples = partial_mats[0]->n_samples;
@@ -1383,7 +1412,7 @@ MergeStatus merge_partial_to_matrix_T(partial_dyn_mat_t* * partial_mats, int n_p
      if (mmap_dir[0]==0) mmap_dir = NULL; // easier to have a simple test going on
     }
 
-    MergeStatus err = check_partial(partial_mats, n_partials);
+    MergeStatus err = check_partial(partial_mats, n_partials, false);
     if (err!=merge_okay) return err;
 
     initialize_mat_full_no_biom_T<TReal,TMat>(*result, partial_mats[0]->sample_ids, partial_mats[0]->n_samples,mmap_dir);

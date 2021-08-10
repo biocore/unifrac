@@ -30,9 +30,10 @@ void usage() {
     std::cout << "    \t\t    partial : Compute UniFrac over a subset of stripes." << std::endl;
     std::cout << "    \t\t    partial-report : Start and stop suggestions for partial compute." << std::endl;
     std::cout << "    \t\t    merge-partial : Merge partial UniFrac results." << std::endl;
+    std::cout << "    \t\t    check-partial : Check partial UniFrac results." << std::endl;
     std::cout << "    --start\t[OPTIONAL] If mode==partial, the starting stripe." << std::endl;
     std::cout << "    --stop\t[OPTIONAL] If mode==partial, the stopping stripe." << std::endl;
-    std::cout << "    --partial-pattern\t[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge." << std::endl;
+    std::cout << "    --partial-pattern\t[OPTIONAL] If mode==merge-partial or check-partial, a glob pattern for partial outputs to merge." << std::endl;
     std::cout << "    --n-partials\t[OPTIONAL] If mode==partial-report, the number of partitions to compute." << std::endl;
     std::cout << "    --report-bare\t[OPTIONAL] If mode==partial-report, produce barebones output." << std::endl;
     std::cout << "    --format|-r\t[OPTIONAL]  Output format:" << std::endl;
@@ -240,6 +241,49 @@ int mode_merge_partial(const std::string &output_filename, Format format_val, un
      status = mode_merge_partial_fp32(output_filename.c_str(), format_val, pcoa_dims, partials.size(), partial_mats, mmap_dir_c);
     } else {
      status = mode_merge_partial_fp64(output_filename.c_str(), format_val, pcoa_dims, partials.size(), partial_mats, mmap_dir_c);
+    }
+
+    for(size_t i = 0; i < partials.size(); i++) {
+      destroy_partial_dyn_mat(&partial_mats[i]);
+    }
+
+    return status;
+}
+
+int mode_check_partial(const std::string &partial_pattern) {
+    if(partial_pattern.empty()) {
+        std::string msg("Partial file pattern missing. For instance, if your partial results\n" \
+                        "are named 'ssu.unweighted.start0.partial', 'ssu.unweighted.start10.partial', \n" \
+                        "etc, then a pattern of 'ssu.unweighted.start*.partial' would make sense");
+        err(msg);
+        return EXIT_FAILURE;
+    }
+
+    std::vector<std::string> partials = glob(partial_pattern);
+    std::cout << "Processing " << partials.size() << " partial files." << std::endl;
+
+
+    partial_dyn_mat_t** partial_mats = (partial_dyn_mat_t**)malloc(sizeof(partial_dyn_mat_t*) * partials.size());
+    for(size_t i = 0; i < partials.size(); i++) {
+        IOStatus io_err = read_partial_header(partials[i].c_str(), &partial_mats[i]);
+        if(io_err != read_okay) {
+            std::ostringstream msg;
+            msg << "Unable to parse file (" << partials[i] << "); err " << io_err;
+            err(msg.str());
+            return EXIT_FAILURE;
+        }
+    }
+
+    int status = validate_partial(partial_mats,partials.size());
+
+    if (status==merge_okay) {
+        std::cout << "Partials are ready to be merged" << std::endl;
+        uint64_t n_samples_64 = partial_mats[0]->n_samples;
+        uint64_t msize32 = sizeof(float) * n_samples_64 * n_samples_64;
+        uint64_t msize64 = sizeof(double) * n_samples_64 * n_samples_64;
+
+        std::cout << "n_samples = " << n_samples_64 << std::endl;
+        std::cout << "Matrix RAM needs: fp32 = " << msize32/(1024.0*1024*1024) << "GB, fp64 = " << msize64/(1024.0*1024*1024) << "GB"<< std::endl;
     }
 
     for(size_t i = 0; i < partials.size(); i++) {
@@ -482,10 +526,12 @@ int main(int argc, char **argv){
         return mode_partial(table_filename, tree_filename, output_filename, method_string, vaw, g_unifrac_alpha, bypass_tips, nthreads, start_stripe, stop_stripe);
     else if(mode_arg == "merge-partial")
         return mode_merge_partial(output_filename, format_val, pcoa_dims, partial_pattern, diskbuf_arg);
+    else if(mode_arg == "check-partial")
+        return mode_check_partial(partial_pattern);
     else if(mode_arg == "partial-report")
         return mode_partial_report(table_filename, uint32_t(n_partials), bare);
     else 
-        err("Unknown mode. Valid options are: one-off, partial, merge-partial, partial-report");
+        err("Unknown mode. Valid options are: one-off, partial, merge-partial, check-partial, partial-report");
 
     return EXIT_SUCCESS;
 }
