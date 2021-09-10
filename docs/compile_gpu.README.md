@@ -4,6 +4,13 @@ Note: The GPU-enabled version is currenlty only supported on Linux systems.
 One can however run on Windows systems, too, using [CUDA-enabled WSL2](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
 
 
+## System toools and libraries
+
+While we will install most of the tools we need, there these instrcutions assume you have installed the following packages
+```
+wget make git glibc-devel
+```
+
 ## Anaconda 
 
 UniFrac has several dependencies, which we assume come via [Anaconda](https://www.anaconda.com/products/individual).
