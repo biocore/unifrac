@@ -40,7 +40,7 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        if [[ "$(uname -s)" != "Linux" ]];
+        if [[ "$(uname -s)" == "Linux" ]];
         then
           sudo apt-get update && sudo apt-get install r-base
           sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
