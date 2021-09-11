@@ -40,11 +40,8 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        if [[ "$(uname -s)" == "Linux" ]];
+        if [[ "$(uname -s)" != "Linux" ]];
         then
-          sudo apt-get update && sudo apt-get install r-base
-          sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
-        else
           ls -l /Applications/
           # coonda clang does not like xcode 12
           sudo xcode-select --switch /Applications/Xcode_11.7.app
@@ -87,6 +84,9 @@ jobs:
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
+          rm -f ~/.R/Makevars
+          conda install -c conda-forge r-base
+          R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
           make rapi_test
         fi
         popd
