@@ -86,6 +86,8 @@ jobs:
         then
           rm -f ~/.R/Makevars
           conda install -c conda-forge r-base
+          # the r-base package has a broken dependency
+          ln -s $CONDA_PREFIX/lib/libreadline.so $CONDA_PREFIX/lib/libreadline.so.6
           R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
           make rapi_test
         fi
