@@ -40,10 +40,8 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        if [[ "$(uname -s)" == "Linux" ]];
+        if [[ "$(uname -s)" != "Linux" ]];
         then
-          sudo apt-get update && sudo apt-get install libreadline-dev
-        else
           ls -l /Applications/
           # coonda clang does not like xcode 12
           sudo xcode-select --switch /Applications/Xcode_11.7.app
