@@ -113,8 +113,9 @@ rapi_test: main
 	echo CXX=h5c++ >> ~/.R/Makevars 
 	echo CC=h5c++ >> ~/.R/Makevars
 	echo LDFLAGS -llz4 $(BLASLIB) >> ~/.R/Makevars
-        rm -f *.o
+	rm -f *.o
 	Rscript R_interface/rapi_test.R
+	rm -f *.o
 	
 api: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UNIFRAC_FILES)
 	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o $(UNIFRAC_FILES) unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
