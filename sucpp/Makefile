@@ -103,7 +103,7 @@ main: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UNIFRAC_FILES)
 
 rapi_test: main
 	mkdir -p ~/.R
-	if [ -a ~/.R/Makevars ] ; \
+	if [ -e ~/.R/Makevars ] ; \
 	then \
 		echo "WARNING: OVERWRITING ~/.R/Makevars" ; \
 		echo "The original Makevars file has been copied to ~/.R/Makevars" ;\
