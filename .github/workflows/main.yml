@@ -40,11 +40,8 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        if [[ "$(uname -s)" == "Linux" ]];
+        if [[ "$(uname -s)" != "Linux" ]];
         then
-          sudo apt-get update && sudo apt-get install r-base
-          sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
-        else
           ls -l /Applications/
           # coonda clang does not like xcode 12
           sudo xcode-select --switch /Applications/Xcode_11.7.app
@@ -57,12 +54,12 @@ jobs:
         conda config --add channels bioconda
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda install --yes gxx_linux-64=9.3
+          conda install --yes -c conda-forge -c bioconda gxx_linux-64=7.5.0
         else
-          conda install --yes clangxx_osx-64=10.0.0
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-64=10.0.0
         fi 
-        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
-        conda install --yes mkl-include lz4 hdf5-static
+        conda install --yes -c conda-forge -c bioconda cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
+        conda install --yes -c conda-forge -c bioconda mkl-include lz4 hdf5-static
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
@@ -77,52 +74,21 @@ jobs:
         which h5c++
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          ORGPATH=$PATH
-          # Enable OpenACC build
-          curl -s -S -o nvhpc_2021.tar.gz https://developer.download.nvidia.com/hpc-sdk/21.5/nvhpc_2021_215_Linux_x86_64_cuda_multi.tar.gz
-          tar xpzf nvhpc_2021.tar.gz
-          rm -f nvhpc_2021.tar.gz
-
-          mkdir conda_nv_bins
-          (cd conda_nv_bins && for f in \
-              ar as c++ cc cpp g++ gcc ld nm ranlib strip; \
-           do \
-             ln -s `which x86_64-conda-linux-gnu-${f}` ${f}; \
-           done )
-
-          PATH=${PWD}/conda_nv_bins:$PATH
-
-          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
-            nvhpc_*/install_components/install 
-          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
-            nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
-          sed -i -e "s#print_line 'set LOCALRC=YES;'#print_line 'set LOCALRC=YES;';print_line 'set DEFSTDOBJDIR=$CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot/usr/lib64;'#g" \
-            nvhpc_*/install_components/*/*/compilers/bin/makelocalrc
-          sed -i -e "s#PATH=/#PATH=$PWD/conda_nv_bins:/#g" \
-            nvhpc_*/install_components/install_cuda
-
-          export NVHPC_INSTALL_DIR=$PWD/hpc_sdk
-          export NVHPC_SILENT=true
-
-          (cd nvhpc_*_x86_64_*; ./install)
-
-          export PATH=$PATH:`ls -d $PWD/hpc_sdk/*/202*/compilers/bin`
-          export ACC_CXX=pgc++
+          ./scripts/install_hpc_sdk.sh
+          source setup_nv_h5.sh
         fi
         pushd sucpp
         make test
         make main
         make api
-        if [[ "$(uname -s)" == "Linux" ]];
-        then
-          # capi_test needs standard gcc
-          ACCPATH=$PATH
-          export PATH=$ORGPATH
-        fi
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
-          export PATH=$ACCPATH
+          rm -f ~/.R/Makevars
+          conda install -c conda-forge r-base
+          # the r-base package has a broken dependency
+          ln -s $CONDA_PREFIX/lib/libreadline.so $CONDA_PREFIX/lib/libreadline.so.6
+          R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
           make rapi_test
         fi
         popd
