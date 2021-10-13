@@ -93,7 +93,7 @@ with open('README.md') as f:
 
 setup(
     name="unifrac",
-    version="0.20.1",
+    version="0.20.2",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',

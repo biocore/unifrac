@@ -465,6 +465,10 @@ EXTERN IOStatus read_partial_header(const char* input_filename, partial_dyn_mat_
  */
 EXTERN IOStatus read_partial_one_stripe(partial_dyn_mat_t* result, uint32_t stripe_idx);
 
+/*
+ * Description TBD
+ */
+EXTERN MergeStatus validate_partial(const partial_dyn_mat_t* const * partial_mats, int n_partials);
 
 /* Merge partial results
  *

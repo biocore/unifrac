@@ -3,6 +3,7 @@
 #include "tree.hpp"
 #include "biom.hpp"
 #include "unifrac.hpp"
+#include "unifrac_internal.hpp"
 #include <cmath>
 #include <unordered_set>
 #include <string.h>
@@ -1808,8 +1809,6 @@ void test_bptree_constructor_newline_bug() {
 }
 
 int main(int argc, char** argv) {
-#pragma acc init
-
     test_bptree_constructor_simple();
     test_bptree_constructor_newline_bug();
     test_bptree_constructor_from_existing();

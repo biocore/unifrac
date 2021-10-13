@@ -40,29 +40,26 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        if [[ "$(uname -s)" == "Linux" ]];
+        if [[ "$(uname -s)" != "Linux" ]];
         then
-          sudo apt-get update && sudo apt-get install r-base
-          sudo R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
-        else
           ls -l /Applications/
           # coonda clang does not like xcode 12
           sudo xcode-select --switch /Applications/Xcode_11.7.app
           # the system tools are unusable, hide them
           sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
         fi
-        conda create --yes -n unifrac python=3.6
+        conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6
         conda activate unifrac
         conda config --add channels conda-forge
         conda config --add channels bioconda
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda install --yes gxx_linux-64=7.5.0
+          conda install --yes -c conda-forge -c bioconda gxx_linux-64=7.5.0
         else
-          conda install --yes clangxx_osx-64=10.0.0
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-64=10.0.0
         fi 
-        conda install --yes cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
-        conda install --yes mkl-include lz4 hdf5-static
+        conda install --yes -c conda-forge -c bioconda cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
+        conda install --yes -c conda-forge -c bioconda mkl-include lz4 hdf5-static
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
@@ -75,6 +72,11 @@ jobs:
           clang -v
         fi
         which h5c++
+        if [[ "$(uname -s)" == "Linux" ]];
+        then
+          ./scripts/install_hpc_sdk.sh
+          source setup_nv_h5.sh
+        fi
         pushd sucpp
         make test
         make main
@@ -82,6 +84,11 @@ jobs:
         make capi_test
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
+          rm -f ~/.R/Makevars
+          conda install -c conda-forge r-base
+          # the r-base package has a broken dependency
+          ln -s $CONDA_PREFIX/lib/libreadline.so $CONDA_PREFIX/lib/libreadline.so.6
+          R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
           make rapi_test
         fi
         popd
@@ -92,6 +99,7 @@ jobs:
       run: |
         conda activate unifrac
         pushd sucpp
+        export UNIFRAC_GPU_INFO=Y
         ./test_su
         ./test_api
         ./test_ska

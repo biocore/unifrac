@@ -1,3 +1,12 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2016-2021, UniFrac development team.
+ * All rights reserved.
+ *
+ * See LICENSE file for more details
+ */
+
 #include "task_parameters.hpp"
 #include <math.h>
 #include <vector>
@@ -10,10 +19,9 @@
 #ifndef __UNIFRAC_TASKS
 #define __UNIFRAC_TASKS 1
 
-namespace su {
-
-
 #ifdef _OPENACC
+
+#define SUCMP_NM su_acc
 
   #ifndef SMALLGPU
   // defaultt on larger alignment, which improves performance on GPUs like V100
@@ -25,9 +33,14 @@ namespace su {
 
 #else
 
+#define SUCMP_NM su_cpu
+
+
 // CPUs don't need such a big alignment
 #define UNIFRAC_BLOCK 16
 #endif
+
+namespace SUCMP_NM {
 
     // Note: This adds a copy, which is suboptimal
     //       But was the easiest way to get a contiguous buffer
@@ -261,7 +274,7 @@ namespace su {
     template<> inline  unsigned int UnifracTaskBase<double,uint64_t>::get_emb_els(unsigned int max_embs) {return (max_embs+63)/64;}
     template<> inline  unsigned int UnifracTaskBase<float,uint64_t>::get_emb_els(unsigned int max_embs) {return (max_embs+63)/64;}
 
-    /* void su::unifrac tasks
+    /* void unifrac tasks
      *
      * all methods utilize the same function signature. that signature is as follows:
      *
@@ -392,7 +405,7 @@ namespace su {
         UnifracUnweightedTask(std::vector<double*> &_dm_stripes, std::vector<double*> &_dm_stripes_total, unsigned int _max_embs, const su::task_parameters* _task_p)
         : UnifracTask<TFloat, uint64_t>(_dm_stripes,_dm_stripes_total,_max_embs,_task_p) 
         {
-          const unsigned int bsize = _max_embs*0x400/32;
+          const unsigned int bsize = _max_embs*(0x400/32);
           sums = NULL;
           posix_memalign((void **)&sums, 4096, sizeof(TFloat) * bsize);
 #pragma acc enter data create(sums[:bsize])
@@ -401,7 +414,7 @@ namespace su {
         virtual ~UnifracUnweightedTask()
         {
 #ifdef _OPENACC
-           const unsigned int bsize = this->max_embs*0x400/32;
+           const unsigned int bsize = this->max_embs*(0x400/32);
 #pragma acc exit data delete(sums[:bsize])
 #endif
           free(sums);
@@ -426,7 +439,7 @@ namespace su {
         void _run(unsigned int filled_embs, const TFloat * __restrict__ length);
     };
 
-    /* void su::unifrac_vaw tasks
+    /* void unifrac_vaw tasks
      *
      * all methods utilize the same function signature. that signature is as follows:
      *
