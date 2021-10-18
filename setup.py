@@ -85,9 +85,9 @@ extensions = [Extension("unifrac._api",
                                  "sucpp/api.cpp"],
                         language="c++",
                         extra_link_args=LINK_ARGS,
-                        include_dirs=[np.get_include()] + \
-									 ['sucpp/'] + \
-                                     CONDA_INCLUDES,
+                        include_dirs=([np.get_include()] +
+                                      ['sucpp/'] +
+                                      CONDA_INCLUDES),
                         libraries=['ssu'])]
 
 if USE_CYTHON:
