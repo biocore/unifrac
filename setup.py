@@ -73,15 +73,21 @@ if sys.platform == "darwin":
 else:
     LINK_ARGS = []
 
+if 'CONDA_PREFIX' in os.environ:
+    CONDA_INCLUDES = [os.environ.get('CONDA_PREFIX') + '/include']
+else:
+    CONDA_INCLUDES = []
+
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("unifrac._api",
                         sources=["unifrac/_api" + ext,
                                  "sucpp/api.cpp"],
                         language="c++",
-                        extra_compile_args=["-std=c++11"],
-                        extra_link_args=["-std=c++11"] + LINK_ARGS,
-                        include_dirs=[np.get_include()] + ['sucpp/'],
+                        extra_link_args=LINK_ARGS,
+                        include_dirs=([np.get_include()] +
+                                      ['sucpp/'] +
+                                      CONDA_INCLUDES),
                         libraries=['ssu'])]
 
 if USE_CYTHON:
