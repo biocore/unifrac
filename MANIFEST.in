@@ -3,9 +3,7 @@ graft unifrac
 include sucpp/*.biom
 include sucpp/*.tre
 
-include sucpp/*.hpp
 include sucpp/*.cpp
-include sucpp/*.sh
 include sucpp/Makefile
 
 global-exclude *.pyc

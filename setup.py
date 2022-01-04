@@ -15,10 +15,6 @@ import os
 import sys
 
 
-SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                     'sucpp/')
-
-
 PREFIX = os.environ.get('PREFIX', "")
 
 base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 2.7.0",
@@ -36,7 +32,21 @@ if sys.platform == 'darwin':
 def compile_ssu():
     """Clean and compile the SSU binary"""
     # clean the target
-    pass
+    cmd = ["rm", "-f", "unifrac/task_parameters.hpp", "unifrac/api.hpp"]
+    ret = subprocess.call(cmd)
+    if ret != 0:
+        raise Exception('Error removing temp unifrac files!')
+
+    # link to files from conda
+    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + "/include/unifrac/task_parameters.hpp", "unifrac/"]
+    ret = subprocess.call(cmd)
+    if ret != 0:
+        raise Exception('Error removing linking unifrac files!')
+
+    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + "/include/unifrac/api.hpp", "unifrac/"]
+    ret = subprocess.call(cmd)
+    if ret != 0:
+        raise Exception('Error removing linking unifrac files!')
 
 class build_ext(build_ext_orig):
     """Pre-installation for any time an Extension is built"""
@@ -54,7 +64,7 @@ else:
     LINK_ARGS = []
 
 if 'CONDA_PREFIX' in os.environ:
-    CONDA_INCLUDES = [os.environ.get('CONDA_PREFIX') + '/include', os.environ.get('CONDA_PREFIX') + '/include/unifrac']
+    CONDA_INCLUDES = [os.environ.get('CONDA_PREFIX') + '/include']
 else:
     CONDA_INCLUDES = []
 
@@ -77,7 +87,7 @@ with open('README.md') as f:
 
 setup(
     name="unifrac",
-    version="0.20.3",
+    version="1.0.0",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',
