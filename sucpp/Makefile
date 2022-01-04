@@ -90,18 +90,7 @@ endif
 
 CPPFLAGS += -Wall  -std=c++11 -pedantic -I. $(OPT) -fPIC -L$(CONDA_PREFIX)/lib
 
-test: tree.o test_su.cpp biom.o unifrac.o skbio_alt.o api.o $(UNIFRAC_FILES)
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o test_su tree.o biom.o $(UNIFRAC_FILES) unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska skbio_alt.o tree.o biom.o $(UNIFRAC_FILES) unifrac.o api.o -llz4 $(BLASLIB) -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o test_api tree.o biom.o $(UNIFRAC_FILES) unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
-
-main: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UNIFRAC_FILES)
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) su.cpp -o ssu tree.o biom.o $(UNIFRAC_FILES) unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 $(BLASLIB) -lpthread
-	$(CXX) $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o faithpd tree.o biom.o $(UNIFRAC_FILES) unifrac.o cmd.o skbio_alt.o api.o -lhdf5_cpp -llz4 $(BLASLIB) -lpthread
-	cp ssu ${PREFIX}/bin/
-	cp faithpd ${PREFIX}/bin/
-
-rapi_test: main
+rapi_test:
 	mkdir -p ~/.R
 	if [ -e ~/.R/Makevars ] ; \
 	then \
@@ -117,22 +106,9 @@ rapi_test: main
 	Rscript R_interface/rapi_test.R
 	rm -f *.o
 	
-api: tree.o biom.o unifrac.o cmd.o skbio_alt.o api.o $(UNIFRAC_FILES)
-	$(CXX) $(LDDFLAGS) -o libssu.so tree.o biom.o $(UNIFRAC_FILES) unifrac.o cmd.o skbio_alt.o api.o -lc -lhdf5_cpp -llz4 $(BLASLIB) -L$(PREFIX)/lib
-	cp libssu.so ${PREFIX}/lib/
-
 capi_test: api
 	gcc -std=c99 capi_test.c -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
 	export LD_LIBRARY_PATH="${PREFIX}/lib":"./capi_test"
-
-api.o: api.cpp api.hpp unifrac.hpp skbio_alt.hpp biom.hpp tree.hpp
-	$(CXX) $(CPPFLAGS) api.cpp -c -o api.o -fPIC
-
-unifrac_cmp_cpu.o: unifrac_cmp.cpp unifrac_cmp.hpp unifrac_internal.hpp unifrac.hpp unifrac_task.cpp unifrac_task.hpp biom_interface.hpp tree.hpp
-	$(CXX) $(CPPFLAGS) -c $< -o $@
-
-unifrac_cmp_acc.o: unifrac_cmp.cpp unifrac_cmp.hpp unifrac_internal.hpp unifrac.hpp unifrac_task.cpp unifrac_task.hpp biom_interface.hpp tree.hpp
-	$(CXX) $(CPPFLAGS) $(ACCCPPFLAGS) -c $< -o $@
 
 
 %.o: %.cpp %.hpp
