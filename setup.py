@@ -63,7 +63,8 @@ class build_ext(build_ext_orig):
 
 
 if sys.platform == "darwin":
-    LINK_ARGS = ['-Wl,sucpp/libssu.so']
+    LINK_ARGS = ['-Wl,' + os.environ.get('CONDA_PREFIX') +
+                 'lib/libssu.so']
 else:
     LINK_ARGS = []
 
