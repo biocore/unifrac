@@ -54,12 +54,11 @@ jobs:
         conda config --add channels bioconda
         if [[ "$(uname -s)" == "Linux" ]];
         then
-          conda install --yes -c conda-forge -c bioconda gxx_linux-64=7.5.0
+          conda install --yes -c conda-forge -c bioconda gxx_linux-64
         else
-          conda install --yes -c conda-forge -c bioconda clangxx_osx-64=10.0.0
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-64
         fi 
-        conda install --yes -c conda-forge -c bioconda cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" flake8 nose
-        conda install --yes -c conda-forge -c bioconda mkl-include lz4 hdf5-static
+        conda install --yes -c conda-forge -c bioconda cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" unifrac-binaries flake8 nose
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
@@ -67,43 +66,16 @@ jobs:
           x86_64-conda-linux-gnu-gcc -v
           x86_64-conda-linux-gnu-g++ -v
         else
-          conda install --yes liblapacke
           which clang
           clang -v
         fi
         which h5c++
-        if [[ "$(uname -s)" == "Linux" ]];
-        then
-          ./scripts/install_hpc_sdk.sh
-          source setup_nv_h5.sh
-        fi
-        pushd sucpp
-        make test
-        make main
-        make api
-        make capi_test
-        if [[ "$(uname -s)" == "Linux" ]]; 
-        then
-          rm -f ~/.R/Makevars
-          conda install -c conda-forge r-base
-          # the r-base package has a broken dependency
-          ln -s $CONDA_PREFIX/lib/libreadline.so $CONDA_PREFIX/lib/libreadline.so.6
-          R -e 'install.packages("Rcpp", repos="http://lib.stat.cmu.edu/R/CRAN/")'
-          make rapi_test
-        fi
-        popd
         pip install -e .   
             
     - name: Tests
       shell: bash -l {0}
       run: |
         conda activate unifrac
-        pushd sucpp
-        export UNIFRAC_GPU_INFO=Y
-        ./test_su
-        ./test_api
-        ./test_ska
-        popd
         nosetests
         flake8 unifrac setup.py
         
@@ -111,21 +83,28 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
-        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
+        set -e
+        ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
         python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
+        pushd unifrac/tests
+        python -c "import unifrac; unifrac.unweighted_to_file('data/crawford.biom','data/crawford.tre','../../ci/test.dm.h5')"
+        python -c "import unifrac,skbio; dm_u=unifrac.unweighted('data/crawford.biom','data/crawford.tre');  dm = skbio.DistanceMatrix.read('../../ci/test.dm'); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
+        popd
+        python -c "import h5py,skbio; f_u=h5py.File('ci/test.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:])"
+        python -c "import h5py,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); f_u=h5py.File('ci/test.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:]); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
           MD5=md5sum
         else
           MD5='md5 -r'
         fi
-        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
-        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
-        ./sucpp/ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
+        ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start0.stop3 -m unweighted --mode partial --start 0 --stop 3
+        ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.start3.stop5 -m unweighted --mode partial --start 3 --stop 5
+        ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm.partial --mode merge-partial --partial-pattern "ci/test.dm.start*"
         exp=$($MD5 ci/test.dm | awk '{ print $1 }')
         obs=$($MD5 ci/test.dm.partial | awk '{ print $1 }')
         python -c "assert '${obs}' == '${exp}'"
-        ./sucpp/faithpd -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.faith.obs
+        faithpd -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.faith.obs
         tail -n +2 ci/test.faith.obs > ci/test.faith.header-removed.obs
         exp1=$($MD5 unifrac/tests/data/test.faith.exp | awk '{ print $1 }')
         obs1=$($MD5 ci/test.faith.header-removed.obs | awk '{ print $1 }')

@@ -1,7 +1,7 @@
 #distutils: language = c++
 from libcpp cimport bool
 
-cdef extern from "../sucpp/api.hpp":
+cdef extern from "api.hpp":
     struct mat:
         double* condensed_form
         unsigned int n_samples

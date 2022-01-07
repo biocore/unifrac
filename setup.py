@@ -15,10 +15,6 @@ import os
 import sys
 
 
-SUCPP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                     'sucpp/')
-
-
 PREFIX = os.environ.get('PREFIX', "")
 
 base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 2.7.0",
@@ -36,22 +32,23 @@ if sys.platform == 'darwin':
 def compile_ssu():
     """Clean and compile the SSU binary"""
     # clean the target
-    subprocess.call(['make', 'clean'], cwd=SUCPP)
-
-    cmd = ['make', 'test']
-    ret = subprocess.call(cmd, cwd=SUCPP)
+    cmd = ["rm", "-f", "unifrac/task_parameters.hpp", "unifrac/api.hpp"]
+    ret = subprocess.call(cmd)
     if ret != 0:
-        raise Exception('Error compiling ssu!')
+        raise Exception('Error removing temp unifrac files!')
 
-    cmd = ['make', 'main']
-    ret = subprocess.call(cmd, cwd=SUCPP)
+    # link to files from conda
+    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
+           "/include/unifrac/task_parameters.hpp", "unifrac/"]
+    ret = subprocess.call(cmd)
     if ret != 0:
-        raise Exception('Error compiling ssu!')
+        raise Exception('Error removing linking unifrac files!')
 
-    cmd = ['make', 'api']
-    ret = subprocess.call(cmd, cwd=SUCPP)
+    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
+           "/include/unifrac/api.hpp", "unifrac/"]
+    ret = subprocess.call(cmd)
     if ret != 0:
-        raise Exception('Error compiling ssu!')
+        raise Exception('Error removing linking unifrac files!')
 
 
 class build_ext(build_ext_orig):
@@ -63,13 +60,11 @@ class build_ext(build_ext_orig):
 
     def run_compile_ssu(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
-        if PREFIX:
-            self.copy_file(os.path.join(SUCPP, 'libssu.so'),
-                           os.path.join(PREFIX, 'lib/'))
 
 
 if sys.platform == "darwin":
-    LINK_ARGS = ['-Wl,sucpp/libssu.so']
+    LINK_ARGS = ['-Wl,' + os.environ.get('CONDA_PREFIX') +
+                 '/lib/libssu.so']
 else:
     LINK_ARGS = []
 
@@ -81,12 +76,10 @@ else:
 USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("unifrac._api",
-                        sources=["unifrac/_api" + ext,
-                                 "sucpp/api.cpp"],
+                        sources=["unifrac/_api" + ext],
                         language="c++",
                         extra_link_args=LINK_ARGS,
                         include_dirs=([np.get_include()] +
-                                      ['sucpp/'] +
                                       CONDA_INCLUDES),
                         libraries=['ssu'])]
 
@@ -99,7 +92,7 @@ with open('README.md') as f:
 
 setup(
     name="unifrac",
-    version="0.20.3",
+    version="1.0.0",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',
