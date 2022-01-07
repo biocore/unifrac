@@ -83,8 +83,14 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        set -e
         ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
         python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
+        pushd unifrac/tests
+        python -c "import unifrac; unifrac.unweighted_to_file('data/crawford.biom','data/crawford.tre','../../ci/test.dm.h5')"
+        popd
+        python -c "import h5py,skbio; f_u=h5py.File('ci/test.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:])"
+        python -c "import h5py,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); f_u=h5py.File('ci/test.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:]); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
           MD5=md5sum
