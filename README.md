@@ -48,12 +48,6 @@ This library can also be installed via a combination of `conda-forge` and `bioco
 conda create --name unifrac -c conda-forge -c bioconda unifrac
 ```
 
-Note: Only the CPU version of the binaries is currently available in conda. 
-The GPU version must either be [locally compiled using freely-available NVIDIA HPC SDK](docs/compile_gpu.README.md) 
-or obtained [from a github branch](https://github.com/sfiligoi/unifrac/blob/v0.20.2-docs/docs/install_gpu.README.md).
-
-Note: If you desire a fully optimized the binaries for your CPU, you can [compile them locally](docs/compile_cpu.README.md).
-
 ## Install (pip)
 
 ```
@@ -62,18 +56,17 @@ pip install unifrac
 
 ## Install (native)
 
-To install, first the binary needs to be compiled. This assumes that the HDF5 
-toolchain and libraries are available. More information about how to setup the
-stack can be found [here](https://support.hdfgroup.org/HDF5/Tutor/compile.html). 
+To install, first the cython wrappers must be compiled. It also needs
+the libssu library to be present.
 
-Assuming `h5c++` is in your path, the following should work:
+Assuming the compiler is in your path, the following should work:
 
     pip install -e . 
 
-**Note**: if you are using `conda` we recommend installing HDF5 using the
-`conda-forge` channel, for example:
+**Note**: if you are using `conda` we recommend installing the compiler and 
+libssu using the `biooconda` channel, for example:
 
-    conda install -c conda-forge hdf5
+    conda install -c conda-forge -c bioconda gxx_linux-64 unifrac-binaries
         
 # Examples of use
 
