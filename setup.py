@@ -38,15 +38,18 @@ def compile_ssu():
         raise Exception('Error removing temp unifrac files!')
 
     # link to files from conda
-    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + "/include/unifrac/task_parameters.hpp", "unifrac/"]
+    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
+           "/include/unifrac/task_parameters.hpp", "unifrac/"]
     ret = subprocess.call(cmd)
     if ret != 0:
         raise Exception('Error removing linking unifrac files!')
 
-    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + "/include/unifrac/api.hpp", "unifrac/"]
+    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
+           "/include/unifrac/api.hpp", "unifrac/"]
     ret = subprocess.call(cmd)
     if ret != 0:
         raise Exception('Error removing linking unifrac files!')
+
 
 class build_ext(build_ext_orig):
     """Pre-installation for any time an Extension is built"""
@@ -57,6 +60,7 @@ class build_ext(build_ext_orig):
 
     def run_compile_ssu(self):
         self.execute(compile_ssu, [], 'Compiling SSU')
+
 
 if sys.platform == "darwin":
     LINK_ARGS = ['-Wl,sucpp/libssu.so']
