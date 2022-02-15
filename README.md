@@ -68,6 +68,34 @@ libssu using the `biooconda` channel, for example:
 
     conda install -c conda-forge -c bioconda gxx_linux-64 unifrac-binaries
         
+# Environment considerations
+
+## Multi-core support
+
+Unifrac uses OpenMP to make use of multiple CPU cores.
+By default, Unifrac will use all the cores that are avaialble on the system.
+To restrict the number of cores used, set:
+
+    export OMP_NUM_THREADS=nthreads
+
+## GPU support
+
+On Linux platforms, Unifrac will run on a GPU, if one is found. 
+To disable GPU offload, and thus force CPU-only execution, one can set:
+
+    export UNIFRAC_USE_GPU=N
+
+To check which code path is used (Unifrac will print it to standard output at runtime), sett:
+
+    export UNIFRAC_GPU_INFO=Y
+
+Finally, Unifrac will only use one GPU at a time. 
+If more than one GPU is present, one can select the one to use by setting:
+
+    export ACC_DEVICE_NUM=gpunum
+
+Note that there is no GPU support for MacOS.
+
 # Examples of use
 
 Below are a few light examples of different ways to use this library.
