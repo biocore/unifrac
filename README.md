@@ -73,7 +73,7 @@ libssu using the `biooconda` channel, for example:
 ## Multi-core support
 
 Unifrac uses OpenMP to make use of multiple CPU cores.
-By default, Unifrac will use all the cores that are avaialble on the system.
+By default, Unifrac will use all the cores that are available on the system.
 To restrict the number of cores used, set:
 
     export OMP_NUM_THREADS=nthreads
@@ -85,7 +85,7 @@ To disable GPU offload, and thus force CPU-only execution, one can set:
 
     export UNIFRAC_USE_GPU=N
 
-To check which code path is used (Unifrac will print it to standard output at runtime), sett:
+To check which code path is used (Unifrac will print it to standard output at runtime), set:
 
     export UNIFRAC_GPU_INFO=Y
 
