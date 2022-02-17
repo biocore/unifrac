@@ -36,6 +36,10 @@ Compilation has been performed on both LLVM 9.0.0 (OS X >= 10.12) or GCC 4.9.2 (
 
 Installation time should be a few minutes at most.
 
+## Install (example)
+
+An example of installing UniFrac, and using it with CPUs as well as GPUs, can be be found on [Google Colabs](https://colab.research.google.com/drive/1yL0MdF1zNAkPg1_yESI1iABUH4ZHNGwj?usp=sharing).
+
 ## Install (QIIME2)
 
 The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.7/install/). This library is installed by default with the QIIME 2 Core Distribution. Currently, this module is used for phylogenetic diversity calculations in `qiime diversity beta-phylogenetic` for UniFrac and `qiime diversity alpha-phylogenetic-alt` for Faith's PD.
