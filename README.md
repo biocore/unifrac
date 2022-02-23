@@ -44,6 +44,14 @@ An example of installing UniFrac, and using it with CPUs as well as GPUs, can be
 
 The easiest way to use this library is through [QIIME2](https://docs.qiime2.org/2019.7/install/). This library is installed by default with the QIIME 2 Core Distribution. Currently, this module is used for phylogenetic diversity calculations in `qiime diversity beta-phylogenetic` for UniFrac and `qiime diversity alpha-phylogenetic-alt` for Faith's PD.
 
+If installing a newer version of UniFrac into an existing QIIME 2 environment, it is necessary to construct a "throwaway" conda environment, and force the install. An example is below, based on the observations [here](https://github.com/caporaso-lab/pretrained-feature-classifiers/pull/6#issuecomment-586023587):
+
+```
+conda create -n throwaway -c bioconda -c conda-forge conda-forge::python=3.8 unifrac unifrac-binaries
+conda list -n throwaway --explicit | grep 'EXPLICIT\|unifrac\|hdf5\|lapack' > packages.txt
+conda install -n qiime2-2022.2 --file packages.txt 
+```
+
 ## Install (bioconda)
 
 This library can also be installed via a combination of `conda-forge` and `bioconda`:
