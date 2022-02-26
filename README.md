@@ -48,7 +48,7 @@ If installing a newer version of UniFrac into an existing QIIME 2 environment, i
 
 ```
 conda create -n throwaway -c bioconda -c conda-forge conda-forge::python=3.8 unifrac unifrac-binaries
-conda list -n throwaway --explicit | grep 'EXPLICIT\|unifrac\|hdf5\|lapack' > packages.txt
+conda list -n throwaway --explicit | grep 'EXPLICIT\|unifrac\|hdf5\|h5py\|lapack' > packages.txt
 conda install -n qiime2-2022.2 --file packages.txt 
 ```
 
