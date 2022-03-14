@@ -31,24 +31,24 @@ if sys.platform == 'darwin':
 
 def compile_ssu():
     """Clean and compile the SSU binary"""
+    to_link = ["/include/unifrac/task_parameters.hpp",
+               "/include/unifrac/api.hpp",
+               "/include/unifrac/biom.hpp",
+               "/include/unifrac/biom_interface.hpp",
+               "/include/unifrac/tree.hpp"]
+
     # clean the target
-    cmd = ["rm", "-f", "unifrac/task_parameters.hpp", "unifrac/api.hpp"]
+    cmd = ["rm", "-f"] + to_link
     ret = subprocess.call(cmd)
     if ret != 0:
         raise Exception('Error removing temp unifrac files!')
 
-    # link to files from conda
-    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
-           "/include/unifrac/task_parameters.hpp", "unifrac/"]
-    ret = subprocess.call(cmd)
-    if ret != 0:
-        raise Exception('Error removing linking unifrac files!')
-
-    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
-           "/include/unifrac/api.hpp", "unifrac/"]
-    ret = subprocess.call(cmd)
-    if ret != 0:
-        raise Exception('Error removing linking unifrac files!')
+    for f in to_link:
+        # link to files from conda
+        cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + f, "unifrac/"]
+        ret = subprocess.call(cmd)
+        if ret != 0:
+            raise Exception('Error removing linking unifrac files!')
 
 
 class build_ext(build_ext_orig):

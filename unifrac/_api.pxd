@@ -1,5 +1,25 @@
 #distutils: language = c++
-from libcpp cimport bool
+from libcpp cimport bool, string
+from libcpp.vector cimport vector
+from libcpp.string cimport string
+from libc.stdint cimport uint32_t
+
+
+cdef extern from "biom.hpp" namespace "su":
+    cdef cppclass biom:
+        biom(vector[string], 
+             vector[string], 
+             vector[uint32_t],
+             vector[uint32_t],
+             vector[double])
+
+
+cdef extern from "tree.hpp" namespace "su":
+    cdef cppclass BPTree:
+        BPTree(vector[bool],
+               vector[double],
+               vector[string])
+
 
 cdef extern from "api.hpp":
     struct mat:
@@ -25,6 +45,10 @@ cdef extern from "api.hpp":
     compute_status one_off(const char* biom_filename, const char* tree_filename, 
                                const char* unifrac_method, bool variance_adjust, double alpha,
                                bool bypass_tips, unsigned int threads, mat** result)
+    
+    compute_status one_off_inmem(biom &table, BPTree &tree, 
+                                 const char* unifrac_method, bool variance_adjust, double alpha,
+                                 bool bypass_tips, unsigned int threads, mat** result)
 
     compute_status faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                     results_vec** result)
