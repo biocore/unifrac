@@ -13,17 +13,22 @@ import pkg_resources
 
 import numpy as np
 import numpy.testing as npt
-from biom import Table, load_table
+from biom import Table, load_table, example_table
 from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
 
 from unifrac import ssu, faith_pd
 from unifrac import unweighted, unweighted_to_file, h5unifrac
+from unifrac._api import cppbiom
 
 
 class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
+
+    def test_cppbiom(self):
+        # we don't have any accessors, so just make sure we can instantiate
+        cppbiom(example_table)
 
     def get_data_path(self, filename):
         # adapted from qiime2.plugin.testing.TestPluginBase

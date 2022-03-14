@@ -7,11 +7,11 @@ from libc.stdint cimport uint32_t
 
 cdef extern from "biom.hpp" namespace "su":
     cdef cppclass biom:
-        biom(vector[string], 
-             vector[string], 
-             vector[uint32_t],
-             vector[uint32_t],
-             vector[double])
+        biom(const vector[string] &obs_ids, 
+             const vector[string] &samp_ids, 
+             const vector[uint32_t] &index,
+             const vector[uint32_t] &indptr,
+             const vector[double] &data)
 
 
 cdef extern from "tree.hpp" namespace "su":

@@ -31,11 +31,11 @@ if sys.platform == 'darwin':
 
 def compile_ssu():
     """Clean and compile the SSU binary"""
-    to_link = ["/include/unifrac/task_parameters.hpp",
-               "/include/unifrac/api.hpp",
-               "/include/unifrac/biom.hpp",
-               "/include/unifrac/biom_interface.hpp",
-               "/include/unifrac/tree.hpp"]
+    to_link = ["unifrac/task_parameters.hpp",
+               "unifrac/api.hpp",
+               "unifrac/biom.hpp",
+               "unifrac/biom_interface.hpp",
+               "unifrac/tree.hpp"]
 
     # clean the target
     cmd = ["rm", "-f"] + to_link
@@ -45,7 +45,8 @@ def compile_ssu():
 
     for f in to_link:
         # link to files from conda
-        cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + f, "unifrac/"]
+        cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + '/include/' + f,
+               "unifrac/"]
         ret = subprocess.call(cmd)
         if ret != 0:
             raise Exception('Error removing linking unifrac files!')
@@ -67,6 +68,8 @@ if sys.platform == "darwin":
                  '/lib/libssu.so']
 else:
     LINK_ARGS = []
+LINK_ARGS.append('-fopenmp')
+COMPILE_ARGS = ['-fopenmp', ]
 
 if 'CONDA_PREFIX' in os.environ:
     CONDA_INCLUDES = [os.environ.get('CONDA_PREFIX') + '/include']
@@ -79,6 +82,7 @@ extensions = [Extension("unifrac._api",
                         sources=["unifrac/_api" + ext],
                         language="c++",
                         extra_link_args=LINK_ARGS,
+                        extra_compile_args=COMPILE_ARGS,
                         include_dirs=([np.get_include()] +
                                       CONDA_INCLUDES),
                         libraries=['ssu'])]

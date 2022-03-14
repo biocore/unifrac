@@ -1,7 +1,12 @@
+# cython: boundscheck=False
+# distutils: language = c++
 import skbio
 import numpy as np
 cimport numpy as np
 import pandas as pd
+from cython.parallel import prange
+from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 # 
 # Functions that compute Unifrac and return a memory object
@@ -291,3 +296,61 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
 
     return out_filename
 
+
+cdef class cppbiom:
+    cdef biom* obj
+
+    def __cinit__(self, object table):
+        cdef: 
+            vector[string] obs_ids
+            vector[string] samp_ids
+            vector[uint32_t] indices
+            vector[uint32_t] indptr
+            vector[double] data
+
+            np.ndarray[object, ndim=1] table_obs_ids
+            np.ndarray[object, ndim=1] table_samp_ids
+            np.ndarray[np.int32_t, ndim=1] table_indices 
+            np.ndarray[np.int32_t, ndim=1] table_indptr 
+            np.ndarray[np.float64_t, ndim=1] table_data
+           
+            int i, nsamples, nobs, nnz, nindptr
+            object matrix_data = table.matrix_data.tocsr()
+
+        ### I think these need to be expressed as memoryviews for prange ###
+        table_obs_ids = table.ids(axis='observation')
+        table_samp_ids = table.ids(axis='sample')
+        table_indices = matrix_data.indices
+        table_indptr = matrix_data.indptr
+        table_data = matrix_data.data
+
+        nsamples = table_samp_ids.size
+        nobs = table_obs_ids.size
+        nnz = table_data.size
+        nindptr = table_indptr.size
+        
+        obs_ids.resize(nobs)
+        samp_ids.resize(nsamples)
+        indices.resize(nnz)
+        indptr.resize(nindptr)
+        data.resize(nnz)
+
+        # cannot use prange for strings as the GIL is required for indexing
+        # arrays of object dtype
+        for i in range(nsamples):
+            samp_ids[i] = table_samp_ids[i].encode('utf8')
+
+        for i in range(nobs):
+            obs_ids[i] = table_obs_ids[i].encode('utf8')
+        
+        for i in prange(nindptr, nogil=True, schedule='static'):
+            indptr[i] = table_indptr[i]
+
+        for i in prange(nnz, nogil=True, schedule='static'):
+            indices[i] = table_indices[i]
+            data[i] = table_data[i]
+
+        self.obj = new biom(obs_ids, samp_ids, indices, indptr, data)
+
+    def __del__(self):
+        del self.obj
