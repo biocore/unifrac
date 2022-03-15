@@ -14,14 +14,14 @@ cdef extern from "biom.hpp" namespace "su":
              const vector[uint32_t] &index,
              const vector[uint32_t] &indptr,
              const vector[double] &data)
-
+        biom()
 
 cdef extern from "tree.hpp" namespace "su":
     cdef cppclass BPTree:
         BPTree(vector[bool] input_structure,
                vector[double] input_lengths,
                vector[string] input_names)
-
+        BPTree()
 
 cdef extern from "api.hpp":
     struct mat:
@@ -48,7 +48,7 @@ cdef extern from "api.hpp":
                                const char* unifrac_method, bool variance_adjust, double alpha,
                                bool bypass_tips, unsigned int threads, mat** result)
     
-    compute_status one_off_inmem(biom &table, BPTree &tree, 
+    compute_status one_off_inmem(biom *table, BPTree *tree, 
                                  const char* unifrac_method, bool variance_adjust, double alpha,
                                  bool bypass_tips, unsigned int threads, mat** result)
 

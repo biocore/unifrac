@@ -29,6 +29,73 @@ def check_status(compute_status status):
 # 
 # Functions that compute Unifrac and return a memory object
 #
+def ssu_inmem(object table, object tree,
+              str unifrac_method, bool variance_adjust, double alpha,
+              bool bypass_tips, unsigned int threads):
+    """Execute a call to Strided State UniFrac via the direct API
+
+    Parameters
+    ----------
+    table : biom.Table
+        An instance of a biom.Table object
+    tree : bp.BP or skbio.TreeNode
+        A phylogeny corresponding to the table
+    unifrac_method : str
+        The requested UniFrac method, one of {unweighted,
+        weighted_normalized, weighted_unnormalized, generalized,
+        unweighted_fp32, weighted_normalized_fp32, 
+        weighted_unnormalized_fp32, generalized_fp32}
+    variance_adjust : bool
+        Whether to perform Variance Adjusted UniFrac
+    alpha : float
+        The value of alpha for Generalized UniFrac; only applies to
+        Generalized UniFraca
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    threads : int
+        The number of threads to use.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix
+
+    Raises
+    ------
+    ValueError
+        If the table is empty
+        If the table is not completely represented by the phylogeny
+        If an unknown method is requested.
+    Exception
+        If an unkown error is experienced
+    """
+    cdef:
+        mat *result;
+        compute_status status;
+        bytes met_py_bytes
+        char* met_c_string
+        cppbiom inmem_biom
+        cppbptree inmem_tree
+
+    inmem_biom = cppbiom(table)
+    inmem_tree = cppbptree_constructor(tree)
+
+    met_py_bytes = unifrac_method.encode()
+    met_c_string = met_py_bytes
+
+    status = one_off_inmem(inmem_biom.obj,
+                           inmem_tree.obj,
+                           met_c_string,
+                           variance_adjust,
+                           alpha,
+                           bypass_tips,
+                           threads,
+                           &result)
+    check_status(status)
+    
+    return result_to_skbio_distance_matrix(result)
+
 
 def ssu(str biom_filename, str tree_filename,
         str unifrac_method, bool variance_adjust, double alpha,
@@ -324,7 +391,7 @@ def cppbptree_constructor(object tree):
 
 
 cdef class cppbptree:
-    cdef BPTree* obj
+    cdef BPTree *obj
 
     def __cinit__(self, object tree):
         cdef:
@@ -348,7 +415,7 @@ cdef class cppbptree:
             name = tree.name(i)
             if name is not None:
                 input_names[i] = name.encode('utf8')
-    
+   
         self.obj = new BPTree(input_structure, input_lengths, input_names)
 
     def __del__(self):
@@ -356,7 +423,7 @@ cdef class cppbptree:
 
 
 cdef class cppbiom:
-    cdef biom* obj
+    cdef biom *obj
 
     def __cinit__(self, object table):
         cdef: 
@@ -375,7 +442,6 @@ cdef class cppbiom:
             int i, nsamples, nobs, nnz, nindptr
             object matrix_data = table.matrix_data.tocsr()
 
-        ### I think these need to be expressed as memoryviews for prange ###
         table_obs_ids = table.ids(axis='observation')
         table_samp_ids = table.ids(axis='sample')
         table_indices = matrix_data.indices
