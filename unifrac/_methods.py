@@ -8,11 +8,14 @@
 from warnings import warn
 from functools import reduce
 from operator import or_
+from typing import Union
 
 import numpy as np
 import pandas as pd
+import biom
 import skbio
 import h5py
+import bp
 
 import unifrac as qsu
 from unifrac._meta import CONSOLIDATIONS
@@ -63,8 +66,8 @@ def _validate_meta(tables, phylogenies):
 # Functions that compute Unifrac and return a memory object
 #
 
-def unweighted(table: str,
-               phylogeny: str,
+def unweighted(table: Union[str, biom.Table],
+               phylogeny: [str, skbio.TreeNode, bp.BP],
                threads: int = 1,
                variance_adjusted: bool = False,
                bypass_tips: bool = False) -> skbio.DistanceMatrix:
@@ -114,9 +117,12 @@ def unweighted(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu(table, phylogeny, 'unweighted',
-                   variance_adjusted, 1.0, bypass_tips, threads)
+    if isinstance(table, str) and isinstance(phylogeny, str):
+        _validate(table, phylogeny)
+        return qsu.ssu(table, phylogeny, 'unweighted',
+                       variance_adjusted, 1.0, bypass_tips, threads)
+    else:
+        raise NotImplemented()
 
 
 def unweighted_fp32(table: str,

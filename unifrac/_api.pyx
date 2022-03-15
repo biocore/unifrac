@@ -9,6 +9,23 @@ from cython.parallel import prange
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
+
+def check_status(compute_status status):
+    if status != okay:
+        if status == tree_missing:
+            raise IOError("Tree file not found.")
+        elif status == table_missing:
+            raise IOError("Table file not found.")
+        elif status == table_empty:
+            raise ValueError("Table file is empty.")
+        elif status == table_and_tree_do_not_overlap:
+            raise ValueError("The table does not appear to be completely "
+                             "represented by the phylogeny.")
+        elif status == unknown_method:
+            raise ValueError("Unknown method.")
+        else:
+            raise Exception("Unknown Error: {}".format(status))
+
 # 
 # Functions that compute Unifrac and return a memory object
 #
@@ -60,16 +77,12 @@ def ssu(str biom_filename, str tree_filename,
     cdef:
         mat *result;
         compute_status status;
-        np.ndarray[np.double_t, ndim=1] numpy_arr
-        double *cf
-        int i
         bytes biom_py_bytes
         bytes tree_py_bytes
         bytes met_py_bytes
         char* biom_c_string
         char* tree_c_string
         char* met_c_string
-        list ids
 
     biom_py_bytes = biom_filename.encode()
     tree_py_bytes = tree_filename.encode()
@@ -86,21 +99,16 @@ def ssu(str biom_filename, str tree_filename,
                      bypass_tips,
                      threads,
                      &result)
+    check_status(status)
+    
+    return result_to_skbio_distance_matrix(result)
 
-    if status != okay:
-        if status == tree_missing:
-            raise IOError("Tree file not found.")
-        elif status == table_missing:
-            raise IOError("Table file not found.")
-        elif status == table_empty:
-            raise ValueError("Table file is empty.")
-        elif status == table_and_tree_do_not_overlap:
-            raise ValueError("The table does not appear to be completely "
-                             "represented by the phylogeny.")
-        elif status == unknown_method:
-            raise ValueError("Unknown method.")
-        else:
-            raise Exception("Unknown Error: {}".format(status))
+
+cdef object result_to_skbio_distance_matrix(mat *result):
+    cdef:
+        np.ndarray[np.double_t, ndim=1] numpy_arr
+        list ids
+        int i
 
     ids = []
     numpy_arr = np.zeros(result.cf_size, dtype=np.double)
@@ -112,6 +120,7 @@ def ssu(str biom_filename, str tree_filename,
     destroy_mat(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
+
 
 def faith_pd(str biom_filename, str tree_filename):
     """Execute a call to the Stacked Faith API in the UniFrac package
