@@ -1,4 +1,6 @@
+#cython: language_level=3
 #distutils: language = c++
+
 from libcpp cimport bool, string
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -16,9 +18,9 @@ cdef extern from "biom.hpp" namespace "su":
 
 cdef extern from "tree.hpp" namespace "su":
     cdef cppclass BPTree:
-        BPTree(vector[bool],
-               vector[double],
-               vector[string])
+        BPTree(vector[bool] input_structure,
+               vector[double] input_lengths,
+               vector[string] input_names)
 
 
 cdef extern from "api.hpp":

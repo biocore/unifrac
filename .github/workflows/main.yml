@@ -70,6 +70,7 @@ jobs:
           clang -v
         fi
         which h5c++
+        pip install iow
         pip install -e .   
             
     - name: Tests

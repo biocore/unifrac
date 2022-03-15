@@ -17,14 +17,23 @@ from biom import Table, load_table, example_table
 from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
+import bp
 
 from unifrac import ssu, faith_pd
 from unifrac import unweighted, unweighted_to_file, h5unifrac
-from unifrac._api import cppbiom
+from unifrac._api import cppbiom, cppbptree_constructor
 
 
 class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
+
+    def test_cppbptree_skbio(self):
+        t = TreeNode.read(["((a:1,b:2)c:3);"])
+        cppbptree_constructor(t)
+
+    def test_cppbptree_bp(self):
+        t = bp.parse_newick("((a:1,b:2)c:3);")
+        cppbptree_constructor(t)
 
     def test_cppbiom(self):
         # we don't have any accessors, so just make sure we can instantiate

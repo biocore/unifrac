@@ -89,7 +89,7 @@ extensions = [Extension("unifrac._api",
 
 if USE_CYTHON:
     from Cython.Build import cythonize
-    extensions = cythonize(extensions)
+    extensions = cythonize(extensions, gdb_debug=True)
 
 with open('README.md') as f:
     long_description = f.read()

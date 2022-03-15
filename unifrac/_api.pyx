@@ -3,6 +3,7 @@
 import skbio
 import numpy as np
 cimport numpy as np
+import bp
 import pandas as pd
 from cython.parallel import prange
 from libcpp.string cimport string
@@ -295,6 +296,54 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
             raise Exception("Unknown Error: {}".format(status))
 
     return out_filename
+
+
+def cppbptree_constructor(object tree):
+    cdef:
+        object tree_as_bp
+        np.ndarray[np.uint8_t, ndim=1] structure
+        np.ndarray[np.float64_t, ndim=1] lengths
+        np.ndarray[object, ndim=1] names
+        int i, size
+
+    if isinstance(tree, skbio.TreeNode):
+        tree_as_bp = bp.from_skbio_treenode(tree)
+    else:
+        tree_as_bp = tree
+
+    return cppbptree(tree_as_bp)
+
+
+cdef class cppbptree:
+    cdef BPTree* obj
+
+    def __cinit__(self, object tree):
+        cdef:
+            vector[bool] input_structure
+            vector[double] input_lengths
+            vector[string] input_names
+            int i, length
+            unicode name
+
+        # TODO: enable direct access to names and lengths from BP
+        length = tree.B.size
+
+        input_structure.resize(length)
+        input_lengths.resize(length)
+        input_names.resize(length)
+   
+        for i in range(length):
+            input_structure[i] = tree.B[i]
+            input_lengths[i] = tree.length(i)
+            
+            name = tree.name(i)
+            if name is not None:
+                input_names[i] = name.encode('utf8')
+    
+        self.obj = new BPTree(input_structure, input_lengths, input_names)
+
+    def __del__(self):
+        del self.obj
 
 
 cdef class cppbiom:

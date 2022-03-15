@@ -58,12 +58,13 @@ This library can also be installed via a combination of `conda-forge` and `bioco
 
 ```
 conda create --name unifrac -c conda-forge -c bioconda unifrac
+pip install iow
 ```
 
 ## Install (pip)
 
 ```
-pip install unifrac
+pip install unifrac iow
 ```
 
 ## Install (native)
