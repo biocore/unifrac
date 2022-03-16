@@ -21,19 +21,10 @@ import bp
 
 from unifrac import ssu, faith_pd, ssu_inmem
 from unifrac import unweighted, unweighted_to_file, h5unifrac
-from unifrac._api import cppbiom, cppbptree_constructor
 
 
 class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
-
-    def test_cppbptree_skbio(self):
-        t = TreeNode.read(["((a:1,b:2)c:3);"])
-        cppbptree_constructor(t)
-
-    def test_cppbptree_bp(self):
-        t = bp.parse_newick("((a:1,b:2)c:3);")
-        cppbptree_constructor(t)
 
     def test_unweighted_inmem(self):
         tree_fp = self.get_data_path('crawford.tre')
@@ -54,10 +45,6 @@ class UnifracAPITests(unittest.TestCase):
 
         obs2 = unweighted(table_fp, tree_fp)
         npt.assert_almost_equal(obs2.data, exp.data)
-
-    def test_cppbiom(self):
-        # we don't have any accessors, so just make sure we can instantiate
-        cppbiom(example_table)
 
     def get_data_path(self, filename):
         # adapted from qiime2.plugin.testing.TestPluginBase

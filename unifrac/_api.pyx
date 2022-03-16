@@ -495,7 +495,7 @@ cdef support_bptree* construct_support_bptree(object tree):
     else:
         tree_as_bp = tree
 
-    length = tree.B.size
+    length = tree_as_bp.B.size
 
     # malloc these things
     structure = <bool*>malloc(length * sizeof(bool))
@@ -513,11 +513,16 @@ cdef support_bptree* construct_support_bptree(object tree):
     # cannot prange as we need to do attribute access
     # TODO: expose these structures directly from BP
     for i in range(length):
-        structure[i] = tree.B[i]
-        lengths[i] = tree.length(i)
+        structure[i] = tree_as_bp.B[i]
+        lengths[i] = tree_as_bp.length(i)
         
-        name = tree.name(i)
-        if name is not None:
+        name = tree_as_bp.name(i)
+        if name is None:
+            names[i] = <char*>malloc(sizeof(char))
+            if not names[i]:
+                return NULL
+            names[i][0] = b'\0'
+        else:
             n = len(name) + 1  # for \0
             
             names[i] = <char*>malloc(n * sizeof(char))

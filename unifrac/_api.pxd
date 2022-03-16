@@ -47,7 +47,7 @@ cdef extern from "api.hpp":
                                const char* unifrac_method, bool variance_adjust, double alpha,
                                bool bypass_tips, unsigned int threads, mat** result)
     
-    compute_status one_off_inmem(support_biom *table, support_bptree *tree, 
+    compute_status one_off_inmem(const support_biom *table, const support_bptree *tree, 
                                  const char* unifrac_method, bool variance_adjust, double alpha,
                                  bool bypass_tips, unsigned int threads, mat** result)
 
