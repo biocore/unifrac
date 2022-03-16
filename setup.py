@@ -33,9 +33,7 @@ def compile_ssu():
     """Clean and compile the SSU binary"""
     to_link = ["unifrac/task_parameters.hpp",
                "unifrac/api.hpp",
-               "unifrac/biom.hpp",
-               "unifrac/biom_interface.hpp",
-               "unifrac/tree.hpp"]
+               "unifrac/status_enum.hpp"]
 
     # clean the target
     cmd = ["rm", "-f"] + to_link
@@ -80,7 +78,6 @@ USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("unifrac._api",
                         sources=["unifrac/_api" + ext],
-                        language="c++",
                         extra_link_args=LINK_ARGS,
                         extra_compile_args=COMPILE_ARGS,
                         include_dirs=([np.get_include()] +

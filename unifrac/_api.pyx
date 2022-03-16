@@ -1,13 +1,12 @@
 # cython: boundscheck=False
-# distutils: language = c++
 import skbio
 import numpy as np
 cimport numpy as np
 import bp
 import pandas as pd
 from cython.parallel import prange
-from libcpp.string cimport string
-from libcpp.vector cimport vector
+from libc.stdlib cimport malloc, free
+from libc.string cimport strcpy
 
 
 def check_status(compute_status status):
@@ -75,17 +74,17 @@ def ssu_inmem(object table, object tree,
         compute_status status;
         bytes met_py_bytes
         char* met_c_string
-        cppbiom inmem_biom
-        cppbptree inmem_tree
+        support_biom* inmem_biom
+        support_bptree* inmem_tree
 
-    inmem_biom = cppbiom(table)
-    inmem_tree = cppbptree_constructor(tree)
+    inmem_biom = construct_support_biom(table)
+    inmem_tree = construct_support_bptree(tree)
 
     met_py_bytes = unifrac_method.encode()
     met_c_string = met_py_bytes
 
-    status = one_off_inmem(inmem_biom.obj,
-                           inmem_tree.obj,
+    status = one_off_inmem(inmem_biom,
+                           inmem_tree,
                            met_c_string,
                            variance_adjust,
                            alpha,
@@ -93,7 +92,10 @@ def ssu_inmem(object table, object tree,
                            threads,
                            &result)
     check_status(status)
-    
+   
+    destroy_support_biom(inmem_biom)
+    destroy_support_bptree(inmem_tree)
+
     return result_to_skbio_distance_matrix(result)
 
 
@@ -374,107 +376,176 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
     return out_filename
 
 
-def cppbptree_constructor(object tree):
+cdef support_biom* construct_support_biom(object table):
+    cdef: 
+        char** obs_ids
+        char** sample_ids
+        int32_t* indices
+        int32_t* indptr
+        double* data
+        support_biom* sp_biom
+
+        object matrix_data = table.matrix_data.tocsr()
+        int i, nsamples, nobs, nnz, nindptr, n
+
+        np.ndarray[object, ndim=1] table_obs_ids
+        np.ndarray[object, ndim=1] table_samp_ids
+        np.ndarray[np.int32_t, ndim=1] table_indices 
+        np.ndarray[np.int32_t, ndim=1] table_indptr 
+        np.ndarray[np.float64_t, ndim=1] table_data
+
+    table_obs_ids = table.ids(axis='observation')
+    table_samp_ids = table.ids(axis='sample')
+    table_indices = matrix_data.indices
+    table_indptr = matrix_data.indptr
+    table_data = matrix_data.data
+
+    nsamples = table_samp_ids.size
+    nobs = table_obs_ids.size
+    nnz = table_data.size
+    nindptr = table_indptr.size
+   
+    obs_ids = <char**>malloc(nobs * sizeof(char*))
+    if not obs_ids:
+        return NULL
+
+    sample_ids = <char**>malloc(nsamples * sizeof(char*))
+    if not sample_ids:
+        return NULL
+
+    indices = <int32_t*>malloc(nnz * sizeof(int32_t))
+    if not indices:
+        return NULL
+
+    indptr = <int32_t*>malloc(nindptr * sizeof(int32_t))
+    if not indptr:
+        return NULL
+
+    data = <double*>malloc(nnz * sizeof(double))
+    if not data:
+        return NULL
+
+    # cannot use prange for strings as the GIL is required for indexing
+    # arrays of object dtype
+    for i in range(nsamples):
+        n = len(table_samp_ids[i]) + 1  # for \0
+        sample_ids[i] = <char*>malloc(n * sizeof(char))
+        if not sample_ids[i]:
+            return NULL
+        strcpy(sample_ids[i], table_samp_ids[i].encode('ascii'))
+
+    for i in range(nobs):
+        n = len(table_obs_ids[i]) + 1  # for \0
+        obs_ids[i] = <char*>malloc(n * sizeof(char))
+        if not obs_ids[i]:
+            return NULL
+        strcpy(obs_ids[i], table_obs_ids[i].encode('ascii'))
+    
+    for i in prange(nindptr, nogil=True, schedule='static'):
+        indptr[i] = table_indptr[i]
+
+    for i in prange(nnz, nogil=True, schedule='static'):
+        indices[i] = table_indices[i]
+        data[i] = table_data[i]
+
+    sp_biom = <support_biom*>malloc(sizeof(support_biom))
+    if not sp_biom:
+        return NULL
+
+    sp_biom.obs_ids = obs_ids
+    sp_biom.sample_ids = sample_ids
+    sp_biom.indices = indices
+    sp_biom.indptr = indptr
+    sp_biom.data = data
+    sp_biom.n_obs = nobs
+    sp_biom.n_samples = nsamples
+    sp_biom.nnz = nnz
+
+    return sp_biom
+
+cdef void destroy_support_biom(support_biom *sp_biom):
     cdef:
+        int i
+
+    for i in range(sp_biom.n_obs):
+        free(sp_biom.obs_ids[i])
+    free(sp_biom.obs_ids)
+
+    for i in range(sp_biom.n_samples):
+        free(sp_biom.sample_ids[i])
+    free(sp_biom.sample_ids)
+
+    free(sp_biom.indices)
+    free(sp_biom.indptr)
+    free(sp_biom.data)
+    free(sp_biom)
+
+
+cdef support_bptree* construct_support_bptree(object tree):
+    cdef:
+        bool* structure
+        double* lengths
+        char** names
         object tree_as_bp
-        np.ndarray[np.uint8_t, ndim=1] structure
-        np.ndarray[np.float64_t, ndim=1] lengths
-        np.ndarray[object, ndim=1] names
-        int i, size
+        int length, i, n
+        support_bptree* sp_bptree
 
     if isinstance(tree, skbio.TreeNode):
         tree_as_bp = bp.from_skbio_treenode(tree)
     else:
         tree_as_bp = tree
 
-    return cppbptree(tree_as_bp)
+    length = tree.B.size
 
+    # malloc these things
+    structure = <bool*>malloc(length * sizeof(bool))
+    if not structure:
+        return NULL
 
-cdef class cppbptree:
-    cdef BPTree *obj
+    lengths = <double*>malloc(length * sizeof(double))
+    if not lengths:
+        return NULL
 
-    def __cinit__(self, object tree):
-        cdef:
-            vector[bool] input_structure
-            vector[double] input_lengths
-            vector[string] input_names
-            int i, length
-            unicode name
+    names = <char**>malloc(length * sizeof(char*))
+    if not names:
+        return NULL
 
-        # TODO: enable direct access to names and lengths from BP
-        length = tree.B.size
-
-        input_structure.resize(length)
-        input_lengths.resize(length)
-        input_names.resize(length)
-   
-        for i in range(length):
-            input_structure[i] = tree.B[i]
-            input_lengths[i] = tree.length(i)
+    # cannot prange as we need to do attribute access
+    # TODO: expose these structures directly from BP
+    for i in range(length):
+        structure[i] = tree.B[i]
+        lengths[i] = tree.length(i)
+        
+        name = tree.name(i)
+        if name is not None:
+            n = len(name) + 1  # for \0
             
-            name = tree.name(i)
-            if name is not None:
-                input_names[i] = name.encode('utf8')
-   
-        self.obj = new BPTree(input_structure, input_lengths, input_names)
+            names[i] = <char*>malloc(n * sizeof(char))
+            if not names[i]:
+                return NULL
 
-    def __del__(self):
-        del self.obj
+            strcpy(names[i], name.encode('ascii'))
+  
+    sp_bptree = <support_bptree*>malloc(sizeof(support_bptree))
+    if not sp_bptree:
+        return NULL
+
+    sp_bptree.structure = structure
+    sp_bptree.lengths = lengths
+    sp_bptree.names = names
+    sp_bptree.n_parens = length
+    
+    return sp_bptree
 
 
-cdef class cppbiom:
-    cdef biom *obj
+cdef void destroy_support_bptree(support_bptree* sp_bptree):
+    cdef:
+        int i
 
-    def __cinit__(self, object table):
-        cdef: 
-            vector[string] obs_ids
-            vector[string] samp_ids
-            vector[uint32_t] indices
-            vector[uint32_t] indptr
-            vector[double] data
+    for i in range(sp_bptree.n_parens):
+        free(sp_bptree.names[i])
 
-            np.ndarray[object, ndim=1] table_obs_ids
-            np.ndarray[object, ndim=1] table_samp_ids
-            np.ndarray[np.int32_t, ndim=1] table_indices 
-            np.ndarray[np.int32_t, ndim=1] table_indptr 
-            np.ndarray[np.float64_t, ndim=1] table_data
-           
-            int i, nsamples, nobs, nnz, nindptr
-            object matrix_data = table.matrix_data.tocsr()
-
-        table_obs_ids = table.ids(axis='observation')
-        table_samp_ids = table.ids(axis='sample')
-        table_indices = matrix_data.indices
-        table_indptr = matrix_data.indptr
-        table_data = matrix_data.data
-
-        nsamples = table_samp_ids.size
-        nobs = table_obs_ids.size
-        nnz = table_data.size
-        nindptr = table_indptr.size
-        
-        obs_ids.resize(nobs)
-        samp_ids.resize(nsamples)
-        indices.resize(nnz)
-        indptr.resize(nindptr)
-        data.resize(nnz)
-
-        # cannot use prange for strings as the GIL is required for indexing
-        # arrays of object dtype
-        for i in range(nsamples):
-            samp_ids[i] = table_samp_ids[i].encode('utf8')
-
-        for i in range(nobs):
-            obs_ids[i] = table_obs_ids[i].encode('utf8')
-        
-        for i in prange(nindptr, nogil=True, schedule='static'):
-            indptr[i] = table_indptr[i]
-
-        for i in prange(nnz, nogil=True, schedule='static'):
-            indices[i] = table_indices[i]
-            data[i] = table_data[i]
-
-        self.obj = new biom(obs_ids, samp_ids, indices, indptr, data)
-
-    def __del__(self):
-        del self.obj
+    free(sp_bptree.names)
+    free(sp_bptree.lengths)
+    free(sp_bptree.structure)
+    free(sp_bptree)

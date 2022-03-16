@@ -1,27 +1,19 @@
 #cython: language_level=3
-#distutils: language = c++
 
-from libcpp cimport bool, string
-from libcpp.vector cimport vector
-from libcpp.string cimport string
-from libc.stdint cimport uint32_t
+from libc.stdint cimport int32_t, uint8_t
 
+ctypedef uint8_t bool
 
-cdef extern from "biom.hpp" namespace "su":
-    cdef cppclass biom:
-        biom(const vector[string] &obs_ids, 
-             const vector[string] &samp_ids, 
-             const vector[uint32_t] &index,
-             const vector[uint32_t] &indptr,
-             const vector[double] &data)
-        biom()
+cdef extern from "status_enum.hpp":
+    enum compute_status:
+        okay, 
+        tree_missing,
+        table_missing,
+        table_empty,
+        unknown_method,
+        table_and_tree_do_not_overlap,
+        output_error
 
-cdef extern from "tree.hpp" namespace "su":
-    cdef cppclass BPTree:
-        BPTree(vector[bool] input_structure,
-               vector[double] input_lengths,
-               vector[string] input_names)
-        BPTree()
 
 cdef extern from "api.hpp":
     struct mat:
@@ -35,20 +27,27 @@ cdef extern from "api.hpp":
         double* values
         char** sample_ids
 
-    enum compute_status:
-        okay, 
-        tree_missing,
-        table_missing,
-        table_empty,
-        unknown_method,
-        table_and_tree_do_not_overlap,
-        output_error
+    struct support_biom:
+        char** obs_ids
+        char** sample_ids
+        int32_t* indices
+        int32_t* indptr
+        double* data
+        int n_obs
+        int n_samples
+        int nnz
+
+    struct support_bptree:
+        bool* structure
+        double* lengths
+        char** names
+        int n_parens
 
     compute_status one_off(const char* biom_filename, const char* tree_filename, 
                                const char* unifrac_method, bool variance_adjust, double alpha,
                                bool bypass_tips, unsigned int threads, mat** result)
     
-    compute_status one_off_inmem(biom *table, BPTree *tree, 
+    compute_status one_off_inmem(support_biom *table, support_bptree *tree, 
                                  const char* unifrac_method, bool variance_adjust, double alpha,
                                  bool bypass_tips, unsigned int threads, mat** result)
 
