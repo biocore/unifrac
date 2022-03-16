@@ -234,19 +234,7 @@ def faith_pd(str biom_filename, str tree_filename):
     tree_c_string = tree_py_bytes
 
     status = faith_pd_one_off(biom_c_string, tree_c_string, &result)
-
-    if status != okay:
-        if status == tree_missing:
-            raise IOError("Tree file not found.")
-        elif status == table_missing:
-            raise IOError("Table file not found.")
-        elif status == table_empty:
-            raise ValueError("Table file is empty.")
-        elif status == table_and_tree_do_not_overlap:
-            raise ValueError("The table does not appear to be completely "
-                             "represented by the phylogeny.")
-        else:
-            raise Exception("Unknown Error: {}".format(status))
+    check_status(status)
 
     numpy_arr = np.zeros(result.n_samples, dtype=np.double)
     numpy_arr[:] = <np.double_t[:result.n_samples]> result.values
@@ -355,23 +343,7 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
                              variance_adjust, alpha, bypass_tips,
                              threads, format_c_string, 
                              pcoa_dims, dirbuf_c_string)
-
-    if status != okay:
-        if status == tree_missing:
-            raise IOError("Tree file not found.")
-        elif status == table_missing:
-            raise IOError("Table file not found.")
-        elif status == output_error:
-            raise IOError("Failed to generate outputfile.")
-        elif status == table_empty:
-            raise ValueError("Table file is empty.")
-        elif status == table_and_tree_do_not_overlap:
-            raise ValueError("The table does not appear to be completely "
-                             "represented by the phylogeny.")
-        elif status == unknown_method:
-            raise ValueError("Unknown method.")
-        else:
-            raise Exception("Unknown Error: {}".format(status))
+    check_status(status)
 
     return out_filename
 
