@@ -13,11 +13,10 @@ import pkg_resources
 
 import numpy as np
 import numpy.testing as npt
-from biom import Table, load_table, example_table
+from biom import Table, load_table
 from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
-import bp
 
 from unifrac import ssu, faith_pd, ssu_inmem
 from unifrac import unweighted, unweighted_to_file, h5unifrac
