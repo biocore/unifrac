@@ -12,10 +12,11 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-import biom
 import skbio
 import h5py
-import bp
+from bp import BP
+from skbio import TreeNode
+from biom import Table
 
 import unifrac as qsu
 from unifrac._meta import CONSOLIDATIONS
@@ -52,22 +53,38 @@ def _validate(table, phylogeny):
         raise ValueError("The phylogeny does not appear to be newick")
 
 
-def _validate_meta(tables, phylogenies):
-    for idx, (table, phylogeny) in enumerate(zip(tables, phylogenies)):
-        if not is_biom_v210(table):
-            raise ValueError(f"Table at position {idx} does not appear to be a"
-                             " BIOM-Format v2.1")
-        if not is_newick(phylogeny):
-            raise ValueError(f"The phylogeny at position {idx} does not appear"
-                             " to be newick")
+def _call_ssu(table, phylogeny, *args):
+    if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
+        return qsu.ssu_inmem(table, phylogeny, *args)
+    elif isinstance(table, str) and isinstance(phylogeny, str):
+        _validate(table, phylogeny)
+        return qsu.ssu(table, phylogeny, *args)
+    else:
+        table_type = type(table)
+        tree_type = type(phylogeny)
+        raise ValueError(f"table ('{table_type}') and tree ('{tree_type}') "
+                         f"are incompatible with the library call")
+
+
+def _call_ssu_to_file(table, phylogeny, *args):
+    if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
+        raise NotImplementedError("Direct to file support from in memory "
+                                  "objects has not been implemented yet")
+    elif isinstance(table, str) and isinstance(phylogeny, str):
+        _validate(table, phylogeny)
+        return qsu.ssu_to_file(table, phylogeny, *args)
+    else:
+        table_type = type(table)
+        tree_type = type(phylogeny)
+        raise ValueError(f"table ('{table_type}') and tree ('{tree_type}') "
+                         f"are incompatible with the library call")
 
 
 #
 # Functions that compute Unifrac and return a memory object
 #
-
-def unweighted(table: Union[str, biom.Table],
-               phylogeny: [str, skbio.TreeNode, bp.BP],
+def unweighted(table: Union[str, Table],
+               phylogeny: Union[str, TreeNode, BP],
                threads: int = 1,
                variance_adjusted: bool = False,
                bypass_tips: bool = False) -> skbio.DistanceMatrix:
@@ -117,16 +134,12 @@ def unweighted(table: Union[str, biom.Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    if isinstance(table, str) and isinstance(phylogeny, str):
-        _validate(table, phylogeny)
-        return qsu.ssu(table, phylogeny, 'unweighted',
-                       variance_adjusted, 1.0, bypass_tips, threads)
-    else:
-        raise NotImplemented()
+    return _call_ssu(table, phylogeny, 'unweighted', variance_adjusted, 1.0,
+                     bypass_tips, threads)
 
 
-def unweighted_fp32(table: str,
-                    phylogeny: str,
+def unweighted_fp32(table: Union[str, Table],
+                    phylogeny: Union[str, TreeNode, BP],
                     threads: int = 1,
                     variance_adjusted: bool = False,
                     bypass_tips: bool = False) -> skbio.DistanceMatrix:
@@ -176,13 +189,12 @@ def unweighted_fp32(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu(table, phylogeny, 'unweighted_fp32',
-                   variance_adjusted, 1.0, bypass_tips, threads)
+    return _call_ssu(table, phylogeny, 'unweighted_fp32', variance_adjusted,
+                     1.0, bypass_tips, threads)
 
 
-def weighted_normalized(table: str,
-                        phylogeny: str,
+def weighted_normalized(table: Union[str, Table],
+                        phylogeny: Union[str, TreeNode, BP],
                         threads: int = 1,
                         variance_adjusted: bool = False,
                         bypass_tips: bool = False) -> skbio.DistanceMatrix:
@@ -231,13 +243,12 @@ def weighted_normalized(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized',
-                   variance_adjusted, 1.0, bypass_tips, threads)
+    return _call_ssu(str(table), str(phylogeny), 'weighted_normalized',
+                     variance_adjusted, 1.0, bypass_tips, threads)
 
 
-def weighted_normalized_fp32(table: str,
-                             phylogeny: str,
+def weighted_normalized_fp32(table: Union[str, Table],
+                             phylogeny: Union[str, TreeNode, BP],
                              threads: int = 1,
                              variance_adjusted: bool = False,
                              bypass_tips: bool = False
@@ -287,13 +298,12 @@ def weighted_normalized_fp32(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu(str(table), str(phylogeny), 'weighted_normalized_fp32',
-                   variance_adjusted, 1.0, bypass_tips, threads)
+    return _call_ssu(str(table), str(phylogeny), 'weighted_normalized_fp32',
+                     variance_adjusted, 1.0, bypass_tips, threads)
 
 
-def weighted_unnormalized(table: str,
-                          phylogeny: str,
+def weighted_unnormalized(table: Union[str, Table],
+                          phylogeny: Union[str, TreeNode, BP],
                           threads: int = 1,
                           variance_adjusted: bool = False,
                           bypass_tips: bool = False) -> skbio.DistanceMatrix:
@@ -343,13 +353,12 @@ def weighted_unnormalized(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized',
-                   variance_adjusted, 1.0, bypass_tips, threads)
+    return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized',
+                     variance_adjusted, 1.0, bypass_tips, threads)
 
 
-def weighted_unnormalized_fp32(table: str,
-                               phylogeny: str,
+def weighted_unnormalized_fp32(table: Union[str, Table],
+                               phylogeny: Union[str, TreeNode, BP],
                                threads: int = 1,
                                variance_adjusted: bool = False,
                                bypass_tips: bool = False
@@ -400,13 +409,12 @@ def weighted_unnormalized_fp32(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu(str(table), str(phylogeny), 'weighted_unnormalized_fp32',
-                   variance_adjusted, 1.0, bypass_tips, threads)
+    return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized_fp32',
+                     variance_adjusted, 1.0, bypass_tips, threads)
 
 
-def generalized(table: str,
-                phylogeny: str,
+def generalized(table: Union[str, Table],
+                phylogeny: Union[str, TreeNode, BP],
                 threads: int = 1,
                 alpha: float = 1.0,
                 variance_adjusted: bool = False,
@@ -467,7 +475,6 @@ def generalized(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
     if alpha == 1.0:
         warn("alpha of 1.0 is weighted-normalized UniFrac. "
              "Weighted-normalized is being used instead as it is more "
@@ -476,12 +483,12 @@ def generalized(table: str,
         return weighted_normalized(table, phylogeny, threads,
                                    variance_adjusted)
     else:
-        return qsu.ssu(str(table), str(phylogeny), 'generalized',
-                       variance_adjusted, alpha, bypass_tips, threads)
+        return _call_ssu(str(table), str(phylogeny), 'generalized',
+                         variance_adjusted, alpha, bypass_tips, threads)
 
 
-def generalized_fp32(table: str,
-                     phylogeny: str,
+def generalized_fp32(table: Union[str, Table],
+                     phylogeny: Union[str, TreeNode, BP],
                      threads: int = 1,
                      alpha: float = 1.0,
                      variance_adjusted: bool = False,
@@ -542,7 +549,6 @@ def generalized_fp32(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
     if alpha == 1.0:
         warn("alpha of 1.0 is weighted-normalized UniFrac. "
              "Weighted-normalized is being used instead as it is more "
@@ -551,8 +557,8 @@ def generalized_fp32(table: str,
         return weighted_normalized_fp32(table, phylogeny, threads,
                                         variance_adjusted)
     else:
-        return qsu.ssu(str(table), str(phylogeny), 'generalized_fp32',
-                       variance_adjusted, alpha, bypass_tips, threads)
+        return _call_ssu(str(table), str(phylogeny), 'generalized_fp32',
+                         variance_adjusted, alpha, bypass_tips, threads)
 
 
 METHODS = {'unweighted': unweighted,
@@ -680,8 +686,6 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
 
-    _validate_meta(tables, phylogenies)
-
     kwargs = {'threads': threads,
               'bypass_tips': bypass_tips,
               'variance_adjusted': variance_adjusted}
@@ -768,11 +772,10 @@ def unweighted_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename,
-                           'unweighted',
-                           variance_adjusted, 1.0, bypass_tips, threads,
-                           format, pcoa_dims, buf_dirname)
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'unweighted',
+                             variance_adjusted, 1.0, bypass_tips, threads,
+                             format, pcoa_dims, buf_dirname)
 
 
 def unweighted_fp32_to_file(table: str,
@@ -842,11 +845,10 @@ def unweighted_fp32_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename,
-                           'unweighted_fp32',
-                           variance_adjusted, 1.0, bypass_tips, threads,
-                           format, pcoa_dims, buf_dirname)
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'unweighted_fp32',
+                             variance_adjusted, 1.0, bypass_tips, threads,
+                             format, pcoa_dims, buf_dirname)
 
 
 def weighted_normalized_to_file(table: str,
@@ -915,11 +917,10 @@ def weighted_normalized_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename,
-                           'weighted_normalized',
-                           variance_adjusted, 1.0, bypass_tips, threads,
-                           format, pcoa_dims, buf_dirname)
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'weighted_normalized',
+                             variance_adjusted, 1.0, bypass_tips, threads,
+                             format, pcoa_dims, buf_dirname)
 
 
 def weighted_normalized_fp32_to_file(table: str,
@@ -988,11 +989,10 @@ def weighted_normalized_fp32_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename,
-                           'weighted_normalized_fp32',
-                           variance_adjusted, 1.0, bypass_tips, threads,
-                           format, pcoa_dims, buf_dirname)
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'weighted_normalized_fp32',
+                             variance_adjusted, 1.0, bypass_tips, threads,
+                             format, pcoa_dims, buf_dirname)
 
 
 def weighted_unnormalized_to_file(table: str,
@@ -1061,11 +1061,10 @@ def weighted_unnormalized_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename,
-                           'weighted_unnormalized',
-                           variance_adjusted, 1.0, bypass_tips, threads,
-                           format, pcoa_dims, buf_dirname)
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'weighted_unnormalized',
+                             variance_adjusted, 1.0, bypass_tips, threads,
+                             format, pcoa_dims, buf_dirname)
 
 
 def weighted_unnormalized_fp32_to_file(table: str,
@@ -1134,11 +1133,10 @@ def weighted_unnormalized_fp32_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
-    return qsu.ssu_to_file(table, phylogeny, out_filename,
-                           'weighted_unnormalized_fp32',
-                           variance_adjusted, 1.0, bypass_tips, threads,
-                           format, pcoa_dims, buf_dirname)
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'weighted_unnormalized_fp32',
+                             variance_adjusted, 1.0, bypass_tips, threads,
+                             format, pcoa_dims, buf_dirname)
 
 
 def generalized_to_file(table: str,
@@ -1219,23 +1217,22 @@ def generalized_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
     if alpha == 1.0:
         warn("alpha of 1.0 is weighted-normalized UniFrac. "
              "Weighted-normalized is being used instead as it is more "
              "optimized.",
              Warning)
-        return qsu.ssu_to_file(table, phylogeny, out_filename,
-                               'weighted_normalized',
-                               variance_adjusted, alpha,
-                               bypass_tips, threads,
-                               format, pcoa_dims, buf_dirname)
+        return _call_ssu_to_file(table, phylogeny, out_filename,
+                                 'weighted_normalized',
+                                 variance_adjusted, alpha,
+                                 bypass_tips, threads,
+                                 format, pcoa_dims, buf_dirname)
     else:
-        return qsu.ssu_to_file(table, phylogeny, out_filename,
-                               'generalized',
-                               variance_adjusted, alpha,
-                               bypass_tips, threads,
-                               format, pcoa_dims, buf_dirname)
+        return _call_ssu_to_file(table, phylogeny, out_filename,
+                                 'generalized',
+                                 variance_adjusted, alpha,
+                                 bypass_tips, threads,
+                                 format, pcoa_dims, buf_dirname)
 
 
 def generalized_fp32_to_file(table: str,
@@ -1316,23 +1313,22 @@ def generalized_fp32_to_file(table: str,
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    _validate(table, phylogeny)
     if alpha == 1.0:
         warn("alpha of 1.0 is weighted-normalized UniFrac. "
              "Weighted-normalized is being used instead as it is more "
              "optimized.",
              Warning)
-        return qsu.ssu_to_file(table, phylogeny, out_filename,
-                               'weighted_normalized_fp32',
-                               variance_adjusted, alpha,
-                               bypass_tips, threads,
-                               format, pcoa_dims, buf_dirname)
+        return _call_ssu_to_file(table, phylogeny, out_filename,
+                                 'weighted_normalized_fp32',
+                                 variance_adjusted, alpha,
+                                 bypass_tips, threads,
+                                 format, pcoa_dims, buf_dirname)
     else:
-        return qsu.ssu_to_file(table, phylogeny, out_filename,
-                               'generalized_fp32',
-                               variance_adjusted, alpha,
-                               bypass_tips, threads,
-                               format, pcoa_dims, buf_dirname)
+        return _call_ssu_to_file(table, phylogeny, out_filename,
+                                 'generalized_fp32',
+                                 variance_adjusted, alpha,
+                                 bypass_tips, threads,
+                                 format, pcoa_dims, buf_dirname)
 
 #
 # Functions that read Unifrac from hdf5 files
