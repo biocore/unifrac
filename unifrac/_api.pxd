@@ -1,6 +1,6 @@
 #cython: language_level=3
 
-from libc.stdint cimport int32_t, uint8_t
+from libc.stdint cimport uint32_t, uint8_t
 
 ctypedef uint8_t bool
 
@@ -22,6 +22,18 @@ cdef extern from "api.hpp":
         unsigned int cf_size
         char** sample_ids
 
+    struct mat_full_fp64:
+        uint32_t n_samples
+        uint32_t flags 
+        double* matrix
+        char** sample_ids
+    
+    struct mat_full_fp32:
+        uint32_t n_samples
+        uint32_t flags 
+        float* matrix
+        char** sample_ids
+
     struct results_vec:
         unsigned int n_samples
         double* values
@@ -30,8 +42,8 @@ cdef extern from "api.hpp":
     struct support_biom:
         char** obs_ids
         char** sample_ids
-        int32_t* indices
-        int32_t* indptr
+        uint32_t* indices
+        uint32_t* indptr
         double* data
         int n_obs
         int n_samples
@@ -49,13 +61,18 @@ cdef extern from "api.hpp":
     
     compute_status one_off_inmem(const support_biom *table, const support_bptree *tree, 
                                  const char* unifrac_method, bool variance_adjust, double alpha,
-                                 bool bypass_tips, unsigned int threads, mat** result)
+                                 bool bypass_tips, unsigned int threads, mat_full_fp64** result)
+
+    compute_status one_off_inmem_fp32(const support_biom *table, const support_bptree *tree, 
+                                      const char* unifrac_method, bool variance_adjust, double alpha,
+                                      bool bypass_tips, unsigned int threads, mat_full_fp32** result)
 
     compute_status faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                     results_vec** result)
 
     void destroy_mat(mat** result)
-
+    void destroy_mat_full_fp32(mat_full_fp32** result)
+    void destroy_mat_full_fp64(mat_full_fp64** result)
     void destroy_results_vec(results_vec** result)
 
     compute_status unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,

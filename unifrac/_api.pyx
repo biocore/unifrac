@@ -70,18 +70,42 @@ def ssu_inmem(object table, object tree,
         If an unkown error is experienced
     """
     cdef:
-        mat *result;
-        compute_status status;
         bytes met_py_bytes
         char* met_c_string
         support_biom* inmem_biom
         support_bptree* inmem_tree
+        object result_dm
 
     inmem_biom = construct_support_biom(table)
     inmem_tree = construct_support_bptree(tree)
 
     met_py_bytes = unifrac_method.encode()
     met_c_string = met_py_bytes
+
+    if '_fp32' in unifrac_method:
+        result_dm = _ssu_inmem_fp32(inmem_biom, inmem_tree, met_c_string, 
+                                    variance_adjust, alpha, bypass_tips, 
+                                    threads)
+    else:
+        result_dm = _ssu_inmem_fp64(inmem_biom, inmem_tree, met_c_string, 
+                                    variance_adjust, alpha, bypass_tips, 
+                                    threads)
+   
+    destroy_support_biom(inmem_biom)
+    destroy_support_bptree(inmem_tree)
+
+    return result_dm
+
+
+cdef object _ssu_inmem_fp64(support_biom *inmem_biom, 
+                            support_bptree *inmem_tree, 
+                            char* met_c_string, 
+                            bool variance_adjust, double alpha,
+                            bool bypass_tips, unsigned int threads):
+    cdef: 
+        compute_status status
+        mat_full_fp64 *result
+        object result_dm
 
     status = one_off_inmem(inmem_biom,
                            inmem_tree,
@@ -92,11 +116,31 @@ def ssu_inmem(object table, object tree,
                            threads,
                            &result)
     check_status(status)
-   
-    destroy_support_biom(inmem_biom)
-    destroy_support_bptree(inmem_tree)
 
-    return result_to_skbio_distance_matrix(result)
+    return full_fp64_result_to_skbio_distance_matrix(result)
+
+
+cdef object _ssu_inmem_fp32(support_biom *inmem_biom,
+                            support_bptree *inmem_tree, 
+                            char* met_c_string, 
+                            bool variance_adjust, double alpha,
+                            bool bypass_tips, unsigned int threads):
+    cdef: 
+        compute_status status
+        mat_full_fp32 *result
+        object result_dm
+
+    status = one_off_inmem_fp32(inmem_biom,
+                                inmem_tree,
+                                met_c_string,
+                                variance_adjust,
+                                alpha,
+                                bypass_tips,
+                                threads,
+                                &result)
+    check_status(status)
+
+    return full_fp32_result_to_skbio_distance_matrix(result)
 
 
 def ssu(str biom_filename, str tree_filename,
@@ -187,6 +231,51 @@ cdef object result_to_skbio_distance_matrix(mat *result):
         ids.append(result.sample_ids[i].decode('utf-8'))
 
     destroy_mat(&result)
+
+    return skbio.DistanceMatrix(numpy_arr, ids)
+
+
+cdef object full_fp32_result_to_skbio_distance_matrix(mat_full_fp32 *result):
+    cdef:
+        np.ndarray[np.float32_t, ndim=2] numpy_arr
+        np.float32_t* data_ptr
+        list ids
+        int i
+        int n = result.n_samples * result.n_samples
+
+    ids = []
+    numpy_arr = np.zeros((result.n_samples, result.n_samples), dtype=np.float32)
+    numpy_arr.data = <char*>result.matrix
+    #&numpy_arr[0, 0] = result.matrix
+
+    ### can we avoid copy here???
+    ############
+    #numpy_arr
+    #numpy_arr[:] = <np.float32_t[:n]> result.matrix
+
+    for i in range(result.n_samples):
+        ids.append(result.sample_ids[i].decode('utf-8'))
+
+    # destroy_mat_full_fp32(&result)
+
+    return skbio.DistanceMatrix(numpy_arr, ids)
+
+
+cdef object full_fp64_result_to_skbio_distance_matrix(mat_full_fp64 *result):
+    cdef:
+        np.ndarray[np.double_t, ndim=2] numpy_arr
+        list ids
+        int i
+        int n = result.n_samples * result.n_samples
+
+    ids = []
+    numpy_arr = np.zeros((result.n_samples, result.n_samples), dtype=np.double)
+    numpy_arr.data = <char*>result.matrix
+
+    for i in range(result.n_samples):
+        ids.append(result.sample_ids[i].decode('utf-8'))
+
+    # destroy_mat_full_fp64(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
 
@@ -352,8 +441,8 @@ cdef support_biom* construct_support_biom(object table):
     cdef: 
         char** obs_ids
         char** sample_ids
-        int32_t* indices
-        int32_t* indptr
+        uint32_t* indices
+        uint32_t* indptr
         double* data
         support_biom* sp_biom
 
@@ -362,15 +451,19 @@ cdef support_biom* construct_support_biom(object table):
 
         np.ndarray[object, ndim=1] table_obs_ids
         np.ndarray[object, ndim=1] table_samp_ids
-        np.ndarray[np.int32_t, ndim=1] table_indices 
-        np.ndarray[np.int32_t, ndim=1] table_indptr 
-        np.ndarray[np.float64_t, ndim=1] table_data
+        np.ndarray[np.int32_t, ndim=1] table_indices
+        np.ndarray[np.int32_t, ndim=1] table_indptr
+        np.ndarray[np.double_t, ndim=1] table_data
 
     table_obs_ids = table.ids(axis='observation')
     table_samp_ids = table.ids(axis='sample')
-    table_indices = matrix_data.indices
-    table_indptr = matrix_data.indptr
-    table_data = matrix_data.data
+    table_indices = table.matrix_data.indices
+    table_indptr = table.matrix_data.indptr
+    table_data = table.matrix_data.data
+
+    indices = <uint32_t*>&table_indices[0]
+    indptr = <uint32_t*>&table_indptr[0]
+    data = <double*>&table_data[0]
 
     nsamples = table_samp_ids.size
     nobs = table_obs_ids.size
@@ -383,18 +476,6 @@ cdef support_biom* construct_support_biom(object table):
 
     sample_ids = <char**>malloc(nsamples * sizeof(char*))
     if not sample_ids:
-        return NULL
-
-    indices = <int32_t*>malloc(nnz * sizeof(int32_t))
-    if not indices:
-        return NULL
-
-    indptr = <int32_t*>malloc(nindptr * sizeof(int32_t))
-    if not indptr:
-        return NULL
-
-    data = <double*>malloc(nnz * sizeof(double))
-    if not data:
         return NULL
 
     # cannot use prange for strings as the GIL is required for indexing
@@ -413,13 +494,6 @@ cdef support_biom* construct_support_biom(object table):
             return NULL
         strcpy(obs_ids[i], table_obs_ids[i].encode('ascii'))
     
-    for i in prange(nindptr, nogil=True, schedule='static'):
-        indptr[i] = table_indptr[i]
-
-    for i in prange(nnz, nogil=True, schedule='static'):
-        indices[i] = table_indices[i]
-        data[i] = table_data[i]
-
     sp_biom = <support_biom*>malloc(sizeof(support_biom))
     if not sp_biom:
         return NULL
@@ -447,9 +521,10 @@ cdef void destroy_support_biom(support_biom *sp_biom):
         free(sp_biom.sample_ids[i])
     free(sp_biom.sample_ids)
 
-    free(sp_biom.indices)
-    free(sp_biom.indptr)
-    free(sp_biom.data)
+    # these are borrowed pointers so do not free
+    sp_biom.indices = NULL
+    sp_biom.indptr = NULL
+    sp_biom.data = NULL
     free(sp_biom)
 
 
