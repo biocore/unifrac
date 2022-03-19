@@ -244,14 +244,9 @@ cdef object full_fp32_result_to_skbio_distance_matrix(mat_full_fp32 *result):
         int n = result.n_samples * result.n_samples
 
     ids = []
-    numpy_arr = np.zeros((result.n_samples, result.n_samples), dtype=np.float32)
+    numpy_arr = np.empty((result.n_samples, result.n_samples), dtype=np.float32)
+    ###### free(numpy_arr.data)  !?!?!?! can we and should we do thhis?
     numpy_arr.data = <char*>result.matrix
-    #&numpy_arr[0, 0] = result.matrix
-
-    ### can we avoid copy here???
-    ############
-    #numpy_arr
-    #numpy_arr[:] = <np.float32_t[:n]> result.matrix
 
     for i in range(result.n_samples):
         ids.append(result.sample_ids[i].decode('utf-8'))
@@ -269,7 +264,8 @@ cdef object full_fp64_result_to_skbio_distance_matrix(mat_full_fp64 *result):
         int n = result.n_samples * result.n_samples
 
     ids = []
-    numpy_arr = np.zeros((result.n_samples, result.n_samples), dtype=np.double)
+    numpy_arr = np.empty((result.n_samples, result.n_samples), dtype=np.double)
+    ###### free(numpy_arr.data)  !?!?!?! can we do this????
     numpy_arr.data = <char*>result.matrix
 
     for i in range(result.n_samples):
