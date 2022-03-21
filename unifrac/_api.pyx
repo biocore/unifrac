@@ -75,6 +75,8 @@ def ssu_inmem(object table, object tree,
         support_biom* inmem_biom
         support_bptree* inmem_tree
         object result_dm
+        np.ndarray[np.float32_t, ndim=2] numpy_arr_fp32
+        np.ndarray[np.double_t, ndim=2] numpy_arr_fp64
 
     inmem_biom = construct_support_biom(table)
     inmem_tree = construct_support_bptree(tree)
@@ -83,13 +85,16 @@ def ssu_inmem(object table, object tree,
     met_c_string = met_py_bytes
 
     if '_fp32' in unifrac_method:
-        result_dm = _ssu_inmem_fp32(inmem_biom, inmem_tree, met_c_string, 
-                                    variance_adjust, alpha, bypass_tips, 
-                                    threads)
+        numpy_arr_fp32 = _ssu_inmem_fp32(inmem_biom, inmem_tree, met_c_string, 
+                                         variance_adjust, alpha, bypass_tips, 
+                                         threads)
+        result_dm = skbio.DistanceMatrix(numpy_arr_fp32, table.ids())
     else:
-        result_dm = _ssu_inmem_fp64(inmem_biom, inmem_tree, met_c_string, 
-                                    variance_adjust, alpha, bypass_tips, 
-                                    threads)
+        numpy_arr_fp64 = _ssu_inmem_fp64(inmem_biom, inmem_tree, met_c_string, 
+                                         variance_adjust, alpha, bypass_tips, 
+                                         threads)
+        print(numpy_arr_fp64[:5, :5])
+        result_dm = skbio.DistanceMatrix(numpy_arr_fp64, table.ids())
    
     destroy_support_biom(inmem_biom)
     destroy_support_bptree(inmem_tree)
@@ -97,16 +102,26 @@ def ssu_inmem(object table, object tree,
     return result_dm
 
 
-cdef object _ssu_inmem_fp64(support_biom *inmem_biom, 
-                            support_bptree *inmem_tree, 
-                            char* met_c_string, 
-                            bool variance_adjust, double alpha,
-                            bool bypass_tips, unsigned int threads):
+cdef np.ndarray _ssu_inmem_fp64(support_biom *inmem_biom, 
+                                support_bptree *inmem_tree, 
+                                char* met_c_string, 
+                                bool variance_adjust, double alpha,
+                                bool bypass_tips, unsigned int threads):
     cdef: 
         compute_status status
         mat_full_fp64 *result
-        object result_dm
+        np.ndarray[np.double_t, ndim=2] numpy_arr
 
+    # allocate our array, and steal the pointer so we may write into it
+    numpy_arr = np.empty((inmem_biom.n_samples, inmem_biom.n_samples), 
+                         dtype=np.double)
+    result = <mat_full_fp64*>malloc(sizeof(mat_full_fp64))
+    result.n_samples = inmem_biom.n_samples
+    result.flags = 0
+
+    result.matrix = &numpy_arr[0, 0]
+    result.sample_ids = inmem_biom.sample_ids 
+    
     status = one_off_inmem(inmem_biom,
                            inmem_tree,
                            met_c_string,
@@ -117,19 +132,35 @@ cdef object _ssu_inmem_fp64(support_biom *inmem_biom,
                            &result)
     check_status(status)
 
-    return full_fp64_result_to_skbio_distance_matrix(result)
+    # both matrix and sample_ids are borrowed pointers -- we do not need to
+    # worry about freeing them
+    result.matrix = NULL
+    result.sample_ids = NULL
+    free(result)
+
+    return numpy_arr
 
 
-cdef object _ssu_inmem_fp32(support_biom *inmem_biom,
-                            support_bptree *inmem_tree, 
-                            char* met_c_string, 
-                            bool variance_adjust, double alpha,
-                            bool bypass_tips, unsigned int threads):
+cdef np.ndarray _ssu_inmem_fp32(support_biom *inmem_biom,
+                                support_bptree *inmem_tree, 
+                                char* met_c_string, 
+                                bool variance_adjust, double alpha,
+                                bool bypass_tips, unsigned int threads):
     cdef: 
         compute_status status
         mat_full_fp32 *result
-        object result_dm
+        np.ndarray[np.float32_t, ndim=2] numpy_arr
+    
+    # allocate our array, and steal the pointer so we may write into it
+    numpy_arr = np.empty((inmem_biom.n_samples, inmem_biom.n_samples), 
+                         dtype=np.float32)
+    result = <mat_full_fp32*>malloc(sizeof(mat_full_fp32))
+    result.n_samples = inmem_biom.n_samples
+    result.flags = 0
 
+    result.matrix = &numpy_arr[0, 0]
+    result.sample_ids = inmem_biom.sample_ids
+    
     status = one_off_inmem_fp32(inmem_biom,
                                 inmem_tree,
                                 met_c_string,
@@ -139,8 +170,14 @@ cdef object _ssu_inmem_fp32(support_biom *inmem_biom,
                                 threads,
                                 &result)
     check_status(status)
+    
+    # both matrix and sample_ids are borrowed pointers -- we do not need to
+    # worry about freeing them
+    result.matrix = NULL
+    result.sample_ids = NULL
+    free(result)
 
-    return full_fp32_result_to_skbio_distance_matrix(result)
+    return numpy_arr
 
 
 def ssu(str biom_filename, str tree_filename,
@@ -231,47 +268,6 @@ cdef object result_to_skbio_distance_matrix(mat *result):
         ids.append(result.sample_ids[i].decode('utf-8'))
 
     destroy_mat(&result)
-
-    return skbio.DistanceMatrix(numpy_arr, ids)
-
-
-cdef object full_fp32_result_to_skbio_distance_matrix(mat_full_fp32 *result):
-    cdef:
-        np.ndarray[np.float32_t, ndim=2] numpy_arr
-        np.float32_t* data_ptr
-        list ids
-        int i
-        int n = result.n_samples * result.n_samples
-
-    ids = []
-    numpy_arr = np.empty((result.n_samples, result.n_samples), dtype=np.float32)
-    ###### free(numpy_arr.data)  !?!?!?! can we and should we do thhis?
-    numpy_arr.data = <char*>result.matrix
-
-    for i in range(result.n_samples):
-        ids.append(result.sample_ids[i].decode('utf-8'))
-
-    # destroy_mat_full_fp32(&result)
-
-    return skbio.DistanceMatrix(numpy_arr, ids)
-
-
-cdef object full_fp64_result_to_skbio_distance_matrix(mat_full_fp64 *result):
-    cdef:
-        np.ndarray[np.double_t, ndim=2] numpy_arr
-        list ids
-        int i
-        int n = result.n_samples * result.n_samples
-
-    ids = []
-    numpy_arr = np.empty((result.n_samples, result.n_samples), dtype=np.double)
-    ###### free(numpy_arr.data)  !?!?!?! can we do this????
-    numpy_arr.data = <char*>result.matrix
-
-    for i in range(result.n_samples):
-        ids.append(result.sample_ids[i].decode('utf-8'))
-
-    # destroy_mat_full_fp64(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
 
