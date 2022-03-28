@@ -18,12 +18,52 @@ from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
 
-from unifrac import ssu, faith_pd
+from unifrac import ssu, faith_pd, ssu_inmem
 from unifrac import unweighted, unweighted_to_file, h5unifrac
 
 
 class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
+
+    def test_unweighted_inmem(self):
+        tree_fp = self.get_data_path('crawford.tre')
+        table_fp = self.get_data_path('crawford.biom')
+
+        table = load_table(table_fp)
+        tree = skbio.TreeNode.read(tree_fp)
+
+        ids = table.ids()
+        otu_ids = table.ids(axis='observation')
+        cnts = table.matrix_data.astype(int).toarray().T
+        exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
+                                             ids=ids, otu_ids=otu_ids,
+                                             tree=tree)
+        obs = ssu_inmem(table, tree, 'unweighted', False, 1.0,
+                        False, 1)
+        npt.assert_almost_equal(obs.data, exp.data)
+
+        obs2 = unweighted(table_fp, tree_fp)
+        npt.assert_almost_equal(obs2.data, exp.data)
+
+    def test_unweighted_fp32_inmem(self):
+        tree_fp = self.get_data_path('crawford.tre')
+        table_fp = self.get_data_path('crawford.biom')
+
+        table = load_table(table_fp)
+        tree = skbio.TreeNode.read(tree_fp)
+
+        ids = table.ids()
+        otu_ids = table.ids(axis='observation')
+        cnts = table.matrix_data.astype(int).toarray().T
+        exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
+                                             ids=ids, otu_ids=otu_ids,
+                                             tree=tree)
+        obs = ssu_inmem(table, tree, 'unweighted_fp32', False, 1.0,
+                        False, 1)
+        npt.assert_almost_equal(obs.data, exp.data, decimal=6)
+
+        obs2 = unweighted(table_fp, tree_fp)
+        npt.assert_almost_equal(obs2.data, exp.data)
 
     def get_data_path(self, filename):
         # adapted from qiime2.plugin.testing.TestPluginBase

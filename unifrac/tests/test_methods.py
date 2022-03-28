@@ -74,11 +74,15 @@ class StateUnifracTests(unittest.TestCase):
             meta(tuple(), (self.tree1, ), method='unweighted')
 
     def test_meta_validation(self):
-        with self.assertRaisesRegex(ValueError, "position 1.*not.*BIOM"):
+        with self.assertRaisesRegex(ValueError,
+                                    "Table does not appear to be a "
+                                    "BIOM-Format v2.1"):
             meta((self.table1, self.not_a_table), (self.tree1, self.tree2),
                  method='unweighted')
 
-        with self.assertRaisesRegex(ValueError, "position 1.*not.*newick"):
+        with self.assertRaisesRegex(ValueError,
+                                    "The phylogeny does not "
+                                    "appear to be newick"):
             meta((self.table1, self.table2), (self.tree1, self.not_a_tree),
                  method='unweighted')
 

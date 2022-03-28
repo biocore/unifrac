@@ -31,24 +31,23 @@ if sys.platform == 'darwin':
 
 def compile_ssu():
     """Clean and compile the SSU binary"""
+    to_link = ["unifrac/task_parameters.hpp",
+               "unifrac/api.hpp",
+               "unifrac/status_enum.hpp"]
+
     # clean the target
-    cmd = ["rm", "-f", "unifrac/task_parameters.hpp", "unifrac/api.hpp"]
+    cmd = ["rm", "-f"] + to_link
     ret = subprocess.call(cmd)
     if ret != 0:
         raise Exception('Error removing temp unifrac files!')
 
-    # link to files from conda
-    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
-           "/include/unifrac/task_parameters.hpp", "unifrac/"]
-    ret = subprocess.call(cmd)
-    if ret != 0:
-        raise Exception('Error removing linking unifrac files!')
-
-    cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') +
-           "/include/unifrac/api.hpp", "unifrac/"]
-    ret = subprocess.call(cmd)
-    if ret != 0:
-        raise Exception('Error removing linking unifrac files!')
+    for f in to_link:
+        # link to files from conda
+        cmd = ["ln", "-s", os.environ.get('CONDA_PREFIX') + '/include/' + f,
+               "unifrac/"]
+        ret = subprocess.call(cmd)
+        if ret != 0:
+            raise Exception('Error removing linking unifrac files!')
 
 
 class build_ext(build_ext_orig):
@@ -67,6 +66,7 @@ if sys.platform == "darwin":
                  '/lib/libssu.so']
 else:
     LINK_ARGS = []
+COMPILE_ARGS = []
 
 if 'CONDA_PREFIX' in os.environ:
     CONDA_INCLUDES = [os.environ.get('CONDA_PREFIX') + '/include']
@@ -77,8 +77,8 @@ USE_CYTHON = os.environ.get('USE_CYTHON', True)
 ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("unifrac._api",
                         sources=["unifrac/_api" + ext],
-                        language="c++",
                         extra_link_args=LINK_ARGS,
+                        extra_compile_args=COMPILE_ARGS,
                         include_dirs=([np.get_include()] +
                                       CONDA_INCLUDES),
                         libraries=['ssu'])]
