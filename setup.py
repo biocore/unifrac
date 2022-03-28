@@ -66,8 +66,7 @@ if sys.platform == "darwin":
                  '/lib/libssu.so']
 else:
     LINK_ARGS = []
-LINK_ARGS.append('-fopenmp')
-COMPILE_ARGS = ['-fopenmp', ]
+COMPILE_ARGS = []
 
 if 'CONDA_PREFIX' in os.environ:
     CONDA_INCLUDES = [os.environ.get('CONDA_PREFIX') + '/include']

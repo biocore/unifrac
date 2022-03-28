@@ -4,7 +4,6 @@ import numpy as np
 cimport numpy as np
 import bp
 import pandas as pd
-from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.string cimport strcpy
 
