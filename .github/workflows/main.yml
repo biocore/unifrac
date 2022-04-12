@@ -60,7 +60,7 @@ jobs:
           conda install --yes -c conda-forge -c bioconda clangxx_osx-64
         fi
         conda install --yes -c conda-forge -c bioconda unifrac-binaries
-        conda install --yes -c conda-forge -c bioconda cython hdf5 biom-format numpy h5py "scikit-bio>=0.5.1" nose
+        conda install --yes -c conda-forge -c bioconda cython hdf5 hdf5-static biom-format numpy h5py "scikit-bio>=0.5.1" nose
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
