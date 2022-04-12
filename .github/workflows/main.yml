@@ -58,8 +58,9 @@ jobs:
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
         else
           conda install --yes -c conda-forge -c bioconda clangxx_osx-64
-        fi 
-        conda install --yes -c conda-forge -c bioconda cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" unifrac-binaries flake8 nose
+        fi
+        conda install --yes -c conda-forge -c bioconda unifrac-binaries
+        conda install --yes -c conda-forge -c bioconda cython hdf5 biom-format numpy h5py "scikit-bio>=0.5.1" nose
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
@@ -79,7 +80,6 @@ jobs:
       run: |
         conda activate unifrac
         nosetests
-        flake8 unifrac setup.py
         
     - name: Sanity checks
       shell: bash -l {0}
