@@ -79,6 +79,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        ls -lrt $CONDA_PREFIX/lib/libhdf5_cpp*
         nosetests
         
     - name: Sanity checks
