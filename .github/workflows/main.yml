@@ -29,6 +29,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,7 +37,7 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v2
       with:        
         auto-update-conda: true
-        python-version: 3.6 
+        python-version: ${{ matrix.python-version }}
     - name: Install 
       shell: bash -l {0}
       run: |
@@ -48,7 +49,7 @@ jobs:
           # the system tools are unusable, hide them
           sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
         fi
-        conda create --yes -n unifrac -c conda-forge -c bioconda python=3.6
+        conda create --yes -n unifrac -c conda-forge -c bioconda python=${{ matrix.python-version }}
         conda activate unifrac
         conda config --add channels conda-forge
         conda config --add channels bioconda
@@ -57,8 +58,9 @@ jobs:
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
         else
           conda install --yes -c conda-forge -c bioconda clangxx_osx-64
-        fi 
-        conda install --yes -c conda-forge -c bioconda cython "hdf5>=1.8.17" biom-format numpy "h5py>=2.7.0" "scikit-bio>=0.5.1" unifrac-binaries flake8 nose
+        fi
+        conda install --yes -c conda-forge -c bioconda unifrac-binaries
+        conda install --yes -c conda-forge -c bioconda cython "hdf5<1.12.1" biom-format numpy "h5py<3.0.0 | >3.3.0" "scikit-bio>=0.5.1" nose
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
@@ -77,8 +79,8 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        ls -lrt $CONDA_PREFIX/lib/libhdf5_cpp*
         nosetests
-        flake8 unifrac setup.py
         
     - name: Sanity checks
       shell: bash -l {0}

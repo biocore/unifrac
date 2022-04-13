@@ -447,8 +447,14 @@ cdef support_biom* construct_support_biom(object table):
         np.ndarray[np.int32_t, ndim=1] table_indptr
         np.ndarray[np.double_t, ndim=1] table_data
 
-    table_obs_ids = table.ids(axis='observation')
-    table_samp_ids = table.ids(axis='sample')
+    # it seems that even if we use fixed width upstream, we cannot readily
+    # utilize it within cython. Casting to 'object' now. It likely would be
+    # beneficial to operate directly on fixed width.
+    # https://stackoverflow.com/questions/42543485/cython-specify-numpy-array-of-fixed-length-strings#comment72258848_
+
+    table_obs_ids = table.ids(axis='observation').astype(object)
+    table_samp_ids = table.ids(axis='sample').astype(object)
+
     table_indices = table.matrix_data.indices
     table_indptr = table.matrix_data.indptr
     table_data = table.matrix_data.data
