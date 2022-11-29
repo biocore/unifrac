@@ -377,10 +377,6 @@ The methods can also be used directly through the command line after install:
 			Faith Biological Conservation 1992; DOI: 10.1016/0006-3207(92)91201-3
 
             
-## Shared library access
-
-In addition to the above methods to access UniFrac, it is also possible to link against the shared library. The C API is described in `sucpp/api.hpp`, and examples of linking against this API can be found in `examples/`. 
-
 ## Minor test dataset
 
 A small test `.biom` and `.tre` can be found in `sucpp/`. An example with expected output is below, and should execute in 10s of milliseconds:
