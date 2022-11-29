@@ -14,6 +14,7 @@ A detailed description of the Strided State UniFrac algorithm can be found in [M
 
     ssu
     For UniFrac, please see:
+        Sfiligoi et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
         McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
         Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
         Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
