@@ -158,12 +158,14 @@ The library can be accessed directly from within Python. If operating in this mo
         phylogeny : str
             A filepath to a Newick formatted tree.
         threads : int, optional
-            The number of threads to split it into. Default of 1.
+            Deprecated, no-op.
         variance_adjusted : bool, optional
             Adjust for varianace or not. Default is False.
         bypass_tips : bool, optional
             Bypass the tips of the tree in the computation. This reduces compute
             by about 50%, but is an approximation.
+        n_substeps : int, optional
+            Internally split the problem in n substeps for reduced memory footprint.
 
         Returns
         -------
@@ -178,6 +180,15 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
+
+        Environment variables
+        ---------------------
+        OMP_NUM_THREADS
+            Number of CPU cores to use. If not defined, use all detected cores.
+        UNIFRAC_USE_GPU
+            Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        ACC_DEVICE_NUM
+            The GPU to use. If not defined, the first GPU will be used.
 
         Notes
         -----
@@ -211,7 +222,7 @@ The library can be accessed directly from within Python. If operating in this mo
             if set to 0, no PCoA is computed.
             Defaults of 10.
         threads : int, optional
-            The number of threads to split it into. Default of 1.
+            Deprecated, no-op.
         variance_adjusted : bool, optional
             Adjust for varianace or not. Default is False.
         bypass_tips : bool, optional
@@ -222,6 +233,8 @@ The library can be accessed directly from within Python. If operating in this mo
         buf_dirname : str, optional
             If set, the directory where the disk buffer is hosted,
             can be used to reduce the amount of memory needed.
+        n_substeps : int, optional
+            Internally split the problem in n substeps for reduced memory footprint.
 
         Returns
         -------
@@ -237,6 +250,15 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
+
+        Environment variables
+        ---------------------
+        OMP_NUM_THREADS
+            Number of CPU cores to use. If not defined, use all detected cores.
+        UNIFRAC_USE_GPU
+            Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        ACC_DEVICE_NUM
+            The GPU to use. If not defined, the first GPU will be used.
 
         Notes
         -----

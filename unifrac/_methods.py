@@ -121,6 +121,15 @@ def unweighted(table: Union[str, Table],
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
     Notes
     -----
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
@@ -178,6 +187,15 @@ def unweighted_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -237,6 +255,15 @@ def weighted_normalized(table: Union[str, Table],
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
@@ -294,6 +321,15 @@ def weighted_normalized_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -353,6 +389,15 @@ def weighted_unnormalized(table: Union[str, Table],
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
@@ -411,6 +456,15 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -474,6 +528,15 @@ def generalized(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -551,6 +614,15 @@ def generalized_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -652,6 +724,15 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -786,6 +867,15 @@ def unweighted_to_file(table: str,
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
     Notes
     -----
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
@@ -861,6 +951,15 @@ def unweighted_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -938,6 +1037,15 @@ def weighted_normalized_to_file(table: str,
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
@@ -1012,6 +1120,15 @@ def weighted_normalized_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1088,6 +1205,15 @@ def weighted_unnormalized_to_file(table: str,
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
 
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
@@ -1162,6 +1288,15 @@ def weighted_unnormalized_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1243,6 +1378,15 @@ def generalized_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1342,6 +1486,15 @@ def generalized_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
