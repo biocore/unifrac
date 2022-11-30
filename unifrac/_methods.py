@@ -87,7 +87,8 @@ def unweighted(table: Union[str, Table],
                phylogeny: Union[str, TreeNode, BP],
                threads: int = 1,
                variance_adjusted: bool = False,
-               bypass_tips: bool = False) -> skbio.DistanceMatrix:
+               bypass_tips: bool = False,
+               n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute Unweighted UniFrac
 
     Parameters
@@ -97,12 +98,14 @@ def unweighted(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -117,6 +120,15 @@ def unweighted(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -135,14 +147,15 @@ def unweighted(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(table, phylogeny, 'unweighted', variance_adjusted, 1.0,
-                     bypass_tips, threads)
+                     bypass_tips, n_substeps)
 
 
 def unweighted_fp32(table: Union[str, Table],
                     phylogeny: Union[str, TreeNode, BP],
                     threads: int = 1,
                     variance_adjusted: bool = False,
-                    bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                    bypass_tips: bool = False,
+                    n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute Unweighted UniFrac using fp32 math
 
     Parameters
@@ -152,12 +165,14 @@ def unweighted_fp32(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -172,6 +187,15 @@ def unweighted_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -190,14 +214,15 @@ def unweighted_fp32(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(table, phylogeny, 'unweighted_fp32', variance_adjusted,
-                     1.0, bypass_tips, threads)
+                     1.0, bypass_tips, n_substeps)
 
 
 def weighted_normalized(table: Union[str, Table],
                         phylogeny: Union[str, TreeNode, BP],
                         threads: int = 1,
                         variance_adjusted: bool = False,
-                        bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                        bypass_tips: bool = False,
+                        n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute weighted normalized UniFrac
 
     Parameters
@@ -207,12 +232,14 @@ def weighted_normalized(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -227,6 +254,15 @@ def weighted_normalized(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -244,14 +280,15 @@ def weighted_normalized(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(str(table), str(phylogeny), 'weighted_normalized',
-                     variance_adjusted, 1.0, bypass_tips, threads)
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def weighted_normalized_fp32(table: Union[str, Table],
                              phylogeny: Union[str, TreeNode, BP],
                              threads: int = 1,
                              variance_adjusted: bool = False,
-                             bypass_tips: bool = False
+                             bypass_tips: bool = False,
+                             n_substeps: int = 1
                              ) -> skbio.DistanceMatrix:
     """Compute weighted normalized UniFrac using fp32 math
 
@@ -262,12 +299,14 @@ def weighted_normalized_fp32(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -282,6 +321,15 @@ def weighted_normalized_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -299,14 +347,15 @@ def weighted_normalized_fp32(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(str(table), str(phylogeny), 'weighted_normalized_fp32',
-                     variance_adjusted, 1.0, bypass_tips, threads)
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def weighted_unnormalized(table: Union[str, Table],
                           phylogeny: Union[str, TreeNode, BP],
                           threads: int = 1,
                           variance_adjusted: bool = False,
-                          bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                          bypass_tips: bool = False,
+                          n_substeps: int = 1) -> skbio.DistanceMatrix:
     # noqa
     """Compute weighted unnormalized UniFrac
 
@@ -317,12 +366,14 @@ def weighted_unnormalized(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default is 1.
+        Deprecated, no-op..
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -337,6 +388,15 @@ def weighted_unnormalized(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -354,14 +414,15 @@ def weighted_unnormalized(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized',
-                     variance_adjusted, 1.0, bypass_tips, threads)
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def weighted_unnormalized_fp32(table: Union[str, Table],
                                phylogeny: Union[str, TreeNode, BP],
                                threads: int = 1,
                                variance_adjusted: bool = False,
-                               bypass_tips: bool = False
+                               bypass_tips: bool = False,
+                               n_substeps: int = 1
                                ) -> skbio.DistanceMatrix:
     # noqa
     """Compute weighted unnormalized UniFrac using fp32 math
@@ -373,12 +434,14 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default is 1.
+        TDeprecated, no-op..
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -393,6 +456,15 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -410,7 +482,7 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized_fp32',
-                     variance_adjusted, 1.0, bypass_tips, threads)
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def generalized(table: Union[str, Table],
@@ -418,7 +490,8 @@ def generalized(table: Union[str, Table],
                 threads: int = 1,
                 alpha: float = 1.0,
                 variance_adjusted: bool = False,
-                bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                bypass_tips: bool = False,
+                n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute Generalized UniFrac
 
     Parameters
@@ -428,7 +501,7 @@ def generalized(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default is 1
+        Deprecated, no-op.
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -439,6 +512,8 @@ def generalized(table: Union[str, Table],
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -453,6 +528,15 @@ def generalized(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -481,10 +565,10 @@ def generalized(table: Union[str, Table],
              "optimized.",
              Warning)
         return weighted_normalized(table, phylogeny, threads,
-                                   variance_adjusted)
+                                   variance_adjusted, bypass_tips, n_substeps)
     else:
         return _call_ssu(str(table), str(phylogeny), 'generalized',
-                         variance_adjusted, alpha, bypass_tips, threads)
+                         variance_adjusted, alpha, bypass_tips, n_substeps)
 
 
 def generalized_fp32(table: Union[str, Table],
@@ -492,7 +576,8 @@ def generalized_fp32(table: Union[str, Table],
                      threads: int = 1,
                      alpha: float = 1.0,
                      variance_adjusted: bool = False,
-                     bypass_tips: bool = False) -> skbio.DistanceMatrix:
+                     bypass_tips: bool = False,
+                     n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute Generalized UniFrac using fp32 math
 
     Parameters
@@ -502,7 +587,7 @@ def generalized_fp32(table: Union[str, Table],
     phylogeny : str
         A filepath to a Newick formatted tree.
     threads : int, optional
-        The number of threads to split it into. Default is 1
+        Deprecated, no-op.
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -513,6 +598,8 @@ def generalized_fp32(table: Union[str, Table],
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -527,6 +614,15 @@ def generalized_fp32(table: Union[str, Table],
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -555,10 +651,11 @@ def generalized_fp32(table: Union[str, Table],
              "optimized.",
              Warning)
         return weighted_normalized_fp32(table, phylogeny, threads,
-                                        variance_adjusted)
+                                        variance_adjusted, bypass_tips,
+                                        n_substeps)
     else:
         return _call_ssu(str(table), str(phylogeny), 'generalized_fp32',
-                         variance_adjusted, alpha, bypass_tips, threads)
+                         variance_adjusted, alpha, bypass_tips, n_substeps)
 
 
 METHODS = {'unweighted': unweighted,
@@ -574,7 +671,8 @@ METHODS = {'unweighted': unweighted,
 def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
          consolidation: str = None, method: str = None,
          threads: int = 1, variance_adjusted: bool = False,
-         alpha: float = None, bypass_tips: bool = False) -> \
+         alpha: float = None, bypass_tips: bool = False,
+         n_substeps: int = 1) -> \
          skbio.DistanceMatrix:
     """Compute meta UniFrac
 
@@ -600,7 +698,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
         'weighted_unnormalized_fp32', 'weighted_normalized',
         'weighted_normalized_fp32', 'generalized' and 'generalized_fp32'.
     threads : int, optional
-        The number of threads to split it into. Default is 1
+        TDeprecated, no-op.
     bypass_tips : bool, optional
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
@@ -611,6 +709,8 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
         range [0, 1]. Default is 1.0
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -625,6 +725,15 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -686,7 +795,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
                          "is set as 'generalized', the selected method is "
                          "'%s'." % method)
 
-    kwargs = {'threads': threads,
+    kwargs = {'n_substeps': n_substeps,
               'bypass_tips': bypass_tips,
               'variance_adjusted': variance_adjusted}
     if alpha is not None:
@@ -713,7 +822,8 @@ def unweighted_to_file(table: str,
                        variance_adjusted: bool = False,
                        bypass_tips: bool = False,
                        format: str = "hdf5",
-                       buf_dirname: str = "") -> str:
+                       buf_dirname: str = "",
+                       n_substeps: int = 1) -> str:
     """Compute Unweighted UniFrac and write to file
 
     Parameters
@@ -729,7 +839,7 @@ def unweighted_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
@@ -740,6 +850,8 @@ def unweighted_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -755,6 +867,15 @@ def unweighted_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -774,7 +895,7 @@ def unweighted_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted',
-                             variance_adjusted, 1.0, bypass_tips, threads,
+                             variance_adjusted, 1.0, bypass_tips, n_substeps,
                              format, pcoa_dims, buf_dirname)
 
 
@@ -786,7 +907,8 @@ def unweighted_fp32_to_file(table: str,
                             variance_adjusted: bool = False,
                             bypass_tips: bool = False,
                             format: str = "hdf5",
-                            buf_dirname: str = "") -> str:
+                            buf_dirname: str = "",
+                            n_substeps: int = 1) -> str:
     """Compute Unweighted UniFrac using fp32 math and write to file
 
     Parameters
@@ -802,7 +924,7 @@ def unweighted_fp32_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
@@ -813,6 +935,8 @@ def unweighted_fp32_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -828,6 +952,15 @@ def unweighted_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -847,7 +980,7 @@ def unweighted_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_fp32',
-                             variance_adjusted, 1.0, bypass_tips, threads,
+                             variance_adjusted, 1.0, bypass_tips, n_substeps,
                              format, pcoa_dims, buf_dirname)
 
 
@@ -859,7 +992,8 @@ def weighted_normalized_to_file(table: str,
                                 variance_adjusted: bool = False,
                                 bypass_tips: bool = False,
                                 format: str = "hdf5",
-                                buf_dirname: str = "") -> str:
+                                buf_dirname: str = "",
+                                n_substeps: int = 1) -> str:
     """Compute weighted normalized UniFrac and write to file
 
     Parameters
@@ -875,7 +1009,7 @@ def weighted_normalized_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
@@ -886,6 +1020,8 @@ def weighted_normalized_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -901,6 +1037,15 @@ def weighted_normalized_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -919,7 +1064,7 @@ def weighted_normalized_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized',
-                             variance_adjusted, 1.0, bypass_tips, threads,
+                             variance_adjusted, 1.0, bypass_tips, n_substeps,
                              format, pcoa_dims, buf_dirname)
 
 
@@ -931,7 +1076,8 @@ def weighted_normalized_fp32_to_file(table: str,
                                      variance_adjusted: bool = False,
                                      bypass_tips: bool = False,
                                      format: str = "hdf5",
-                                     buf_dirname: str = "") -> str:
+                                     buf_dirname: str = "",
+                                     n_substeps: int = 1) -> str:
     """Compute weighted normalized UniFrac using fp32 math and write to file
 
     Parameters
@@ -947,7 +1093,7 @@ def weighted_normalized_fp32_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default of 1.
+        Deprecated, no-op.
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
@@ -958,6 +1104,8 @@ def weighted_normalized_fp32_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -973,6 +1121,15 @@ def weighted_normalized_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -991,7 +1148,7 @@ def weighted_normalized_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized_fp32',
-                             variance_adjusted, 1.0, bypass_tips, threads,
+                             variance_adjusted, 1.0, bypass_tips, n_substeps,
                              format, pcoa_dims, buf_dirname)
 
 
@@ -1003,7 +1160,8 @@ def weighted_unnormalized_to_file(table: str,
                                   variance_adjusted: bool = False,
                                   bypass_tips: bool = False,
                                   format: str = "hdf5",
-                                  buf_dirname: str = "") -> str:
+                                  buf_dirname: str = "",
+                                  n_substeps: int = 1) -> str:
     """Compute weighted unnormalized UniFrac and write it to file
 
     Parameters
@@ -1019,7 +1177,7 @@ def weighted_unnormalized_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default is 1.
+        TDeprecated, no-op..
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
@@ -1030,6 +1188,8 @@ def weighted_unnormalized_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1045,6 +1205,15 @@ def weighted_unnormalized_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1063,7 +1232,7 @@ def weighted_unnormalized_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized',
-                             variance_adjusted, 1.0, bypass_tips, threads,
+                             variance_adjusted, 1.0, bypass_tips, n_substeps,
                              format, pcoa_dims, buf_dirname)
 
 
@@ -1075,8 +1244,9 @@ def weighted_unnormalized_fp32_to_file(table: str,
                                        variance_adjusted: bool = False,
                                        bypass_tips: bool = False,
                                        format: str = "hdf5",
-                                       buf_dirname: str = "") -> str:
-    """Compute weighted unnormalized UniFrac using fp32 math and write it to file
+                                       buf_dirname: str = "",
+                                       n_substeps: int = 1) -> str:
+    """Compute weighted unnormalized UniFrac using fp32 math and write to file
 
     Parameters
     ----------
@@ -1091,7 +1261,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default is 1.
+        TDeprecated, no-op..
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     bypass_tips : bool, optional
@@ -1102,6 +1272,8 @@ def weighted_unnormalized_fp32_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1117,6 +1289,15 @@ def weighted_unnormalized_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1135,7 +1316,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized_fp32',
-                             variance_adjusted, 1.0, bypass_tips, threads,
+                             variance_adjusted, 1.0, bypass_tips, n_substeps,
                              format, pcoa_dims, buf_dirname)
 
 
@@ -1148,7 +1329,8 @@ def generalized_to_file(table: str,
                         variance_adjusted: bool = False,
                         bypass_tips: bool = False,
                         format: str = "hdf5",
-                        buf_dirname: str = "") -> str:
+                        buf_dirname: str = "",
+                        n_substeps: int = 1) -> str:
     """Compute Generalized UniFrac and write to file
 
     Parameters
@@ -1164,7 +1346,7 @@ def generalized_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default is 1
+        TDeprecated, no-op.
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -1180,6 +1362,8 @@ def generalized_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1195,6 +1379,15 @@ def generalized_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1225,13 +1418,13 @@ def generalized_to_file(table: str,
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'weighted_normalized',
                                  variance_adjusted, alpha,
-                                 bypass_tips, threads,
+                                 bypass_tips, n_substeps,
                                  format, pcoa_dims, buf_dirname)
     else:
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'generalized',
                                  variance_adjusted, alpha,
-                                 bypass_tips, threads,
+                                 bypass_tips, n_substeps,
                                  format, pcoa_dims, buf_dirname)
 
 
@@ -1244,7 +1437,8 @@ def generalized_fp32_to_file(table: str,
                              variance_adjusted: bool = False,
                              bypass_tips: bool = False,
                              format: str = "hdf5",
-                             buf_dirname: str = "") -> str:
+                             buf_dirname: str = "",
+                             n_substeps: int = 1) -> str:
     """Compute Generalized UniFrac using fp32 math and write to file
 
     Parameters
@@ -1260,7 +1454,7 @@ def generalized_fp32_to_file(table: str,
         if set to 0, no PCoA is computed.
         Defaults of 10.
     threads : int, optional
-        The number of threads to split it into. Default is 1
+        TDeprecated, no-op.
     alpha : float, optional
         The level of contribution of high abundance branches. Higher alpha
         increases the contribution of from high abundance branches while lower
@@ -1276,6 +1470,8 @@ def generalized_fp32_to_file(table: str,
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1291,6 +1487,15 @@ def generalized_fp32_to_file(table: str,
     ValueError
         If the table does not appear to be BIOM-Format v2.1.
         If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
 
     Notes
     -----
@@ -1321,13 +1526,13 @@ def generalized_fp32_to_file(table: str,
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'weighted_normalized_fp32',
                                  variance_adjusted, alpha,
-                                 bypass_tips, threads,
+                                 bypass_tips, n_substeps,
                                  format, pcoa_dims, buf_dirname)
     else:
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'generalized_fp32',
                                  variance_adjusted, alpha,
-                                 bypass_tips, threads,
+                                 bypass_tips, n_substeps,
                                  format, pcoa_dims, buf_dirname)
 
 #

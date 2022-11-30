@@ -14,6 +14,7 @@ A detailed description of the Strided State UniFrac algorithm can be found in [M
 
     ssu
     For UniFrac, please see:
+        Sfiligoi et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
         McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
         Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
         Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
@@ -157,12 +158,14 @@ The library can be accessed directly from within Python. If operating in this mo
         phylogeny : str
             A filepath to a Newick formatted tree.
         threads : int, optional
-            The number of threads to split it into. Default of 1.
+            Deprecated, no-op.
         variance_adjusted : bool, optional
             Adjust for varianace or not. Default is False.
         bypass_tips : bool, optional
             Bypass the tips of the tree in the computation. This reduces compute
             by about 50%, but is an approximation.
+        n_substeps : int, optional
+            Internally split the problem in substeps for reduced memory footprint.
 
         Returns
         -------
@@ -177,6 +180,15 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
+
+        Environment variables
+        ---------------------
+        OMP_NUM_THREADS
+            Number of CPU cores to use. If not defined, use all detected cores.
+        UNIFRAC_USE_GPU
+            Enable or disable GPU offload. If not defined, autodetect.
+        ACC_DEVICE_NUM
+            The GPU to use. If not defined, the first GPU will be used.
 
         Notes
         -----
@@ -210,7 +222,7 @@ The library can be accessed directly from within Python. If operating in this mo
             if set to 0, no PCoA is computed.
             Defaults of 10.
         threads : int, optional
-            The number of threads to split it into. Default of 1.
+            Deprecated, no-op.
         variance_adjusted : bool, optional
             Adjust for varianace or not. Default is False.
         bypass_tips : bool, optional
@@ -221,6 +233,8 @@ The library can be accessed directly from within Python. If operating in this mo
         buf_dirname : str, optional
             If set, the directory where the disk buffer is hosted,
             can be used to reduce the amount of memory needed.
+        n_substeps : int, optional
+            Internally split the problem in substeps for reduced memory footprint.
 
         Returns
         -------
@@ -236,6 +250,15 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
+
+        Environment variables
+        ---------------------
+        OMP_NUM_THREADS
+            Number of CPU cores to use. If not defined, use all detected cores.
+        UNIFRAC_USE_GPU
+            Enable or disable GPU offload. If not defined, autodetect.
+        ACC_DEVICE_NUM
+            The GPU to use. If not defined, the first GPU will be used.
 
         Notes
         -----
@@ -312,16 +335,16 @@ The methods can also be used directly through the command line after install:
     $ which ssu
     /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/ssu
     $ ssu --help
-    usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-n threads] [-a alpha] [-f]  [--vaw]
-        [--mode [MODE]] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]
+    usage: ssu -i <biom> -o <out.dm> -m [METHOD] -t <newick> [-a alpha] [-f]  [--vaw]
+        [--mode MODE] [--start starting-stripe] [--stop stopping-stripe] [--partial-pattern <glob>]
         [--n-partials number_of_partitions] [--report-bare] [--format|-r out-mode]
+        [--n-substeps n] [--pcoa dims] [--diskbuf path]
 
         -i		The input BIOM table.
         -t		The input phylogeny in newick.
         -m		The method, [unweighted | weighted_normalized | weighted_unnormalized | generalized | 
                                  unweighted_fp32 | weighted_normalized_fp32 | weighted_unnormalized_fp32 | generalized_fp32].
         -o		The output distance matrix.
-        -n		[OPTIONAL] The number of threads, default is 1.
         -a		[OPTIONAL] Generalized UniFrac alpha, default is 1.
         -f		[OPTIONAL] Bypass tips, reduces compute by about 50%.
         --vaw	[OPTIONAL] Variance adjusted, default is to not adjust for variance.
@@ -333,8 +356,9 @@ The methods can also be used directly through the command line after install:
         --start	[OPTIONAL] If mode==partial, the starting stripe.
         --stop	[OPTIONAL] If mode==partial, the stopping stripe.
         --partial-pattern	[OPTIONAL] If mode==merge-partial, a glob pattern for partial outputs to merge.
-        --n-partials	[OPTIONAL] If mode==partial-report, the number of partitions to compute.
+        --n-partials 	[OPTIONAL] If mode==partial-report, the number of partitions to compute.
         --report-bare	[OPTIONAL] If mode==partial-report, produce barebones output.
+        --n-substeps 	[OPTIONAL] Internally split the problem in n substeps for reduced memory footprint, default is 1.
         --format|-r	[OPTIONAL]  Output format:
                                  ascii : [DEFAULT] Original ASCII format.
                                  hfd5 : HFD5 format.  May be fp32 or fp64, depending on method.
@@ -342,9 +366,16 @@ The methods can also be used directly through the command line after install:
                                  hdf5_fp64 : HFD5 format, using fp64 precision.
         --pcoa	[OPTIONAL] Number of PCoA dimensions to compute (default: 10, do not compute if 0)
         --diskbuf	[OPTIONAL] Use a disk buffer to reduce memory footprint. Provide path to a fast partition (ideally NVMe).
+        -n		[OPTIONAL] DEPRECATED, no-op.
+
+    Environment variables: 
+        CPU parallelism is controlled by OMP_NUM_THREADS. If not defined, all detected core will be used.
+        GPU offload can be disabled with UNIFRAC_USE_GPU=N. By default, if a NVIDIA GPU is detected, it will be used.
+        A specific GPU can be selected with ACC_DEVICE_NUM. If not defined, the first GPU will be used.
 
     Citations: 
         For UniFrac, please see:
+            Sfiligoi et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
             McDonald et al. Nature Methods 2018; DOI: 10.1038/s41592-018-0187-8
             Lozupone and Knight Appl Environ Microbiol 2005; DOI: 10.1128/AEM.71.12.8228-8235.2005
             Lozupone et al. Appl Environ Microbiol 2007; DOI: 10.1128/AEM.01996-06
@@ -369,10 +400,6 @@ The methods can also be used directly through the command line after install:
 			Faith Biological Conservation 1992; DOI: 10.1016/0006-3207(92)91201-3
 
             
-## Shared library access
-
-In addition to the above methods to access UniFrac, it is also possible to link against the shared library. The C API is described in `sucpp/api.hpp`, and examples of linking against this API can be found in `examples/`. 
-
 ## Minor test dataset
 
 A small test `.biom` and `.tre` can be found in `sucpp/`. An example with expected output is below, and should execute in 10s of milliseconds:

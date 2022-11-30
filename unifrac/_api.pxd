@@ -57,15 +57,15 @@ cdef extern from "api.hpp":
 
     compute_status one_off(const char* biom_filename, const char* tree_filename, 
                                const char* unifrac_method, bool variance_adjust, double alpha,
-                               bool bypass_tips, unsigned int threads, mat** result)
+                               bool bypass_tips, unsigned int n_substeps, mat** result)
     
     compute_status one_off_inmem(const support_biom *table, const support_bptree *tree, 
                                  const char* unifrac_method, bool variance_adjust, double alpha,
-                                 bool bypass_tips, unsigned int threads, mat_full_fp64** result)
+                                 bool bypass_tips, unsigned int n_substeps, mat_full_fp64** result)
 
     compute_status one_off_inmem_fp32(const support_biom *table, const support_bptree *tree, 
                                       const char* unifrac_method, bool variance_adjust, double alpha,
-                                      bool bypass_tips, unsigned int threads, mat_full_fp32** result)
+                                      bool bypass_tips, unsigned int n_substeps, mat_full_fp32** result)
 
     compute_status faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                     results_vec** result)
@@ -77,6 +77,6 @@ cdef extern from "api.hpp":
 
     compute_status unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
                                      const char* unifrac_method, bool variance_adjust, double alpha,
-                                     bool bypass_tips, unsigned int threads, const char* format,
+                                     bool bypass_tips, unsigned int n_substeps, const char* format,
                                      unsigned int pcoa_dims, const char *mmap_dir)
 
