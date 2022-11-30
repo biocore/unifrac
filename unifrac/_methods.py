@@ -421,7 +421,7 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
                                phylogeny: Union[str, TreeNode, BP],
                                threads: int = 1,
                                variance_adjusted: bool = False,
-                               bypass_tips: bool = False, 
+                               bypass_tips: bool = False,
                                n_substeps: int = 1
                                ) -> skbio.DistanceMatrix:
     # noqa
@@ -490,7 +490,7 @@ def generalized(table: Union[str, Table],
                 threads: int = 1,
                 alpha: float = 1.0,
                 variance_adjusted: bool = False,
-                bypass_tips: bool = False, 
+                bypass_tips: bool = False,
                 n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute Generalized UniFrac
 
@@ -576,7 +576,7 @@ def generalized_fp32(table: Union[str, Table],
                      threads: int = 1,
                      alpha: float = 1.0,
                      variance_adjusted: bool = False,
-                     bypass_tips: bool = False, 
+                     bypass_tips: bool = False,
                      n_substeps: int = 1) -> skbio.DistanceMatrix:
     """Compute Generalized UniFrac using fp32 math
 
@@ -651,7 +651,8 @@ def generalized_fp32(table: Union[str, Table],
              "optimized.",
              Warning)
         return weighted_normalized_fp32(table, phylogeny, threads,
-                                        variance_adjusted, bypass_tips, n_substeps)
+                                        variance_adjusted, bypass_tips,
+                                        n_substeps)
     else:
         return _call_ssu(str(table), str(phylogeny), 'generalized_fp32',
                          variance_adjusted, alpha, bypass_tips, n_substeps)
@@ -670,7 +671,7 @@ METHODS = {'unweighted': unweighted,
 def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
          consolidation: str = None, method: str = None,
          threads: int = 1, variance_adjusted: bool = False,
-         alpha: float = None, bypass_tips: bool = False, 
+         alpha: float = None, bypass_tips: bool = False,
          n_substeps: int = 1) -> \
          skbio.DistanceMatrix:
     """Compute meta UniFrac
@@ -821,7 +822,7 @@ def unweighted_to_file(table: str,
                        variance_adjusted: bool = False,
                        bypass_tips: bool = False,
                        format: str = "hdf5",
-                       buf_dirname: str = "", 
+                       buf_dirname: str = "",
                        n_substeps: int = 1) -> str:
     """Compute Unweighted UniFrac and write to file
 
@@ -906,7 +907,7 @@ def unweighted_fp32_to_file(table: str,
                             variance_adjusted: bool = False,
                             bypass_tips: bool = False,
                             format: str = "hdf5",
-                            buf_dirname: str = "", 
+                            buf_dirname: str = "",
                             n_substeps: int = 1) -> str:
     """Compute Unweighted UniFrac using fp32 math and write to file
 
@@ -991,7 +992,7 @@ def weighted_normalized_to_file(table: str,
                                 variance_adjusted: bool = False,
                                 bypass_tips: bool = False,
                                 format: str = "hdf5",
-                                buf_dirname: str = "", 
+                                buf_dirname: str = "",
                                 n_substeps: int = 1) -> str:
     """Compute weighted normalized UniFrac and write to file
 
@@ -1075,7 +1076,7 @@ def weighted_normalized_fp32_to_file(table: str,
                                      variance_adjusted: bool = False,
                                      bypass_tips: bool = False,
                                      format: str = "hdf5",
-                                     buf_dirname: str = "", 
+                                     buf_dirname: str = "",
                                      n_substeps: int = 1) -> str:
     """Compute weighted normalized UniFrac using fp32 math and write to file
 
@@ -1159,7 +1160,7 @@ def weighted_unnormalized_to_file(table: str,
                                   variance_adjusted: bool = False,
                                   bypass_tips: bool = False,
                                   format: str = "hdf5",
-                                  buf_dirname: str = "", 
+                                  buf_dirname: str = "",
                                   n_substeps: int = 1) -> str:
     """Compute weighted unnormalized UniFrac and write it to file
 
@@ -1243,9 +1244,9 @@ def weighted_unnormalized_fp32_to_file(table: str,
                                        variance_adjusted: bool = False,
                                        bypass_tips: bool = False,
                                        format: str = "hdf5",
-                                       buf_dirname: str = "", 
+                                       buf_dirname: str = "",
                                        n_substeps: int = 1) -> str:
-    """Compute weighted unnormalized UniFrac using fp32 math and write it to file
+    """Compute weighted unnormalized UniFrac using fp32 math and write to file
 
     Parameters
     ----------
@@ -1328,7 +1329,7 @@ def generalized_to_file(table: str,
                         variance_adjusted: bool = False,
                         bypass_tips: bool = False,
                         format: str = "hdf5",
-                        buf_dirname: str = "", 
+                        buf_dirname: str = "",
                         n_substeps: int = 1) -> str:
     """Compute Generalized UniFrac and write to file
 
@@ -1436,7 +1437,7 @@ def generalized_fp32_to_file(table: str,
                              variance_adjusted: bool = False,
                              bypass_tips: bool = False,
                              format: str = "hdf5",
-                             buf_dirname: str = "", 
+                             buf_dirname: str = "",
                              n_substeps: int = 1) -> str:
     """Compute Generalized UniFrac using fp32 math and write to file
 
