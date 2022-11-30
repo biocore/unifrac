@@ -29,7 +29,7 @@ def check_status(compute_status status):
 #
 def ssu_inmem(object table, object tree,
               str unifrac_method, bool variance_adjust, double alpha,
-              bool bypass_tips, unsigned int threads):
+              bool bypass_tips, unsigned int n_substeps):
     """Execute a call to Strided State UniFrac via the direct API
 
     Parameters
@@ -51,8 +51,8 @@ def ssu_inmem(object table, object tree,
     bypass_tips : bool
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
-    threads : int
-        The number of threads to use.
+    n_substeps : int
+        The number of substeps to use.
 
     Returns
     -------
@@ -86,13 +86,13 @@ def ssu_inmem(object table, object tree,
     if '_fp32' in unifrac_method:
         numpy_arr_fp32 = _ssu_inmem_fp32(inmem_biom, inmem_tree, met_c_string, 
                                          variance_adjust, alpha, bypass_tips, 
-                                         threads)
+                                         n_substeps)
         # validate=False would shave 5% but it's currently in skbio master
         result_dm = skbio.DistanceMatrix(numpy_arr_fp32, table.ids())
     else:
         numpy_arr_fp64 = _ssu_inmem_fp64(inmem_biom, inmem_tree, met_c_string, 
                                          variance_adjust, alpha, bypass_tips, 
-                                         threads)
+                                         n_substeps)
         # validate=False would shave 5% but it's currently in skbio master
         result_dm = skbio.DistanceMatrix(numpy_arr_fp64, table.ids())
    
@@ -106,7 +106,7 @@ cdef np.ndarray _ssu_inmem_fp64(support_biom *inmem_biom,
                                 support_bptree *inmem_tree, 
                                 char* met_c_string, 
                                 bool variance_adjust, double alpha,
-                                bool bypass_tips, unsigned int threads):
+                                bool bypass_tips, unsigned int n_substeps):
     cdef: 
         compute_status status
         mat_full_fp64 *result
@@ -128,7 +128,7 @@ cdef np.ndarray _ssu_inmem_fp64(support_biom *inmem_biom,
                            variance_adjust,
                            alpha,
                            bypass_tips,
-                           threads,
+                           n_substeps,
                            &result)
     check_status(status)
 
@@ -145,7 +145,7 @@ cdef np.ndarray _ssu_inmem_fp32(support_biom *inmem_biom,
                                 support_bptree *inmem_tree, 
                                 char* met_c_string, 
                                 bool variance_adjust, double alpha,
-                                bool bypass_tips, unsigned int threads):
+                                bool bypass_tips, unsigned int n_substeps):
     cdef: 
         compute_status status
         mat_full_fp32 *result
@@ -167,7 +167,7 @@ cdef np.ndarray _ssu_inmem_fp32(support_biom *inmem_biom,
                                 variance_adjust,
                                 alpha,
                                 bypass_tips,
-                                threads,
+                                n_substeps,
                                 &result)
     check_status(status)
     
@@ -182,7 +182,7 @@ cdef np.ndarray _ssu_inmem_fp32(support_biom *inmem_biom,
 
 def ssu(str biom_filename, str tree_filename,
         str unifrac_method, bool variance_adjust, double alpha,
-        bool bypass_tips, unsigned int threads):
+        bool bypass_tips, unsigned int n_substeps):
     """Execute a call to Strided State UniFrac via the direct API
 
     Parameters
@@ -204,8 +204,8 @@ def ssu(str biom_filename, str tree_filename,
     bypass_tips : bool
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
-    threads : int
-        The number of threads to use.
+    n_substeps : int
+        The number of substeps to use.
 
     Returns
     -------
@@ -247,7 +247,7 @@ def ssu(str biom_filename, str tree_filename,
                      variance_adjust,
                      alpha,
                      bypass_tips,
-                     threads,
+                     n_substeps,
                      &result)
     check_status(status)
     
@@ -337,7 +337,7 @@ def faith_pd(str biom_filename, str tree_filename):
 
 def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
                 str unifrac_method, bool variance_adjust, double alpha,
-                bool bypass_tips, unsigned int threads, str format,
+                bool bypass_tips, unsigned int n_substeps, str format,
                 unsigned int pcoa_dims, str buf_dirname):
     """Execute a call to Strided State UniFrac to file via the direct API
 
@@ -362,8 +362,8 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
     bypass_tips : bool
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
-    threads : int
-        The number of threads to use.
+    n_substeps : int
+        The number of substeps to use.
     format : str
         Onput format to use; one of {hdf5, hdf5_fp32, hdf5_fp64}
     pcoa_dims : int
@@ -422,7 +422,7 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
     status = unifrac_to_file(biom_c_string, tree_c_string, out_c_string,
                              met_c_string,
                              variance_adjust, alpha, bypass_tips,
-                             threads, format_c_string, 
+                             n_substeps, format_c_string, 
                              pcoa_dims, dirbuf_c_string)
     check_status(status)
 
