@@ -165,7 +165,7 @@ The library can be accessed directly from within Python. If operating in this mo
             Bypass the tips of the tree in the computation. This reduces compute
             by about 50%, but is an approximation.
         n_substeps : int, optional
-            Internally split the problem in n substeps for reduced memory footprint.
+            Internally split the problem in substeps for reduced memory footprint.
 
         Returns
         -------
@@ -186,7 +186,7 @@ The library can be accessed directly from within Python. If operating in this mo
         OMP_NUM_THREADS
             Number of CPU cores to use. If not defined, use all detected cores.
         UNIFRAC_USE_GPU
-            Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+            Enable or disable GPU offload. If not defined, autodetect.
         ACC_DEVICE_NUM
             The GPU to use. If not defined, the first GPU will be used.
 
@@ -234,7 +234,7 @@ The library can be accessed directly from within Python. If operating in this mo
             If set, the directory where the disk buffer is hosted,
             can be used to reduce the amount of memory needed.
         n_substeps : int, optional
-            Internally split the problem in n substeps for reduced memory footprint.
+            Internally split the problem in substeps for reduced memory footprint.
 
         Returns
         -------
@@ -256,7 +256,7 @@ The library can be accessed directly from within Python. If operating in this mo
         OMP_NUM_THREADS
             Number of CPU cores to use. If not defined, use all detected cores.
         UNIFRAC_USE_GPU
-            Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+            Enable or disable GPU offload. If not defined, autodetect.
         ACC_DEVICE_NUM
             The GPU to use. If not defined, the first GPU will be used.
 

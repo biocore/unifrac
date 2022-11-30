@@ -126,7 +126,7 @@ def unweighted(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -193,7 +193,7 @@ def unweighted_fp32(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -260,7 +260,7 @@ def weighted_normalized(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -327,7 +327,7 @@ def weighted_normalized_fp32(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -394,7 +394,7 @@ def weighted_unnormalized(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -462,7 +462,7 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -534,7 +534,7 @@ def generalized(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -620,7 +620,7 @@ def generalized_fp32(table: Union[str, Table],
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -730,7 +730,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -872,7 +872,7 @@ def unweighted_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -957,7 +957,7 @@ def unweighted_fp32_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -1042,7 +1042,7 @@ def weighted_normalized_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -1126,7 +1126,7 @@ def weighted_normalized_fp32_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -1210,7 +1210,7 @@ def weighted_unnormalized_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -1294,7 +1294,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -1384,7 +1384,7 @@ def generalized_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
@@ -1492,7 +1492,7 @@ def generalized_fp32_to_file(table: str,
     OMP_NUM_THREADS
         Number of CPU cores to use. If not defined, use all detected cores.
     UNIFRAC_USE_GPU
-        Enable or disable GPU offload. If not defined, if a NVIDIA GPU is detected, it will be used.
+        Enable or disable GPU offload. If not defined, autodetect.
     ACC_DEVICE_NUM
         The GPU to use. If not defined, the first GPU will be used.
 
