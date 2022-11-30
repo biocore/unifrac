@@ -105,7 +105,7 @@ def unweighted(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -172,7 +172,7 @@ def unweighted_fp32(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -239,7 +239,7 @@ def weighted_normalized(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -306,7 +306,7 @@ def weighted_normalized_fp32(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -373,7 +373,7 @@ def weighted_unnormalized(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -441,7 +441,7 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -513,7 +513,7 @@ def generalized(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -599,7 +599,7 @@ def generalized_fp32(table: Union[str, Table],
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -709,7 +709,7 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     variance_adjusted : bool, optional
         Adjust for varianace or not. Default is False.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -850,7 +850,7 @@ def unweighted_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -935,7 +935,7 @@ def unweighted_fp32_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1020,7 +1020,7 @@ def weighted_normalized_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1104,7 +1104,7 @@ def weighted_normalized_fp32_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1188,7 +1188,7 @@ def weighted_unnormalized_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1272,7 +1272,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1362,7 +1362,7 @@ def generalized_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
@@ -1470,7 +1470,7 @@ def generalized_fp32_to_file(table: str,
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
-        Internally split the problem in n substeps for reduced memory footprint.
+        Internally split the problem in substeps for reduced memory footprint.
 
     Returns
     -------
