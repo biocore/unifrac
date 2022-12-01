@@ -180,6 +180,177 @@ cdef np.ndarray _ssu_inmem_fp32(support_biom *inmem_biom,
     return numpy_arr
 
 
+def ssu_fast(str biom_filename, str tree_filename, object ids,
+             str unifrac_method, bool variance_adjust, double alpha,
+             bool bypass_tips, unsigned int n_substeps):
+    """Execute a call to Strided State UniFrac via the direct API
+
+    Parameters
+    ----------
+    biom_filename : str
+        A filepath to a BIOM 2.1 formatted table (HDF5)
+    tree_filename : str
+        A filepath to a Newick formatted tree
+    ids : tuple or list
+        Ids as present in biom_filename file
+    unifrac_method : str
+        The requested UniFrac method, one of {unweighted,
+        weighted_normalized, weighted_unnormalized, generalized,
+        unweighted_fp32, weighted_normalized_fp32, 
+        weighted_unnormalized_fp32, generalized_fp32}
+    variance_adjust : bool
+        Whether to perform Variance Adjusted UniFrac
+    alpha : float
+        The value of alpha for Generalized UniFrac; only applies to
+        Generalized UniFraca
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    n_substeps : int
+        The number of substeps to use.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix
+
+    Raises
+    ------
+    ValueError
+        If the table is empty
+        If the table is not completely represented by the phylogeny
+        If an unknown method is requested.
+    Exception
+        If an unkown error is experienced
+    """
+    cdef:
+        bytes biom_py_bytes
+        bytes tree_py_bytes
+        bytes met_py_bytes
+        char* biom_c_string
+        char* tree_c_string
+        char* met_c_string
+        object result_dm
+        np.ndarray[np.float32_t, ndim=2] numpy_arr_fp32
+        np.ndarray[np.double_t, ndim=2] numpy_arr_fp64
+
+    biom_py_bytes = biom_filename.encode()
+    tree_py_bytes = tree_filename.encode()
+    met_py_bytes = unifrac_method.encode()
+    biom_c_string = biom_py_bytes
+    tree_c_string = tree_py_bytes
+    met_c_string = met_py_bytes
+
+    if '_fp32' in unifrac_method:
+        numpy_arr_fp32 = _ssu_fast_fp32(biom_c_string, tree_c_string, 
+                                        ids.__len__(), met_c_string, 
+                                        variance_adjust, alpha, bypass_tips, 
+                                        n_substeps)
+        result_dm = skbio.DistanceMatrix(numpy_arr_fp32, ids,
+                                         validate=False)
+    else:
+        numpy_arr_fp64 = _ssu_fast_fp64(biom_c_string, tree_c_string,
+                                        ids.__len__(), met_c_string, 
+                                        variance_adjust, alpha, bypass_tips, 
+                                        n_substeps)
+        result_dm = skbio.DistanceMatrix(numpy_arr_fp64, ids,
+                                         validate=False)
+   
+    return result_dm
+
+
+cdef np.ndarray _ssu_fast_fp64(char* biom_c_string,
+                               char* tree_c_string,
+                               unsigned int n_ids,
+                               char* met_c_string,
+                               bool variance_adjust, double alpha,
+                               bool bypass_tips, unsigned int n_substeps):
+    cdef:
+        unsigned int i 
+        compute_status status
+        mat_full_fp64 *result
+        np.ndarray[np.double_t, ndim=2] numpy_arr
+
+    # allocate our array, and steal the pointer so we may write into it
+    numpy_arr = np.empty((n_ids, n_ids), 
+                         dtype=np.double)
+    result = <mat_full_fp64*>malloc(sizeof(mat_full_fp64))
+    result.n_samples = n_ids
+    result.flags = 0
+
+    result.matrix = &numpy_arr[0, 0]
+    result.sample_ids =  <char **>malloc(n_ids*sizeof(char*))
+    # the values are not really used, so just point to a dummy string
+    for i in range(n_ids):
+        result.sample_ids[i] = biom_c_string
+    
+    status = one_off_matrix(biom_c_string,
+                            tree_c_string,
+                            met_c_string,
+                            variance_adjust,
+                            alpha,
+                            bypass_tips,
+                            n_substeps,
+                            NULL,
+                            &result)
+    check_status(status)
+
+    # matrix is a borrowed pointer -- we do not need to
+    # worry about freeing it
+    result.matrix = NULL
+
+    free(result.sample_ids)
+    free(result)
+
+    return numpy_arr
+
+
+cdef np.ndarray _ssu_fast_fp32(char* biom_c_string,
+                               char* tree_c_string,
+                               unsigned int n_ids,
+                               char* met_c_string,
+                               bool variance_adjust, double alpha,
+                               bool bypass_tips, unsigned int n_substeps):
+    cdef:
+        unsigned int i 
+        compute_status status
+        mat_full_fp32 *result
+        np.ndarray[np.float32_t, ndim=2] numpy_arr
+
+    # allocate our array, and steal the pointer so we may write into it
+    numpy_arr = np.empty((n_ids, n_ids), 
+                         dtype=np.float32)
+    result = <mat_full_fp32*>malloc(sizeof(mat_full_fp32))
+    result.n_samples = n_ids
+    result.flags = 0
+
+    result.matrix = &numpy_arr[0, 0]
+    result.sample_ids =  <char **>malloc(n_ids*sizeof(char*))
+    # the values are not really used, so just point to a dummy string
+    for i in range(n_ids):
+        result.sample_ids[i] = biom_c_string
+    
+    status = one_off_matrix_fp32(biom_c_string,
+                                 tree_c_string,
+                                 met_c_string,
+                                 variance_adjust,
+                                 alpha,
+                                 bypass_tips,
+                                 n_substeps,
+                                 NULL,
+                                 &result)
+    check_status(status)
+
+    # matrix is a borrowed pointer -- we do not need to
+    # worry about freeing it
+    result.matrix = NULL
+
+    free(result.sample_ids)
+    free(result)
+
+    return numpy_arr
+
+
 def ssu(str biom_filename, str tree_filename,
         str unifrac_method, bool variance_adjust, double alpha,
         bool bypass_tips, unsigned int n_substeps):
@@ -223,6 +394,12 @@ def ssu(str biom_filename, str tree_filename,
         If an unknown method is requested.
     Exception
         If an unkown error is experienced
+
+    Note
+    ----
+    This version makes several memory conversions
+    and is thus much slower than ssu_fast.
+    Retaining only for backward compatibility reasons.
     """
     cdef:
         mat *result;

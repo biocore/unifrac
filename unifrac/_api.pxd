@@ -55,15 +55,25 @@ cdef extern from "api.hpp":
         char** names
         int n_parens
 
-    compute_status one_off(const char* biom_filename, const char* tree_filename, 
-                               const char* unifrac_method, bool variance_adjust, double alpha,
-                               bool bypass_tips, unsigned int n_substeps, mat** result)
+    compute_status one_off(const char* biom_filename, const char* tree_filename,
+                           const char* unifrac_method, bool variance_adjust, double alpha,
+                           bool bypass_tips, unsigned int n_substeps, mat** result)
     
-    compute_status one_off_inmem(const support_biom *table, const support_bptree *tree, 
+    compute_status one_off_matrix(const char* biom_filename, const char* tree_filename,
+                                  const char* unifrac_method, bool variance_adjust, double alpha,
+                                  bool bypass_tips, unsigned int n_substeps, const char *mmap_dir,
+                                  mat_full_fp64** result)
+
+    compute_status one_off_matrix_fp32(const char* biom_filename, const char* tree_filename,
+                                       const char* unifrac_method, bool variance_adjust, double alpha,
+                                       bool bypass_tips, unsigned int n_substeps, const char *mmap_dir,
+                                       mat_full_fp32** result)
+
+    compute_status one_off_inmem(const support_biom *table, const support_bptree *tree,
                                  const char* unifrac_method, bool variance_adjust, double alpha,
                                  bool bypass_tips, unsigned int n_substeps, mat_full_fp64** result)
 
-    compute_status one_off_inmem_fp32(const support_biom *table, const support_bptree *tree, 
+    compute_status one_off_inmem_fp32(const support_biom *table, const support_bptree *tree,
                                       const char* unifrac_method, bool variance_adjust, double alpha,
                                       bool bypass_tips, unsigned int n_substeps, mat_full_fp32** result)
 

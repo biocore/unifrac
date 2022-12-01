@@ -22,7 +22,7 @@ import unifrac as qsu
 from unifrac._meta import CONSOLIDATIONS
 
 
-def is_biom_v210(f):
+def is_biom_v210(f, ids=None):
     import h5py
     if not h5py.is_hdf5(f):
         return False
@@ -38,6 +38,10 @@ def is_biom_v210(f):
         if tuple(version) != (2, 1):
             return False
 
+        if ids!=None:
+            for idel in fp['sample/ids']:
+                ids.append(idel.decode('ascii'))
+
     return True
 
 
@@ -46,8 +50,8 @@ def is_newick(f):
     return sniffer(f)[0]
 
 
-def _validate(table, phylogeny):
-    if not is_biom_v210(table):
+def _validate(table, phylogeny, ids=None):
+    if not is_biom_v210(table, ids):
         raise ValueError("Table does not appear to be a BIOM-Format v2.1")
     if not is_newick(phylogeny):
         raise ValueError("The phylogeny does not appear to be newick")
@@ -57,8 +61,9 @@ def _call_ssu(table, phylogeny, *args):
     if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
         return qsu.ssu_inmem(table, phylogeny, *args)
     elif isinstance(table, str) and isinstance(phylogeny, str):
-        _validate(table, phylogeny)
-        return qsu.ssu(table, phylogeny, *args)
+        ids=[]
+        _validate(table, phylogeny, ids)
+        return qsu.ssu_fast(table, phylogeny, ids, *args)
     else:
         table_type = type(table)
         tree_type = type(phylogeny)
