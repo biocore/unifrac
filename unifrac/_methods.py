@@ -38,7 +38,7 @@ def is_biom_v210(f, ids=None):
         if tuple(version) != (2, 1):
             return False
 
-        if ids!=None:
+        if ids is not None:
             for idel in fp['sample/ids']:
                 ids.append(idel.decode('ascii'))
 
@@ -61,7 +61,7 @@ def _call_ssu(table, phylogeny, *args):
     if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
         return qsu.ssu_inmem(table, phylogeny, *args)
     elif isinstance(table, str) and isinstance(phylogeny, str):
-        ids=[]
+        ids = []
         _validate(table, phylogeny, ids)
         return qsu.ssu_fast(table, phylogeny, ids, *args)
     else:
