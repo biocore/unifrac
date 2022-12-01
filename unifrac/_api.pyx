@@ -87,14 +87,14 @@ def ssu_inmem(object table, object tree,
         numpy_arr_fp32 = _ssu_inmem_fp32(inmem_biom, inmem_tree, met_c_string, 
                                          variance_adjust, alpha, bypass_tips, 
                                          n_substeps)
-        # validate=False would shave 5% but it's currently in skbio master
-        result_dm = skbio.DistanceMatrix(numpy_arr_fp32, table.ids())
+        result_dm = skbio.DistanceMatrix(numpy_arr_fp32, table.ids(),
+                                         validate=False)
     else:
         numpy_arr_fp64 = _ssu_inmem_fp64(inmem_biom, inmem_tree, met_c_string, 
                                          variance_adjust, alpha, bypass_tips, 
                                          n_substeps)
-        # validate=False would shave 5% but it's currently in skbio master
-        result_dm = skbio.DistanceMatrix(numpy_arr_fp64, table.ids())
+        result_dm = skbio.DistanceMatrix(numpy_arr_fp64, table.ids(),
+                                         validate=False)
    
     destroy_support_biom(inmem_biom)
     destroy_support_bptree(inmem_tree)
