@@ -61,7 +61,7 @@ jobs:
         fi
         conda install --yes -c conda-forge -c bioconda unifrac-binaries
         # TEMP HACK: Use older version of scipy to work around scikit-bio problem
-        conda install --yes -c conda-forge -c bioconda cython "scipy<1.9" "hdf5<1.12.1" biom-format numpy "h5py<3.0.0 | >3.3.0" "scikit-bio>=0.5.1" nose
+        conda install --yes -c conda-forge -c bioconda cython "scipy<1.9" "hdf5<1.12.1" biom-format numpy "h5py<3.0.0 | >3.3.0" "scikit-bio>=0.5.7" nose
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
         then
