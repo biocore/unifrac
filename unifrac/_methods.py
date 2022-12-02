@@ -40,7 +40,10 @@ def is_biom_v210(f, ids=None):
 
         if ids is not None:
             for idel in fp['sample/ids']:
-                ids.append(idel.decode('ascii'))
+                if isinstance(idel, bytes):
+                    ids.append(idel.decode('ascii'))
+                else:
+                    ids.append(idel)
 
     return True
 
