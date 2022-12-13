@@ -43,7 +43,7 @@ class UnifracAPITests(unittest.TestCase):
         npt.assert_almost_equal(obs.data, exp.data, decimal=6)
 
         obs2 = unweighted(table_fp, tree_fp)
-        npt.assert_almost_equal(obs2.data, exp.data)
+        npt.assert_almost_equal(obs2.data, exp.data, decimal=6)
 
     def test_unweighted_fp32_inmem(self):
         tree_fp = self.get_data_path('crawford.tre')
@@ -62,8 +62,8 @@ class UnifracAPITests(unittest.TestCase):
                         False, 1)
         npt.assert_almost_equal(obs.data, exp.data, decimal=6)
 
-        obs2 = unweighted(table_fp, tree_fp)
-        npt.assert_almost_equal(obs2.data, exp.data)
+        obs2 = unweighted_fp32(table_fp, tree_fp)
+        npt.assert_almost_equal(obs2.data, exp.data, decimal=6)
 
     def test_unweighted_fp64_inmem(self):
         tree_fp = self.get_data_path('crawford.tre')
@@ -82,7 +82,7 @@ class UnifracAPITests(unittest.TestCase):
                         False, 1)
         npt.assert_almost_equal(obs.data, exp.data)
 
-        obs2 = unweighted(table_fp, tree_fp)
+        obs2 = unweighted_fp64(table_fp, tree_fp)
         npt.assert_almost_equal(obs2.data, exp.data)
 
     def get_data_path(self, filename):
@@ -104,17 +104,17 @@ class UnifracAPITests(unittest.TestCase):
                                              ids=ids, otu_ids=otu_ids,
                                              tree=tree_inmem)
         obs = ssu(table, tree, 'unweighted', False, 1.0, False, 1)
-        npt.assert_almost_equal(obs.data, exp.data)
+        npt.assert_almost_equal(obs.data, exp.data, decimal=6)
 
         obs2 = unweighted(table, tree)
-        npt.assert_almost_equal(obs2.data, exp.data)
+        npt.assert_almost_equal(obs2.data, exp.data, decimal=6)
 
         tmpfile = '/tmp/uf_ta_1.md5'
         unweighted_to_file(table, tree, tmpfile, pcoa_dims=0)
 
         try:
             obs3 = h5unifrac(tmpfile)
-            npt.assert_almost_equal(obs3.data, exp.data)
+            npt.assert_almost_equal(obs3.data, exp.data, decimal=6)
         finally:
             os.unlink(tmpfile)
 
@@ -128,7 +128,7 @@ class UnifracAPITests(unittest.TestCase):
                                  [10 / 16., 0, 8 / 17.],
                                  [8 / 13., 8 / 17., 0]])
 
-        npt.assert_almost_equal(u1_distances, result.data)
+        npt.assert_almost_equal(u1_distances, result.data, decimal=6)
         self.assertEqual(tuple('ABC'), result.ids)
 
     def test_ssu_bad_tree(self):
