@@ -40,7 +40,7 @@ class UnifracAPITests(unittest.TestCase):
                                              tree=tree)
         obs = ssu_inmem(table, tree, 'unweighted', False, 1.0,
                         False, 1)
-        npt.assert_almost_equal(obs.data, exp.data)
+        npt.assert_almost_equal(obs.data, exp.data, decimal=6)
 
         obs2 = unweighted(table_fp, tree_fp)
         npt.assert_almost_equal(obs2.data, exp.data)
@@ -61,6 +61,26 @@ class UnifracAPITests(unittest.TestCase):
         obs = ssu_inmem(table, tree, 'unweighted_fp32', False, 1.0,
                         False, 1)
         npt.assert_almost_equal(obs.data, exp.data, decimal=6)
+
+        obs2 = unweighted(table_fp, tree_fp)
+        npt.assert_almost_equal(obs2.data, exp.data)
+
+    def test_unweighted_fp64_inmem(self):
+        tree_fp = self.get_data_path('crawford.tre')
+        table_fp = self.get_data_path('crawford.biom')
+
+        table = load_table(table_fp)
+        tree = skbio.TreeNode.read(tree_fp)
+
+        ids = table.ids()
+        otu_ids = table.ids(axis='observation')
+        cnts = table.matrix_data.astype(int).toarray().T
+        exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
+                                             ids=ids, otu_ids=otu_ids,
+                                             tree=tree)
+        obs = ssu_inmem(table, tree, 'unweighted_fp64', False, 1.0,
+                        False, 1)
+        npt.assert_almost_equal(obs.data, exp.data)
 
         obs2 = unweighted(table_fp, tree_fp)
         npt.assert_almost_equal(obs2.data, exp.data)
