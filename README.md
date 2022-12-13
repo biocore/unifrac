@@ -135,22 +135,22 @@ To use Stacked Faith through QIIME2, given similar artifacts, you can use:
 The library can be accessed directly from within Python. If operating in this mode, the API methods are expecting a filepath to a BIOM-Format V2.1.0 table, and a filepath to a Newick formatted phylogeny.
 
     $ python
-    Python 3.7.8 | packaged by conda-forge | (default, Nov 27 2020, 19:24:58) 
-    [GCC 9.3.0] on linux
+    Python 3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:23:14) [GCC 10.4.0] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
-    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', 
-     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 
-     'faith_pd', 
-     'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_to_file', 
-     'h5pcoa', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_to_file', 
-     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_to_file', 
-     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 'weighted_normalized_to_file', 
-     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 'weighted_unnormalized_to_file']
-    >>> print(unifrac.unweighted_fp32.__doc__)
-    Compute Unweighted UniFrac using fp32 math
-
+    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__',
+     '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'faith_pd', 
+     'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file', 
+     'h5pcoa', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 
+     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file', 
+     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 
+     'weighted_normalized_fp64', 'weighted_normalized_fp64_to_file', 'weighted_normalized_to_file', 
+     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 
+     'weighted_unnormalized_fp64', 'weighted_unnormalized_fp64_to_file', 'weighted_unnormalized_to_file']
+    >>> print(unifrac.unweighted.__doc__)
+    Compute Unweighted UniFrac
+    
         Parameters
         ----------
         table : str
@@ -166,12 +166,12 @@ The library can be accessed directly from within Python. If operating in this mo
             by about 50%, but is an approximation.
         n_substeps : int, optional
             Internally split the problem in substeps for reduced memory footprint.
-
+    
         Returns
         -------
         skbio.DistanceMatrix
             The resulting distance matrix.
-
+    
         Raises
         ------
         IOError
@@ -180,7 +180,7 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
-
+    
         Environment variables
         ---------------------
         OMP_NUM_THREADS
@@ -189,14 +189,14 @@ The library can be accessed directly from within Python. If operating in this mo
             Enable or disable GPU offload. If not defined, autodetect.
         ACC_DEVICE_NUM
             The GPU to use. If not defined, the first GPU will be used.
-
+    
         Notes
         -----
         Unweighted UniFrac was originally described in [1]_. Variance Adjusted
         UniFrac was originally described in [2]_, and while its application to
         Unweighted UniFrac was not described, factoring in the variance adjustment
         is still feasible and so it is exposed.
-
+    
         References
         ----------
         .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
@@ -205,10 +205,10 @@ The library can be accessed directly from within Python. If operating in this mo
         .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
-
-    >>> print(unifrac.unweighted_fp32_to_file.__doc__)
-    Compute Unweighted UniFrac using fp32 math and write to file
-
+        
+    >>> print(unifrac.unweighted_to_file.__doc__)
+    Compute Unweighted UniFrac and write to file
+    
         Parameters
         ----------
         table : str
@@ -235,12 +235,12 @@ The library can be accessed directly from within Python. If operating in this mo
             can be used to reduce the amount of memory needed.
         n_substeps : int, optional
             Internally split the problem in substeps for reduced memory footprint.
-
+    
         Returns
         -------
         str
             A filepath to the output file.
-
+    
         Raises
         ------
         IOError
@@ -250,7 +250,7 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
-
+    
         Environment variables
         ---------------------
         OMP_NUM_THREADS
@@ -259,14 +259,14 @@ The library can be accessed directly from within Python. If operating in this mo
             Enable or disable GPU offload. If not defined, autodetect.
         ACC_DEVICE_NUM
             The GPU to use. If not defined, the first GPU will be used.
-
+    
         Notes
         -----
         Unweighted UniFrac was originally described in [1]_. Variance Adjusted
         UniFrac was originally described in [2]_, and while its application to
         Unweighted UniFrac was not described, factoring in the variance adjustment
         is still feasible and so it is exposed.
-
+    
         References
         ----------
         .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
@@ -275,27 +275,27 @@ The library can be accessed directly from within Python. If operating in this mo
         .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
-
+        
     >>> print(unifrac.h5unifrac.__doc__)
     Read UniFrac from a hdf5 file
-
+    
         Parameters
         ----------
         h5file : str
             A filepath to a hdf5 file.
-
+    
         Returns
         -------
         skbio.DistanceMatrix
             The distance matrix.
-
+    
         Raises
         ------
         OSError
             If the hdf5 file is not found
         KeyError
             If the hdf5 does not have the necessary fields
-
+    
         References
         ----------
         .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
@@ -304,7 +304,7 @@ The library can be accessed directly from within Python. If operating in this mo
         .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
-
+         
 	>>> print(unifrac.faith_pd.__doc__)
 	Execute a call to the Stacked Faith API in the UniFrac package
 
@@ -402,14 +402,30 @@ The methods can also be used directly through the command line after install:
             
 ## Minor test dataset
 
-A small test `.biom` and `.tre` can be found in `sucpp/`. An example with expected output is below, and should execute in 10s of milliseconds:
+A small test `.biom` and `.tre` can be found in `unifrac/tests/data/`. An example with expected output is below, and should execute in 10s of milliseconds:
 
-    $ ssu -i sucpp/test.biom -t sucpp/test.tre -m unweighted -o test.out
-    $ cat test.out
-    	Sample1	Sample2	Sample3	Sample4	Sample5	Sample6
-    Sample1	0	0.2	0.5714285714285714	0.6	0.5	0.2
-    Sample2	0.2	0	0.4285714285714285	0.6666666666666666	0.6	0.3333333333333333
-    Sample3	0.5714285714285714	0.4285714285714285	0	0.7142857142857143	0.8571428571428571	0.4285714285714285
-    Sample4	0.6	0.6666666666666666	0.7142857142857143	0	0.3333333333333333	0.4
-    Sample5	0.5	0.6	0.8571428571428571	0.3333333333333333	0	0.6
-    Sample6	0.2	0.3333333333333333	0.4285714285714285	0.4	0.6	0
+    $ python
+    Python 3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:23:14) [GCC 10.4.0] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import unifrac
+    >>> d=unifrac.unweighted('unifrac/tests/data/crawford.biom','unifrac/tests/data/crawford.tre')
+    >>> d.data
+    array([[0.        , 0.71836066, 0.7131736 , 0.6974604 , 0.6258721 ,
+            0.7282667 , 0.72065896, 0.7264058 , 0.7360605 ],
+           [0.71836066, 0.        , 0.7030297 , 0.734073  , 0.6548042 ,
+            0.71547383, 0.7839781 , 0.723184  , 0.7613893 ],
+           [0.7131736 , 0.7030297 , 0.        , 0.6104128 , 0.623313  ,
+            0.71848303, 0.7041634 , 0.75258476, 0.7924903 ],
+           [0.6974604 , 0.734073  , 0.6104128 , 0.        , 0.6439278 ,
+            0.7005273 , 0.6983272 , 0.77818936, 0.72959894],
+           [0.6258721 , 0.6548042 , 0.623313  , 0.6439278 , 0.        ,
+            0.75782686, 0.7100514 , 0.75065047, 0.7894437 ],
+           [0.7282667 , 0.71547383, 0.71848303, 0.7005273 , 0.75782686,
+            0.        , 0.63593644, 0.71283615, 0.5831464 ],
+           [0.72065896, 0.7839781 , 0.7041634 , 0.6983272 , 0.7100514 ,
+            0.63593644, 0.        , 0.6920076 , 0.6897206 ],
+           [0.7264058 , 0.723184  , 0.75258476, 0.77818936, 0.75065047,
+            0.71283615, 0.6920076 , 0.        , 0.7151408 ],
+           [0.7360605 , 0.7613893 , 0.7924903 , 0.72959894, 0.7894437 ,
+            0.5831464 , 0.6897206 , 0.7151408 , 0.        ]], dtype=float32)
+
