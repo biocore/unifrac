@@ -248,7 +248,7 @@ class EdgeCasesTests(unittest.TestCase):
                     self.b1[i], self.b1[j], self.oids1, self.t1)
                 expected = self.unweighted_unifrac(
                     shuffled_b1[i], shuffled_b1[j], shuffled_ids, self.t1)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_otus_out_of_order(self):
         # UniFrac API does not assert the observations are in tip order of the
@@ -265,7 +265,7 @@ class EdgeCasesTests(unittest.TestCase):
                     self.b1[i], self.b1[j], self.oids1, self.t1)
                 expected = self.weighted_unifrac(
                     shuffled_b1[i], shuffled_b1[j], shuffled_ids, self.t1)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_unweighted_extra_tips(self):
         # UniFrac values are the same despite unobserved tips in the tree
@@ -275,7 +275,7 @@ class EdgeCasesTests(unittest.TestCase):
                     self.b1[i], self.b1[j], self.oids1, self.t1_w_extra_tips)
                 expected = self.unweighted_unifrac(
                     self.b1[i], self.b1[j], self.oids1, self.t1)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_extra_tips(self):
         # UniFrac values are the same despite unobserved tips in the tree
@@ -285,7 +285,7 @@ class EdgeCasesTests(unittest.TestCase):
                     self.b1[i], self.b1[j], self.oids1, self.t1_w_extra_tips)
                 expected = self.weighted_unifrac(
                     self.b1[i], self.b1[j], self.oids1, self.t1)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_unweighted_minimal_trees(self):
         # two tips
@@ -306,7 +306,7 @@ class EdgeCasesTests(unittest.TestCase):
         # a point of confusion for me here, so leaving these in for
         # future reference
         expected = 0.2 / (0.1 + 0.2 + 0.3)  # 0.3333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
         # root node not observed, but branch between (OTU3, OTU4) and root
         # is considered shared
@@ -317,7 +317,7 @@ class EdgeCasesTests(unittest.TestCase):
         # a point of confusion for me here, so leaving these in for
         # future reference
         expected = 0.7 / (1.1 + 0.5 + 0.7)  # 0.3043478261
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_root_not_observed(self):
         # expected values computed by hand, these disagree with QIIME 1.9.1
@@ -326,14 +326,14 @@ class EdgeCasesTests(unittest.TestCase):
         actual = self.weighted_unifrac([1, 0, 0, 0], [1, 1, 0, 0],
                                        self.oids2, self.t2)
         expected = 0.15
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
         # root node not observed, but branch between (OTU3, OTU4) and root
         # is considered shared
         actual = self.weighted_unifrac([0, 0, 1, 1], [0, 0, 1, 0],
                                        self.oids2, self.t2)
         expected = 0.6
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_normalized_root_not_observed(self):
         # expected values computed by hand, these disagree with QIIME 1.9.1
@@ -342,21 +342,21 @@ class EdgeCasesTests(unittest.TestCase):
         actual = self.weighted_unifrac([1, 0, 0, 0], [1, 1, 0, 0],
                                        self.oids2, self.t2, normalized=True)
         expected = 0.1764705882
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
         # root node not observed, but branch between (OTU3, OTU4) and root
         # is considered shared
         actual = self.weighted_unifrac([0, 0, 1, 1], [0, 0, 1, 0],
                                        self.oids2, self.t2, normalized=True)
         expected = 0.1818181818
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_unweighted_unifrac_identity(self):
         for i in range(len(self.b1)):
             actual = self.unweighted_unifrac(
                 self.b1[i], self.b1[i], self.oids1, self.t1)
             expected = 0.0
-            self.assertAlmostEqual(actual, expected)
+            self.assertAlmostEqual(actual, expected, places=6)
 
     def test_unweighted_unifrac_symmetry(self):
         for i in range(len(self.b1)):
@@ -365,18 +365,18 @@ class EdgeCasesTests(unittest.TestCase):
                     self.b1[i], self.b1[j], self.oids1, self.t1)
                 expected = self.unweighted_unifrac(
                     self.b1[j], self.b1[i], self.oids1, self.t1)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_unweighted_unifrac_non_overlapping(self):
         # these communities only share the root node
         actual = self.unweighted_unifrac(
             self.b1[4], self.b1[5], self.oids1, self.t1)
         expected = 1.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             [1, 1, 1, 0, 0], [0, 0, 0, 1, 1], self.oids1, self.t1)
         expected = 1.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_unweighted_unifrac(self):
         # expected results derived from QIIME 1.9.1, which
@@ -386,74 +386,74 @@ class EdgeCasesTests(unittest.TestCase):
         actual = self.unweighted_unifrac(
             self.b1[0], self.b1[1], self.oids1, self.t1)
         expected = 0.238095238095
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[0], self.b1[2], self.oids1, self.t1)
         expected = 0.52
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[0], self.b1[3], self.oids1, self.t1)
         expected = 0.52
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[0], self.b1[4], self.oids1, self.t1)
         expected = 0.545454545455
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[0], self.b1[5], self.oids1, self.t1)
         expected = 0.619047619048
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample B versus remaining
         actual = self.unweighted_unifrac(
             self.b1[1], self.b1[2], self.oids1, self.t1)
         expected = 0.347826086957
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[1], self.b1[3], self.oids1, self.t1)
         expected = 0.347826086957
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[1], self.b1[4], self.oids1, self.t1)
         expected = 0.68
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[1], self.b1[5], self.oids1, self.t1)
         expected = 0.421052631579
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample C versus remaining
         actual = self.unweighted_unifrac(
             self.b1[2], self.b1[3], self.oids1, self.t1)
         expected = 0.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[2], self.b1[4], self.oids1, self.t1)
         expected = 0.68
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[2], self.b1[5], self.oids1, self.t1)
         expected = 0.421052631579
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample D versus remaining
         actual = self.unweighted_unifrac(
             self.b1[3], self.b1[4], self.oids1, self.t1)
         expected = 0.68
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.unweighted_unifrac(
             self.b1[3], self.b1[5], self.oids1, self.t1)
         expected = 0.421052631579
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample E versus remaining
         actual = self.unweighted_unifrac(
             self.b1[4], self.b1[5], self.oids1, self.t1)
         expected = 1.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_identity(self):
         for i in range(len(self.b1)):
             actual = self.weighted_unifrac(
                 self.b1[i], self.b1[i], self.oids1, self.t1)
             expected = 0.0
-            self.assertAlmostEqual(actual, expected)
+            self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_symmetry(self):
         for i in range(len(self.b1)):
@@ -462,7 +462,7 @@ class EdgeCasesTests(unittest.TestCase):
                     self.b1[i], self.b1[j], self.oids1, self.t1)
                 expected = self.weighted_unifrac(
                     self.b1[j], self.b1[i], self.oids1, self.t1)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_non_overlapping(self):
         # expected results derived from QIIME 1.9.1, which
@@ -472,7 +472,7 @@ class EdgeCasesTests(unittest.TestCase):
         actual = self.weighted_unifrac(
             self.b1[4], self.b1[5], self.oids1, self.t1)
         expected = 4.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac(self):
         # expected results derived from QIIME 1.9.1, which
@@ -481,74 +481,74 @@ class EdgeCasesTests(unittest.TestCase):
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[1], self.oids1, self.t1)
         expected = 2.4
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[2], self.oids1, self.t1)
         expected = 1.86666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[3], self.oids1, self.t1)
         expected = 2.53333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[4], self.oids1, self.t1)
         expected = 1.35384615385
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[5], self.oids1, self.t1)
         expected = 3.2
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample B versus remaining
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[2], self.oids1, self.t1)
         expected = 2.26666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[3], self.oids1, self.t1)
         expected = 0.933333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[4], self.oids1, self.t1)
         expected = 3.2
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[5], self.oids1, self.t1)
         expected = 0.8375
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample C versus remaining
         actual = self.weighted_unifrac(
             self.b1[2], self.b1[3], self.oids1, self.t1)
         expected = 1.33333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[2], self.b1[4], self.oids1, self.t1)
         expected = 1.89743589744
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[2], self.b1[5], self.oids1, self.t1)
         expected = 2.66666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample D versus remaining
         actual = self.weighted_unifrac(
             self.b1[3], self.b1[4], self.oids1, self.t1)
         expected = 2.66666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[3], self.b1[5], self.oids1, self.t1)
         expected = 1.33333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample E versus remaining
         actual = self.weighted_unifrac(
             self.b1[4], self.b1[5], self.oids1, self.t1)
         expected = 4.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_identity_normalized(self):
         for i in range(len(self.b1)):
             actual = self.weighted_unifrac(
                 self.b1[i], self.b1[i], self.oids1, self.t1, normalized=True)
             expected = 0.0
-            self.assertAlmostEqual(actual, expected)
+            self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_symmetry_normalized(self):
         for i in range(len(self.b1)):
@@ -559,19 +559,19 @@ class EdgeCasesTests(unittest.TestCase):
                 expected = self.weighted_unifrac(
                     self.b1[j], self.b1[i], self.oids1, self.t1,
                     normalized=True)
-                self.assertAlmostEqual(actual, expected)
+                self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_non_overlapping_normalized(self):
         # these communities only share the root node
         actual = self.weighted_unifrac(
             self.b1[4], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 1.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             [1, 1, 1, 0, 0], [0, 0, 0, 1, 1], self.oids1, self.t1,
             normalized=True)
         expected = 1.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
     def test_weighted_unifrac_normalized(self):
         # expected results derived from QIIME 1.9.1, which
@@ -580,67 +580,67 @@ class EdgeCasesTests(unittest.TestCase):
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[1], self.oids1, self.t1, normalized=True)
         expected = 0.6
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[2], self.oids1, self.t1, normalized=True)
         expected = 0.466666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[3], self.oids1, self.t1, normalized=True)
         expected = 0.633333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[4], self.oids1, self.t1, normalized=True)
         expected = 0.338461538462
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[0], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 0.8
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample B versus remaining
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[2], self.oids1, self.t1, normalized=True)
         expected = 0.566666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[3], self.oids1, self.t1, normalized=True)
         expected = 0.233333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[4], self.oids1, self.t1, normalized=True)
         expected = 0.8
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[1], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 0.209375
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample C versus remaining
         actual = self.weighted_unifrac(
             self.b1[2], self.b1[3], self.oids1, self.t1, normalized=True)
         expected = 0.333333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[2], self.b1[4], self.oids1, self.t1, normalized=True)
         expected = 0.474358974359
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[2], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 0.666666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample D versus remaining
         actual = self.weighted_unifrac(
             self.b1[3], self.b1[4], self.oids1, self.t1, normalized=True)
         expected = 0.666666666667
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         actual = self.weighted_unifrac(
             self.b1[3], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 0.333333333333
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
         # sample E versus remaining
         actual = self.weighted_unifrac(
             self.b1[4], self.b1[5], self.oids1, self.t1, normalized=True)
         expected = 1.0
-        self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(actual, expected, places=6)
 
 
 class FaithPDEdgeCasesTests(unittest.TestCase):
