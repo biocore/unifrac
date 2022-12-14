@@ -30,7 +30,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10']
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, linux-gpu-cuda]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
@@ -79,6 +79,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        export UNIFRAC_GPU_INFO=Y
         ls -lrt $CONDA_PREFIX/lib/libhdf5_cpp*
         nosetests
         
@@ -86,6 +87,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        export UNIFRAC_GPU_INFO=Y
         set -e
         ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
         python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
