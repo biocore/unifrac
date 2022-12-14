@@ -17,8 +17,8 @@ import sys
 
 PREFIX = os.environ.get('PREFIX', "")
 
-base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 2.7.0",
-        "scikit-bio >= 0.5.1", "iow"]
+base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 3.3.0",
+        "scikit-bio >= 0.5.8", "iow"]
 
 test = ["nose", "flake8"]
 
@@ -92,7 +92,7 @@ with open('README.md') as f:
 
 setup(
     name="unifrac",
-    version="1.0.0",
+    version="1.2.0",
     packages=find_packages(),
     author="Daniel McDonald",
     license='BSD-3-Clause',

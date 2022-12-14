@@ -3,4 +3,4 @@ flake8
 nose
 scikit-bio
 biom-format
-h5py==2.7.0
+h5py
