@@ -2243,6 +2243,7 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
 
     return dm
 
+
 def _build_pcoa(f_u, long_method_name, order_index,
                 eigval_key, samples_key, prop_key):
     axis_labels = ["PC%d" % i for i in
@@ -2301,6 +2302,7 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
 
     return pc
 
+
 def h5pcoa_all(h5file: str) -> tuple:
     """Read all PCoAs from a hdf5 file
 
@@ -2352,14 +2354,15 @@ def h5pcoa_all(h5file: str) -> tuple:
             # multi-matrix version
             pcs = []
             i = 0
-            while 'pcoa_eigvals:%i'%i in f_u.keys():
+            while 'pcoa_eigvals:%i' % i in f_u.keys():
                 pcs.append(_build_pcoa(f_u, long_method_name, order_index,
-                                       'pcoa_eigvals:%i'%i,
-                                       'pcoa_samples:%i'%i,
-                                       'pcoa_proportion_explained:%i'%i))
-                i=i+1
+                                       'pcoa_eigvals:%i' % i,
+                                       'pcoa_samples:%i' % i,
+                                       'pcoa_proportion_explained:%i' % i))
+                i = i + 1
 
     return pcs
+
 
 def h5permanova(h5file: str) -> pd.Series:
     """Read first PERMANOVA statistical test from a hdf5 file
@@ -2405,28 +2408,30 @@ def h5permanova(h5file: str) -> pd.Series:
 
     found = False
     with h5py.File(h5file, "r") as f_u:
-        methods =        f_u['stat_methods'][:]
-        test_names =     f_u['stat_test_names'][:]
-        values =         f_u['stat_values'][:]
-        pvalues =        f_u['stat_pvalues'][:]
+        methods = f_u['stat_methods'][:]
+        test_names = f_u['stat_test_names'][:]
+        values = f_u['stat_values'][:]
+        pvalues = f_u['stat_pvalues'][:]
         n_permutations = f_u['stat_n_permutations'][:]
-        num_groups =     f_u['stat_n_groups'][:]
-        
+        num_groups = f_u['stat_n_groups'][:]
+
         sample_size = len(f_u['order'][:])
 
         n_stats = len(methods)
 
         for i in range(n_stats):
-          if (methods[i]==b'PERMANOVA') and (test_names[i]==b'pseudo-F'):
-            found = True
-            pmn = _build_stat('PERMANOVA', 'pseudo-F', sample_size, num_groups[i],
-                              values[i], pvalues[i], n_permutations[i])
-            break
+            if (methods[i] == b'PERMANOVA') and (test_names[i] == b'pseudo-F'):
+                found = True
+                pmn = _build_stat('PERMANOVA', 'pseudo-F',
+                                  sample_size, num_groups[i],
+                                  values[i], pvalues[i], n_permutations[i])
+                break
 
     if (not found):
-      raise KeyError("PERMANOVA not found")
+        raise KeyError("PERMANOVA not found")
 
     return pmn
+
 
 def h5permanova_dict(h5file: str) -> dict:
     """Read PERMANOVA statistical tests from a hdf5 file
@@ -2470,26 +2475,26 @@ def h5permanova_dict(h5file: str) -> dict:
     .. [2] http://cran.r-project.org/web/packages/vegan/index.html
     """
 
-    pmns={}
+    pmns = {}
     with h5py.File(h5file, "r") as f_u:
-        methods =        f_u['stat_methods'][:]
-        test_names =     f_u['stat_test_names'][:]
+        methods = f_u['stat_methods'][:]
+        test_names = f_u['stat_test_names'][:]
         grouping_names = f_u['stat_grouping_names'][:]
-        values =         f_u['stat_values'][:]
-        pvalues =        f_u['stat_pvalues'][:]
+        values = f_u['stat_values'][:]
+        pvalues = f_u['stat_pvalues'][:]
         n_permutations = f_u['stat_n_permutations'][:]
-        num_groups =     f_u['stat_n_groups'][:]
-        
+        num_groups = f_u['stat_n_groups'][:]
+
         sample_size = len(f_u['order'][:])
 
         n_stats = len(methods)
 
         for i in range(n_stats):
-          if (methods[i]==b'PERMANOVA') and (test_names[i]==b'pseudo-F'):
-            kname = grouping_names[i].decode('ascii')
-            pmns[kname] = _build_stat('PERMANOVA', 'pseudo-F',
-                                      sample_size, num_groups[i],
-                                      values[i], pvalues[i],
-                                      n_permutations[i])
+            if (methods[i] == b'PERMANOVA') and (test_names[i] == b'pseudo-F'):
+                kname = grouping_names[i].decode('ascii')
+                pmns[kname] = _build_stat('PERMANOVA', 'pseudo-F',
+                                          sample_size, num_groups[i],
+                                          values[i], pvalues[i],
+                                          n_permutations[i])
 
     return pmns
