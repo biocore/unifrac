@@ -35,7 +35,7 @@ from unifrac._methods import (unweighted,
                               meta,
                               h5unifrac,
                               h5pcoa,
-                              h5permanova)
+                              h5permanova, h5permanova_dict)
 from unifrac._api import ssu, ssu_fast, faith_pd, ssu_to_file, ssu_inmem
 
 

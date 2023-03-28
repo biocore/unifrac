@@ -2344,12 +2344,12 @@ def h5permanova(h5file: str) -> pd.Series:
 
     found = False
     with h5py.File(h5file, "r") as f_u:
-        methods = f_u['stat_methods'][:]
-        test_names = f_u['stat_test_names'][:]
-        values = f_u['stat_values'][:]
-        pvalues = f_u['stat_pvalues'][:]
+        methods =        f_u['stat_methods'][:]
+        test_names =     f_u['stat_test_names'][:]
+        values =         f_u['stat_values'][:]
+        pvalues =        f_u['stat_pvalues'][:]
         n_permutations = f_u['stat_n_permutations'][:]
-        num_groups = f_u['stat_n_groups'][:]
+        num_groups =     f_u['stat_n_groups'][:]
         
         sample_size = len(f_u['order'][:])
 
@@ -2363,6 +2363,72 @@ def h5permanova(h5file: str) -> pd.Series:
             break
 
     if (not found):
-      raise KeyError("Not found")
+      raise KeyError("PERMANOVA not found")
 
     return pmn
+
+def h5permanova_dict(h5file: str) -> dict:
+    """Read PERMANOVA statistical tests from a hdf5 file
+
+    Permutational Multivariate Analysis of Variance (PERMANOVA) is a
+    non-parametric method that tests whether two or more groups of objects
+    (e.g., samples) are significantly different based on a categorical factor.
+    It is conceptually similar to ANOVA except that it operates on a distance
+    matrix, which allows for multivariate analysis. PERMANOVA computes a
+    pseudo-F statistic.
+
+    Statistical significance is assessed via a permutation test. The assignment
+    of objects to groups (`grouping`) is randomly permuted a number of times
+    (controlled via `permutations`). A pseudo-F statistic is computed for each
+    permutation and the p-value is the proportion of permuted pseudo-F
+    statisics that are equal to or greater than the original (unpermuted)
+    pseudo-F statistic.
+
+    Parameters
+    ----------
+    h5file : str
+        A filepath to a hdf5 file.
+
+    Returns
+    -------
+    dict[str]=pandas.Series
+        Results of the statistical test, including ``test statistic`` and
+        ``p-value``.
+
+    Raises
+    ------
+    OSError
+        If the hdf5 file is not found
+    KeyError
+        If the hdf5 does not have the necessary fields
+
+    References
+    ----------
+    .. [1] Anderson, Marti J. "A new method for non-parametric multivariate
+       analysis of variance." Austral Ecology 26.1 (2001): 32-46.
+    .. [2] http://cran.r-project.org/web/packages/vegan/index.html
+    """
+
+    pmns={}
+    with h5py.File(h5file, "r") as f_u:
+        methods =        f_u['stat_methods'][:]
+        test_names =     f_u['stat_test_names'][:]
+        grouping_names = f_u['stat_grouping_names'][:]
+        values =         f_u['stat_values'][:]
+        pvalues =        f_u['stat_pvalues'][:]
+        n_permutations = f_u['stat_n_permutations'][:]
+        num_groups =     f_u['stat_n_groups'][:]
+        
+        sample_size = len(f_u['order'][:])
+
+        n_stats = len(methods)
+
+        for i in range(n_stats):
+          if (methods[i]==b'PERMANOVA') and (test_names[i]==b'pseudo-F'):
+            kname = grouping_names[i].decode('ascii')
+            pmns[kname] = _build_stat('PERMANOVA', 'pseudo-F',
+                                      sample_size, num_groups[i],
+                                      values[i], pvalues[i],
+                                      n_permutations[i])
+
+    return pmns
