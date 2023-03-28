@@ -34,7 +34,8 @@ from unifrac._methods import (unweighted,
                               generalized_fp32_to_file,
                               meta,
                               h5unifrac,
-                              h5pcoa)
+                              h5pcoa,
+                              h5permanova)
 from unifrac._api import ssu, ssu_fast, faith_pd, ssu_to_file, ssu_inmem
 
 
