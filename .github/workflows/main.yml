@@ -42,14 +42,6 @@ jobs:
     - name: Install 
       shell: bash -l {0}
       run: |
-        if [[ "$(uname -s)" != "Linux" ]];
-        then
-          ls -l /Applications/
-          # coonda clang does not like xcode 12
-          sudo xcode-select --switch /Applications/Xcode_11.7.app
-          # the system tools are unusable, hide them
-          sudo mv -f /Library/Developer/CommandLineTools /Library/Developer/CommandLineTools.org
-        fi
         conda create --yes -n unifrac -c conda-forge -c bioconda python=${{ matrix.python-version }}
         conda activate unifrac
         conda config --add channels conda-forge
