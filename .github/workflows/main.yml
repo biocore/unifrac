@@ -72,6 +72,10 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        # keep it low for runs in containers
+        # and a weird number to potentially catch potential bugs
+        export OMP_NUM_THREADS=3
+        # diagnostic messages for debugging, if needed
         export UNIFRAC_GPU_INFO=Y
         ls -lrt $CONDA_PREFIX/lib/libhdf5_cpp*
         nosetests
@@ -80,6 +84,10 @@ jobs:
       shell: bash -l {0}
       run: |
         conda activate unifrac
+        # keep it low for runs in containers
+        # and a weird number to potentially catch potential bugs
+        export OMP_NUM_THREADS=3
+        # diagnostic messages for debugging, if needed
         export UNIFRAC_GPU_INFO=Y
         set -e
         ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
