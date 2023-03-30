@@ -34,7 +34,8 @@ from unifrac._methods import (unweighted,
                               generalized_fp32_to_file,
                               meta,
                               h5unifrac,
-                              h5pcoa)
+                              h5pcoa, h5pcoa_all,
+                              h5permanova, h5permanova_dict)
 from unifrac._api import ssu, ssu_fast, faith_pd, ssu_to_file, ssu_inmem
 
 
@@ -55,5 +56,6 @@ __all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized',
            'weighted_normalized_fp32_to_file',
            'weighted_unnormalized_fp32_to_file',
            'generalized_fp32_to_file',
-           'h5unifrac', 'h5pcoa',
+           'h5unifrac', 'h5pcoa', 'h5pcoa_all',
+           'h5permanova', 'h5permanova_dict',
            'ssu', 'ssu_fast', 'faith_pd', 'ssu_to_file', 'ssu_inmem']
