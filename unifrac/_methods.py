@@ -2367,19 +2367,10 @@ def h5pcoa_all(h5file: str) -> tuple:
 def h5permanova(h5file: str) -> pd.Series:
     """Read first PERMANOVA statistical test from a hdf5 file
 
+    As describe in scikit-bio skbio.stats.distance.permanova.py,
     Permutational Multivariate Analysis of Variance (PERMANOVA) is a
     non-parametric method that tests whether two or more groups of objects
-    (e.g., samples) are significantly different based on a categorical factor.
-    It is conceptually similar to ANOVA except that it operates on a distance
-    matrix, which allows for multivariate analysis. PERMANOVA computes a
-    pseudo-F statistic.
-
-    Statistical significance is assessed via a permutation test. The assignment
-    of objects to groups (`grouping`) is randomly permuted a number of times
-    (controlled via `permutations`). A pseudo-F statistic is computed for each
-    permutation and the p-value is the proportion of permuted pseudo-F
-    statisics that are equal to or greater than the original (unpermuted)
-    pseudo-F statistic.
+    are significantly different based on a categorical factor.
 
     Parameters
     ----------
@@ -2403,7 +2394,6 @@ def h5permanova(h5file: str) -> pd.Series:
     ----------
     .. [1] Anderson, Marti J. "A new method for non-parametric multivariate
        analysis of variance." Austral Ecology 26.1 (2001): 32-46.
-    .. [2] http://cran.r-project.org/web/packages/vegan/index.html
     """
 
     found = False
@@ -2436,19 +2426,10 @@ def h5permanova(h5file: str) -> pd.Series:
 def h5permanova_dict(h5file: str) -> dict:
     """Read PERMANOVA statistical tests from a hdf5 file
 
+    As describe in scikit-bio skbio.stats.distance.permanova.py,
     Permutational Multivariate Analysis of Variance (PERMANOVA) is a
     non-parametric method that tests whether two or more groups of objects
-    (e.g., samples) are significantly different based on a categorical factor.
-    It is conceptually similar to ANOVA except that it operates on a distance
-    matrix, which allows for multivariate analysis. PERMANOVA computes a
-    pseudo-F statistic.
-
-    Statistical significance is assessed via a permutation test. The assignment
-    of objects to groups (`grouping`) is randomly permuted a number of times
-    (controlled via `permutations`). A pseudo-F statistic is computed for each
-    permutation and the p-value is the proportion of permuted pseudo-F
-    statisics that are equal to or greater than the original (unpermuted)
-    pseudo-F statistic.
+    are significantly different based on a categorical factor.
 
     Parameters
     ----------
@@ -2472,7 +2453,6 @@ def h5permanova_dict(h5file: str) -> dict:
     ----------
     .. [1] Anderson, Marti J. "A new method for non-parametric multivariate
        analysis of variance." Austral Ecology 26.1 (2001): 32-46.
-    .. [2] http://cran.r-project.org/web/packages/vegan/index.html
     """
 
     pmns = {}
