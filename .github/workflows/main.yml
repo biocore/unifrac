@@ -93,14 +93,18 @@ jobs:
         ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre -o ci/test.dm -m unweighted
         python -c "import skbio; dm = skbio.DistanceMatrix.read('ci/test.dm')"
         pushd unifrac/tests
+        export UNIFRAC_TIMING_INFO=Y
         python -c "import unifrac; unifrac.unweighted_to_file('data/crawford.biom','data/crawford.tre','../../ci/test.dm.h5')"
         python -c "import unifrac,skbio; dm_u=unifrac.unweighted('data/crawford.biom','data/crawford.tre');  dm = skbio.DistanceMatrix.read('../../ci/test.dm'); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         python -c "import unifrac; unifrac.unweighted_to_file('data/crawford.biom','data/crawford.tre','../../ci/test2.dm.h5',permanova_perms=99,grouping_filename='data/crawford.group.tsv',grouping_columns='Treatment')"
+        python -c "import unifrac; unifrac.weighted_normalized_to_file('data/crawford.biom','data/crawford.tre','../../ci/test3.dm.h5',subsample_depth=2,pcoa_dims=2)"
+        export UNIFRAC_TIMING_INFO=N
         popd
         python -c "import h5py,skbio; f_u=h5py.File('ci/test.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:])"
         python -c "import h5py,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); f_u=h5py.File('ci/test.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:]); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         python -c "import h5py,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); f_u=h5py.File('ci/test2.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:]); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         python -c "import h5py; f_u=h5py.File('ci/test2.dm.h5','r'); print(f_u.keys()); assert len(f_u['stat_methods'][:]) == 1"
+        python -c "import h5py; f_u=h5py.File('ci/test3.dm.h5','r'); print(f_u.keys()); assert len(f_u['pcoa_eigvals'][:]) == 2"
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
           MD5=md5sum
