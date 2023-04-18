@@ -21,6 +21,8 @@ def check_status(compute_status status):
                              "represented by the phylogeny.")
         elif status == unknown_method:
             raise ValueError("Unknown method.")
+        elif status == output_error:
+            raise IOError("Could not write output file.")
         elif status == invalid_method:
             raise ValueError("Invalid method.")
         elif status == grouping_missing:
