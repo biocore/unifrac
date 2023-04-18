@@ -12,7 +12,9 @@ cdef extern from "status_enum.hpp":
         table_empty,
         unknown_method,
         table_and_tree_do_not_overlap,
-        output_error
+        output_error,
+        invalid_method,
+        grouping_missing
 
 
 cdef extern from "api.hpp":
@@ -85,6 +87,15 @@ cdef extern from "api.hpp":
     void destroy_mat_full_fp64(mat_full_fp64** result)
     void destroy_results_vec(results_vec** result)
 
+    compute_status unifrac_to_file_v2(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                                     const char* unifrac_method, bool variance_adjust, double alpha,
+                                     bool bypass_tips, unsigned int n_substeps, const char* format,
+                                     unsigned int subsample_depth, bool subsample_with_replacement,
+                                     unsigned int pcoa_dims,
+                                     unsigned int permanova_perms, const char *grouping_filename, const char *grouping_columns,
+                                     const char *mmap_dir)
+
+    # obsolete, will be removed in the future
     compute_status unifrac_to_file(const char* biom_filename, const char* tree_filename, const char* out_filename,
                                      const char* unifrac_method, bool variance_adjust, double alpha,
                                      bool bypass_tips, unsigned int n_substeps, const char* format,

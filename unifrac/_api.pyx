@@ -21,6 +21,12 @@ def check_status(compute_status status):
                              "represented by the phylogeny.")
         elif status == unknown_method:
             raise ValueError("Unknown method.")
+        elif status == output_error:
+            raise IOError("Could not write output file.")
+        elif status == invalid_method:
+            raise ValueError("Invalid method.")
+        elif status == grouping_missing:
+            raise IOError("PERMANOVA groupping not found.")
         else:
             raise Exception("Unknown Error: {}".format(status))
 
@@ -518,11 +524,15 @@ def faith_pd(str biom_filename, str tree_filename):
 # Functions that compute Unifrac and write into a file
 #
 
-def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
-                str unifrac_method, bool variance_adjust, double alpha,
-                bool bypass_tips, unsigned int n_substeps, str format,
-                unsigned int pcoa_dims, str buf_dirname):
-    """Execute a call to Strided State UniFrac to file via the direct API
+def ssu_to_file_v2(str biom_filename, str tree_filename, str out_filename,
+                   str unifrac_method, bool variance_adjust, double alpha,
+                   bool bypass_tips, unsigned int n_substeps, str format,
+                   unsigned int subsample_depth, bool subsample_with_replacement,
+                   unsigned int pcoa_dims,
+                   unsigned int permanova_perms,
+                   str grouping_filename, str grouping_columns,
+                   str buf_dirname):
+    """Execute a call to UniFrac to file via the direct API
 
     Parameters
     ----------
@@ -551,8 +561,18 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
         The number of substeps to use.
     format : str
         Onput format to use; one of {hdf5, hdf5_fp32, hdf5_fp64}
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
     pcoa_dims : int
         Number of dimension for PCoA, if 0, no PCoA is computed.
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
     out_filename : str
         If using a disk buffer for saving memory is desired, a dirpath.
 
@@ -582,12 +602,16 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
         bytes out_py_bytes
         bytes met_py_bytes
         bytes format_py_bytes
+        bytes grouping_filename_py_bytes
+        bytes grouping_columns_py_bytes
         bytes dirbuf_py_bytes
         char* biom_c_string
         char* tree_c_string
         char* out_c_string
         char* met_c_string
         char* format_c_string
+        char* grouping_filename_c_string
+        char* grouping_columns_c_string
         char* dirbuf_c_string
         list ids
 
@@ -596,22 +620,43 @@ def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
     out_py_bytes = out_filename.encode()
     met_py_bytes = unifrac_method.encode()
     format_py_bytes = format.encode()
+    grouping_filename_py_bytes = grouping_filename.encode()
+    grouping_columns_py_bytes = grouping_columns.encode()
     dirbuf_py_bytes = buf_dirname.encode()
     biom_c_string = biom_py_bytes
     tree_c_string = tree_py_bytes
     out_c_string = out_py_bytes
     met_c_string = met_py_bytes
     format_c_string = format_py_bytes
+    grouping_filename_c_string = grouping_filename_py_bytes
+    grouping_columns_c_string = grouping_columns_py_bytes
     dirbuf_c_string = dirbuf_py_bytes
 
-    status = unifrac_to_file(biom_c_string, tree_c_string, out_c_string,
-                             met_c_string,
-                             variance_adjust, alpha, bypass_tips,
-                             n_substeps, format_c_string, 
-                             pcoa_dims, dirbuf_c_string)
+    status = unifrac_to_file_v2(biom_c_string, tree_c_string, out_c_string,
+                                met_c_string,
+                                variance_adjust, alpha, bypass_tips,
+                                n_substeps, format_c_string,
+                                subsample_depth, subsample_with_replacement,
+                                pcoa_dims,
+                                permanova_perms, grouping_filename_c_string, grouping_columns_c_string,
+                                dirbuf_c_string)
     check_status(status)
 
     return out_filename
+
+
+# obsolete, just for backward compatibility
+def ssu_to_file(str biom_filename, str tree_filename, str out_filename,
+                str unifrac_method, bool variance_adjust, double alpha,
+                bool bypass_tips, unsigned int n_substeps, str format,
+                unsigned int pcoa_dims, str buf_dirname):
+    return ssu_to_file_v2(biom_filename, tree_filename, out_filename,
+                          unifrac_method, variance_adjust, alpha,
+                          bypass_tips, n_substeps, format,
+                          0, True,
+                          pcoa_dims,
+                          0, "" , "",
+                          buf_dirname)
 
 
 cdef support_biom* construct_support_biom(object table):
