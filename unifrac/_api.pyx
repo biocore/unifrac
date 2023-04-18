@@ -21,6 +21,10 @@ def check_status(compute_status status):
                              "represented by the phylogeny.")
         elif status == unknown_method:
             raise ValueError("Unknown method.")
+        elif status == invalid_method:
+            raise ValueError("Invalid method.")
+        elif status == grouping_missing:
+            raise IOError("PERMANOVA groupping not found.")
         else:
             raise Exception("Unknown Error: {}".format(status))
 

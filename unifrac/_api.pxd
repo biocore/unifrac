@@ -12,7 +12,9 @@ cdef extern from "status_enum.hpp":
         table_empty,
         unknown_method,
         table_and_tree_do_not_overlap,
-        output_error
+        output_error,
+        invalid_method,
+        grouping_missing
 
 
 cdef extern from "api.hpp":
