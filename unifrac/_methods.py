@@ -81,7 +81,7 @@ def _call_ssu_to_file(table, phylogeny, *args):
                                   "objects has not been implemented yet")
     elif isinstance(table, str) and isinstance(phylogeny, str):
         _validate(table, phylogeny)
-        return qsu.ssu_to_file(table, phylogeny, *args)
+        return qsu.ssu_to_file_v2(table, phylogeny, *args)
     else:
         table_type = type(table)
         tree_type = type(phylogeny)
@@ -1128,7 +1128,12 @@ def unweighted_to_file(table: str,
                        bypass_tips: bool = False,
                        format: str = "hdf5",
                        buf_dirname: str = "",
-                       n_substeps: int = 1) -> str:
+                       n_substeps: int = 1,
+                       subsample_depth: int = 0,
+                       subsample_with_replacement: bool = True,
+                       permanova_perms: int = 0,
+                       grouping_filename: str = "",
+                       grouping_columns: str = "") -> str:
     """Compute Unweighted UniFrac and write to file
 
     Parameters
@@ -1157,6 +1162,16 @@ def unweighted_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1200,8 +1215,13 @@ def unweighted_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def unweighted_fp64_to_file(table: str,
@@ -1213,7 +1233,12 @@ def unweighted_fp64_to_file(table: str,
                             bypass_tips: bool = False,
                             format: str = "hdf5",
                             buf_dirname: str = "",
-                            n_substeps: int = 1) -> str:
+                            n_substeps: int = 1,
+                            subsample_depth: int = 0,
+                            subsample_with_replacement: bool = True,
+                            permanova_perms: int = 0,
+                            grouping_filename: str = "",
+                            grouping_columns: str = "") -> str:
     """Compute Unweighted UniFrac using fp64 math and write to file
 
     Parameters
@@ -1242,6 +1267,16 @@ def unweighted_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1285,8 +1320,13 @@ def unweighted_fp64_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_fp64',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def unweighted_fp32_to_file(table: str,
@@ -1298,7 +1338,12 @@ def unweighted_fp32_to_file(table: str,
                             bypass_tips: bool = False,
                             format: str = "hdf5",
                             buf_dirname: str = "",
-                            n_substeps: int = 1) -> str:
+                            n_substeps: int = 1,
+                            subsample_depth: int = 0,
+                            subsample_with_replacement: bool = True,
+                            permanova_perms: int = 0,
+                            grouping_filename: str = "",
+                            grouping_columns: str = "") -> str:
     """Compute Unweighted UniFrac using fp32 math and write to file
 
     Parameters
@@ -1327,6 +1372,16 @@ def unweighted_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1370,8 +1425,13 @@ def unweighted_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_fp32',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def weighted_normalized_to_file(table: str,
@@ -1383,7 +1443,12 @@ def weighted_normalized_to_file(table: str,
                                 bypass_tips: bool = False,
                                 format: str = "hdf5",
                                 buf_dirname: str = "",
-                                n_substeps: int = 1) -> str:
+                                n_substeps: int = 1,
+                                subsample_depth: int = 0,
+                                subsample_with_replacement: bool = True,
+                                permanova_perms: int = 0,
+                                grouping_filename: str = "",
+                                grouping_columns: str = "") -> str:
     """Compute weighted normalized UniFrac and write to file
 
     Parameters
@@ -1412,6 +1477,16 @@ def weighted_normalized_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1454,8 +1529,13 @@ def weighted_normalized_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def weighted_normalized_fp64_to_file(table: str,
@@ -1467,7 +1547,12 @@ def weighted_normalized_fp64_to_file(table: str,
                                      bypass_tips: bool = False,
                                      format: str = "hdf5",
                                      buf_dirname: str = "",
-                                     n_substeps: int = 1) -> str:
+                                     n_substeps: int = 1,
+                                     subsample_depth: int = 0,
+                                     subsample_with_replacement: bool = True,
+                                     permanova_perms: int = 0,
+                                     grouping_filename: str = "",
+                                     grouping_columns: str = "") -> str:
     """Compute weighted normalized UniFrac using fp64 math and write to file
 
     Parameters
@@ -1496,6 +1581,16 @@ def weighted_normalized_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1538,8 +1633,13 @@ def weighted_normalized_fp64_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized_fp64',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def weighted_normalized_fp32_to_file(table: str,
@@ -1551,7 +1651,12 @@ def weighted_normalized_fp32_to_file(table: str,
                                      bypass_tips: bool = False,
                                      format: str = "hdf5",
                                      buf_dirname: str = "",
-                                     n_substeps: int = 1) -> str:
+                                     n_substeps: int = 1,
+                                     subsample_depth: int = 0,
+                                     subsample_with_replacement: bool = True,
+                                     permanova_perms: int = 0,
+                                     grouping_filename: str = "",
+                                     grouping_columns: str = "") -> str:
     """Compute weighted normalized UniFrac using fp32 math and write to file
 
     Parameters
@@ -1580,6 +1685,16 @@ def weighted_normalized_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1622,8 +1737,13 @@ def weighted_normalized_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized_fp32',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def weighted_unnormalized_to_file(table: str,
@@ -1635,7 +1755,12 @@ def weighted_unnormalized_to_file(table: str,
                                   bypass_tips: bool = False,
                                   format: str = "hdf5",
                                   buf_dirname: str = "",
-                                  n_substeps: int = 1) -> str:
+                                  n_substeps: int = 1,
+                                  subsample_depth: int = 0,
+                                  subsample_with_replacement: bool = True,
+                                  permanova_perms: int = 0,
+                                  grouping_filename: str = "",
+                                  grouping_columns: str = "") -> str:
     """Compute weighted unnormalized UniFrac and write it to file
 
     Parameters
@@ -1664,6 +1789,16 @@ def weighted_unnormalized_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1706,8 +1841,13 @@ def weighted_unnormalized_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def weighted_unnormalized_fp64_to_file(table: str,
@@ -1719,7 +1859,12 @@ def weighted_unnormalized_fp64_to_file(table: str,
                                        bypass_tips: bool = False,
                                        format: str = "hdf5",
                                        buf_dirname: str = "",
-                                       n_substeps: int = 1) -> str:
+                                       n_substeps: int = 1,
+                                       subsample_depth: int = 0,
+                                       subsample_with_replacement: bool = True,
+                                       permanova_perms: int = 0,
+                                       grouping_filename: str = "",
+                                       grouping_columns: str = "") -> str:
     """Compute weighted unnormalized UniFrac using fp64 math and write to file
 
     Parameters
@@ -1748,6 +1893,16 @@ def weighted_unnormalized_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1790,8 +1945,13 @@ def weighted_unnormalized_fp64_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized_fp64',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def weighted_unnormalized_fp32_to_file(table: str,
@@ -1803,7 +1963,12 @@ def weighted_unnormalized_fp32_to_file(table: str,
                                        bypass_tips: bool = False,
                                        format: str = "hdf5",
                                        buf_dirname: str = "",
-                                       n_substeps: int = 1) -> str:
+                                       n_substeps: int = 1,
+                                       subsample_depth: int = 0,
+                                       subsample_with_replacement: bool = True,
+                                       permanova_perms: int = 0,
+                                       grouping_filename: str = "",
+                                       grouping_columns: str = "") -> str:
     """Compute weighted unnormalized UniFrac using fp32 math and write to file
 
     Parameters
@@ -1832,6 +1997,16 @@ def weighted_unnormalized_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1874,8 +2049,13 @@ def weighted_unnormalized_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized_fp32',
-                             variance_adjusted, 1.0, bypass_tips, n_substeps,
-                             format, pcoa_dims, buf_dirname)
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
 
 
 def generalized_to_file(table: str,
@@ -1888,7 +2068,12 @@ def generalized_to_file(table: str,
                         bypass_tips: bool = False,
                         format: str = "hdf5",
                         buf_dirname: str = "",
-                        n_substeps: int = 1) -> str:
+                        n_substeps: int = 1,
+                        subsample_depth: int = 0,
+                        subsample_with_replacement: bool = True,
+                        permanova_perms: int = 0,
+                        grouping_filename: str = "",
+                        grouping_columns: str = "") -> str:
     """Compute Generalized UniFrac and write to file
 
     Parameters
@@ -1922,6 +2107,16 @@ def generalized_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -1975,15 +2170,23 @@ def generalized_to_file(table: str,
              Warning)
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'weighted_normalized',
-                                 variance_adjusted, alpha,
-                                 bypass_tips, n_substeps,
-                                 format, pcoa_dims, buf_dirname)
+                                 variance_adjusted, 1.0, bypass_tips,
+                                 n_substeps, format,
+                                 subsample_depth, subsample_with_replacement,
+                                 pcoa_dims,
+                                 permanova_perms,
+                                 grouping_filename, grouping_columns,
+                                 buf_dirname)
     else:
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'generalized',
-                                 variance_adjusted, alpha,
-                                 bypass_tips, n_substeps,
-                                 format, pcoa_dims, buf_dirname)
+                                 variance_adjusted, alpha, bypass_tips,
+                                 n_substeps, format,
+                                 subsample_depth, subsample_with_replacement,
+                                 pcoa_dims,
+                                 permanova_perms,
+                                 grouping_filename, grouping_columns,
+                                 buf_dirname)
 
 
 def generalized_fp64_to_file(table: str,
@@ -1996,7 +2199,12 @@ def generalized_fp64_to_file(table: str,
                              bypass_tips: bool = False,
                              format: str = "hdf5",
                              buf_dirname: str = "",
-                             n_substeps: int = 1) -> str:
+                             n_substeps: int = 1,
+                             subsample_depth: int = 0,
+                             subsample_with_replacement: bool = True,
+                             permanova_perms: int = 0,
+                             grouping_filename: str = "",
+                             grouping_columns: str = "") -> str:
     """Compute Generalized UniFrac using fp64 math and write to file
 
     Parameters
@@ -2030,6 +2238,16 @@ def generalized_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -2083,15 +2301,23 @@ def generalized_fp64_to_file(table: str,
              Warning)
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'weighted_normalized_fp64',
-                                 variance_adjusted, alpha,
-                                 bypass_tips, n_substeps,
-                                 format, pcoa_dims, buf_dirname)
+                                 variance_adjusted, 1.0, bypass_tips,
+                                 n_substeps, format,
+                                 subsample_depth, subsample_with_replacement,
+                                 pcoa_dims,
+                                 permanova_perms,
+                                 grouping_filename, grouping_columns,
+                                 buf_dirname)
     else:
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'generalized_fp64',
-                                 variance_adjusted, alpha,
-                                 bypass_tips, n_substeps,
-                                 format, pcoa_dims, buf_dirname)
+                                 variance_adjusted, alpha, bypass_tips,
+                                 n_substeps, format,
+                                 subsample_depth, subsample_with_replacement,
+                                 pcoa_dims,
+                                 permanova_perms,
+                                 grouping_filename, grouping_columns,
+                                 buf_dirname)
 
 
 def generalized_fp32_to_file(table: str,
@@ -2104,7 +2330,12 @@ def generalized_fp32_to_file(table: str,
                              bypass_tips: bool = False,
                              format: str = "hdf5",
                              buf_dirname: str = "",
-                             n_substeps: int = 1) -> str:
+                             n_substeps: int = 1,
+                             subsample_depth: int = 0,
+                             subsample_with_replacement: bool = True,
+                             permanova_perms: int = 0,
+                             grouping_filename: str = "",
+                             grouping_columns: str = "") -> str:
     """Compute Generalized UniFrac using fp32 math and write to file
 
     Parameters
@@ -2138,6 +2369,16 @@ def generalized_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
 
     Returns
     -------
@@ -2191,15 +2432,23 @@ def generalized_fp32_to_file(table: str,
              Warning)
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'weighted_normalized_fp32',
-                                 variance_adjusted, alpha,
-                                 bypass_tips, n_substeps,
-                                 format, pcoa_dims, buf_dirname)
+                                 variance_adjusted, 1.0, bypass_tips,
+                                 n_substeps, format,
+                                 subsample_depth, subsample_with_replacement,
+                                 pcoa_dims,
+                                 permanova_perms,
+                                 grouping_filename, grouping_columns,
+                                 buf_dirname)
     else:
         return _call_ssu_to_file(table, phylogeny, out_filename,
                                  'generalized_fp32',
-                                 variance_adjusted, alpha,
-                                 bypass_tips, n_substeps,
-                                 format, pcoa_dims, buf_dirname)
+                                 variance_adjusted, alpha, bypass_tips,
+                                 n_substeps, format,
+                                 subsample_depth, subsample_with_replacement,
+                                 pcoa_dims,
+                                 permanova_perms,
+                                 grouping_filename, grouping_columns,
+                                 buf_dirname)
 
 #
 # Functions that read Unifrac from hdf5 files
