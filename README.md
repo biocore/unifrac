@@ -235,6 +235,16 @@ The library can be accessed directly from within Python. If operating in this mo
             can be used to reduce the amount of memory needed.
         n_substeps : int, optional
             Internally split the problem in substeps for reduced memory footprint.
+        subsample_depth : int
+            Depth of subsampling, if >0
+        subsample_with_replacement : bool
+            Use subsampling with replacement? (only True supported in 1.3)
+        permanova_perms : int
+            If not 0, compute PERMANOVA using that many permutations
+        grouping_filename : str
+            The TSV filename containing grouping information
+        grouping_columns : str
+            The columns to use for grouping
     
         Returns
         -------
@@ -275,7 +285,7 @@ The library can be accessed directly from within Python. If operating in this mo
         .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
-        
+    
     >>> print(unifrac.h5unifrac.__doc__)
     Read UniFrac from a hdf5 file
     
