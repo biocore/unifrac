@@ -285,6 +285,28 @@ The library can be accessed directly from within Python. If operating in this mo
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
     
+	>>> print(unifrac.faith_pd.__doc__)
+	Execute a call to the Stacked Faith API in the UniFrac package
+
+		Parameters
+		----------
+		biom_filename : str
+			A filepath to a BIOM 2.1 formatted table (HDF5)
+		tree_filename : str
+			A filepath to a Newick formatted tree
+
+		Returns
+		-------
+		pd.Series
+			Series of Faith's PD for each sample in `biom_filename`
+
+		Raises
+		------
+		IOError
+			If the tree file is not found
+			If the table is not found
+			If the table is empty
+	
     >>> print(unifrac.h5unifrac.__doc__)
     Read UniFrac from a hdf5 file
     
@@ -314,28 +336,6 @@ The library can be accessed directly from within Python. If operating in this mo
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
          
-	>>> print(unifrac.faith_pd.__doc__)
-	Execute a call to the Stacked Faith API in the UniFrac package
-
-		Parameters
-		----------
-		biom_filename : str
-			A filepath to a BIOM 2.1 formatted table (HDF5)
-		tree_filename : str
-			A filepath to a Newick formatted tree
-
-		Returns
-		-------
-		pd.Series
-			Series of Faith's PD for each sample in `biom_filename`
-
-		Raises
-		------
-		IOError
-			If the tree file is not found
-			If the table is not found
-			If the table is empty
-	
     >>> print(unifrac.h5pcoa.__doc__)
     Read PCoA from a hdf5 file
     
