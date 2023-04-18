@@ -336,6 +336,57 @@ The library can be accessed directly from within Python. If operating in this mo
 			If the table is not found
 			If the table is empty
 	
+    >>> print(unifrac.h5pcoa.__doc__)
+    Read PCoA from a hdf5 file
+    
+        Parameters
+        ----------
+        h5file : str
+            A filepath to a hdf5 file.
+    
+        Returns
+        -------
+        skbio.OrdinationResults
+            The PCoA of the distance matrix
+    
+        Raises
+        ------
+        OSError
+            If the hdf5 file is not found
+        KeyError
+            If the hdf5 does not have the necessary fields
+    
+    >>> print(unifrac.h5permanova_dict.__doc__)
+    Read PERMANOVA statistical tests from a hdf5 file
+    
+        As describe in scikit-bio skbio.stats.distance.permanova.py,
+        Permutational Multivariate Analysis of Variance (PERMANOVA) is a
+        non-parametric method that tests whether two or more groups of objects
+        are significantly different based on a categorical factor.
+    
+        Parameters
+        ----------
+        h5file : str
+            A filepath to a hdf5 file.
+    
+        Returns
+        -------
+        dict[str]=pandas.Series
+            Results of the statistical test, including ``test statistic`` and
+            ``p-value``.
+    
+        Raises
+        ------
+        OSError
+            If the hdf5 file is not found
+        KeyError
+            If the hdf5 does not have the necessary fields
+    
+        References
+        ----------
+        .. [1] Anderson, Marti J. "A new method for non-parametric multivariate
+           analysis of variance." Austral Ecology 26.1 (2001): 32-46.
+    
 
 ## Command line
 
