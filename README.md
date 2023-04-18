@@ -139,15 +139,14 @@ The library can be accessed directly from within Python. If operating in this mo
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
-    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__',
-     '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'faith_pd', 
-     'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file', 
-     'h5pcoa', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 
-     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file', 
-     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 
-     'weighted_normalized_fp64', 'weighted_normalized_fp64_to_file', 'weighted_normalized_to_file', 
-     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 
-     'weighted_unnormalized_fp64', 'weighted_unnormalized_fp64_to_file', 'weighted_unnormalized_to_file']
+    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__',
+     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'faith_pd',
+     'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file',
+     'h5pcoa', 'h5pcoa_all', 'h5permanova', 'h5permanova_dict', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 'ssu_to_file_v2',
+     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file',
+     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 'weighted_normalized_fp64', 'weighted_normalized_fp64_to_file',
+     'weighted_normalized_to_file', 'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 'weighted_unnormalized_fp64', 
+     'weighted_unnormalized_fp64_to_file', 'weighted_unnormalized_to_file']
     >>> print(unifrac.unweighted.__doc__)
     Compute Unweighted UniFrac
     
