@@ -34,12 +34,8 @@ jobs:
         exclude:
          - os: macos-latest
            python-version: '3.9'
-         - os: macos-latest
-           python-version: '3.10'
          - os: linux-gpu-cuda
            python-version: '3.8'
-         - os: linux-gpu-cuda
-           python-version: '3.9'
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
