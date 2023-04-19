@@ -103,3 +103,12 @@ cdef extern from "api.hpp":
                                      bool bypass_tips, unsigned int n_substeps, const char* format,
                                      unsigned int pcoa_dims, const char *mmap_dir)
 
+    compute_status unifrac_multi_to_file_v2(const char* biom_filename, const char* tree_filename, const char* out_filename,
+                                            const char* unifrac_method, bool variance_adjust, double alpha,
+                                            bool bypass_tips, unsigned int n_substeps, const char* format,
+                                            unsigned int n_subsamples, unsigned int subsample_depth, bool subsample_with_replacement,
+                                            unsigned int pcoa_dims,
+                                            unsigned int permanova_perms, const char *grouping_filename, const char *grouping_columns,
+                                            const char *mmap_dir)
+
+
