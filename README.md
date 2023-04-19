@@ -393,7 +393,7 @@ The library can be accessed directly from within Python. If operating in this mo
 
 ## Command line
 
-The methods can also be used directly through the command line after install:
+The methods can also be used directly through the command line after install of the dependent [unifrac-binaries](https://github.com/biocore/unifrac-binaries) package:
 
     $ which ssu
     /Users/<username>/miniconda3/envs/qiime2-20xx.x/bin/ssu
