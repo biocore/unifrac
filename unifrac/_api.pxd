@@ -87,6 +87,8 @@ cdef extern from "api.hpp":
     void destroy_mat_full_fp64(mat_full_fp64** result)
     void destroy_results_vec(results_vec** result)
 
+    void ssu_set_random_seed(unsigned int new_seed)
+
     compute_status unifrac_to_file_v2(const char* biom_filename, const char* tree_filename, const char* out_filename,
                                      const char* unifrac_method, bool variance_adjust, double alpha,
                                      bool bypass_tips, unsigned int n_substeps, const char* format,

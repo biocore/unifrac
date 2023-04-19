@@ -30,6 +30,11 @@ def check_status(compute_status status):
         else:
             raise Exception("Unknown Error: {}".format(status))
 
+def set_random_seed(unsigned int new_seed):
+    """Set random seed used by this library"""
+    ssu_set_random_seed(new_seed)
+
+
 # 
 # Functions that compute Unifrac and return a memory object
 #

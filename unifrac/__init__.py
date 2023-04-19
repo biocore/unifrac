@@ -36,7 +36,7 @@ from unifrac._methods import (unweighted,
                               h5unifrac,
                               h5pcoa, h5pcoa_all,
                               h5permanova, h5permanova_dict)
-from unifrac._api import ssu, ssu_fast, faith_pd
+from unifrac._api import ssu, ssu_fast, faith_pd, set_random_seed
 from unifrac._api import ssu_to_file, ssu_to_file_v2, ssu_inmem
 
 
@@ -46,7 +46,7 @@ __all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized',
            'weighted_unnormalized_fp64', 'generalized_fp64',
            'unweighted_fp32', 'weighted_normalized_fp32',
            'weighted_unnormalized_fp32', 'generalized_fp32',
-           'meta',
+           'meta', 'set_random_seed',
            'unweighted_to_file', 'weighted_normalized_to_file',
            'weighted_unnormalized_to_file',
            'generalized_to_file', 'unweighted_fp64_to_file',
