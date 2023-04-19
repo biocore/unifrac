@@ -228,12 +228,15 @@ The library can be accessed directly from within Python. If operating in this mo
             Bypass the tips of the tree in the computation. This reduces compute
             by about 50%, but is an approximation.
         format : str, optional
-            Output format to use. Defaults to "hdf5".
+            Output format to use.
+            Defaults to "hdf5" if n_subsamples<=1 else "hdf5_nodist"
         buf_dirname : str, optional
             If set, the directory where the disk buffer is hosted,
             can be used to reduce the amount of memory needed.
         n_substeps : int, optional
             Internally split the problem in substeps for reduced memory footprint.
+        n_subsamples : int
+            If >1, perform multiple subsamples.
         subsample_depth : int
             Depth of subsampling, if >0
         subsample_with_replacement : bool
