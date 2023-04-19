@@ -140,7 +140,7 @@ The library can be accessed directly from within Python. If operating in this mo
     >>> import unifrac
     >>> dir(unifrac)
     ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__',
-     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'faith_pd',
+     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods', 'set_random_seed', 'faith_pd',
      'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file',
      'h5pcoa', 'h5pcoa_all', 'h5permanova', 'h5permanova_dict', 'h5unifrac', 'meta', 'pkg_resources', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 'ssu_to_file_v2',
      'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file',
@@ -228,12 +228,15 @@ The library can be accessed directly from within Python. If operating in this mo
             Bypass the tips of the tree in the computation. This reduces compute
             by about 50%, but is an approximation.
         format : str, optional
-            Output format to use. Defaults to "hdf5".
+            Output format to use.
+            Defaults to "hdf5" if n_subsamples<=1 else "hdf5_nodist"
         buf_dirname : str, optional
             If set, the directory where the disk buffer is hosted,
             can be used to reduce the amount of memory needed.
         n_substeps : int, optional
             Internally split the problem in substeps for reduced memory footprint.
+        n_subsamples : int
+            If >1, perform multiple subsamples.
         subsample_depth : int
             Depth of subsampling, if >0
         subsample_with_replacement : bool

@@ -13,9 +13,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: flake8
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: install dependencies
@@ -29,11 +29,20 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         os: [ubuntu-latest, macos-latest, linux-gpu-cuda]
+        exclude:
+        - os: macos-latest
+          python-version: '3.9'
+        - os: macos-latest
+          python-version: '3.10'
+        - os: linux-gpu-cuda
+          python-version: '3.8'
+        - os: linux-gpu-cuda
+          python-version: '3.9'
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniconda-version: "latest"

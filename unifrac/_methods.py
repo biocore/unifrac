@@ -1126,9 +1126,10 @@ def unweighted_to_file(table: str,
                        threads: int = 1,
                        variance_adjusted: bool = False,
                        bypass_tips: bool = False,
-                       format: str = "hdf5",
+                       format: str = "",
                        buf_dirname: str = "",
                        n_substeps: int = 1,
+                       n_subsamples: int = 1,
                        subsample_depth: int = 0,
                        subsample_with_replacement: bool = True,
                        permanova_perms: int = 0,
@@ -1156,12 +1157,15 @@ def unweighted_to_file(table: str,
         Bypass the tips of the tree in the computation. This reduces compute
         by about 50%, but is an approximation.
     format : str, optional
-        Output format to use. Defaults to "hdf5".
+        Output format to use.
+        Defaults to "hdf5" if n_subsamples<=1 else "hdf5_nodist"
     buf_dirname : str, optional
         If set, the directory where the disk buffer is hosted,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1217,6 +1221,7 @@ def unweighted_to_file(table: str,
                              'unweighted',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1234,6 +1239,7 @@ def unweighted_fp64_to_file(table: str,
                             format: str = "hdf5",
                             buf_dirname: str = "",
                             n_substeps: int = 1,
+                            n_subsamples: int = 1,
                             subsample_depth: int = 0,
                             subsample_with_replacement: bool = True,
                             permanova_perms: int = 0,
@@ -1267,6 +1273,8 @@ def unweighted_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1322,6 +1330,7 @@ def unweighted_fp64_to_file(table: str,
                              'unweighted_fp64',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1339,6 +1348,7 @@ def unweighted_fp32_to_file(table: str,
                             format: str = "hdf5",
                             buf_dirname: str = "",
                             n_substeps: int = 1,
+                            n_subsamples: int = 1,
                             subsample_depth: int = 0,
                             subsample_with_replacement: bool = True,
                             permanova_perms: int = 0,
@@ -1372,6 +1382,8 @@ def unweighted_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1427,6 +1439,7 @@ def unweighted_fp32_to_file(table: str,
                              'unweighted_fp32',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1444,6 +1457,7 @@ def weighted_normalized_to_file(table: str,
                                 format: str = "hdf5",
                                 buf_dirname: str = "",
                                 n_substeps: int = 1,
+                                n_subsamples: int = 1,
                                 subsample_depth: int = 0,
                                 subsample_with_replacement: bool = True,
                                 permanova_perms: int = 0,
@@ -1477,6 +1491,8 @@ def weighted_normalized_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1531,6 +1547,7 @@ def weighted_normalized_to_file(table: str,
                              'weighted_normalized',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1548,6 +1565,7 @@ def weighted_normalized_fp64_to_file(table: str,
                                      format: str = "hdf5",
                                      buf_dirname: str = "",
                                      n_substeps: int = 1,
+                                     n_subsamples: int = 1,
                                      subsample_depth: int = 0,
                                      subsample_with_replacement: bool = True,
                                      permanova_perms: int = 0,
@@ -1581,6 +1599,8 @@ def weighted_normalized_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1635,6 +1655,7 @@ def weighted_normalized_fp64_to_file(table: str,
                              'weighted_normalized_fp64',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1652,6 +1673,7 @@ def weighted_normalized_fp32_to_file(table: str,
                                      format: str = "hdf5",
                                      buf_dirname: str = "",
                                      n_substeps: int = 1,
+                                     n_subsamples: int = 1,
                                      subsample_depth: int = 0,
                                      subsample_with_replacement: bool = True,
                                      permanova_perms: int = 0,
@@ -1685,6 +1707,8 @@ def weighted_normalized_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1739,6 +1763,7 @@ def weighted_normalized_fp32_to_file(table: str,
                              'weighted_normalized_fp32',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1756,6 +1781,7 @@ def weighted_unnormalized_to_file(table: str,
                                   format: str = "hdf5",
                                   buf_dirname: str = "",
                                   n_substeps: int = 1,
+                                  n_subsamples: int = 1,
                                   subsample_depth: int = 0,
                                   subsample_with_replacement: bool = True,
                                   permanova_perms: int = 0,
@@ -1789,6 +1815,8 @@ def weighted_unnormalized_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1843,6 +1871,7 @@ def weighted_unnormalized_to_file(table: str,
                              'weighted_unnormalized',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1860,6 +1889,7 @@ def weighted_unnormalized_fp64_to_file(table: str,
                                        format: str = "hdf5",
                                        buf_dirname: str = "",
                                        n_substeps: int = 1,
+                                       n_subsamples: int = 1,
                                        subsample_depth: int = 0,
                                        subsample_with_replacement: bool = True,
                                        permanova_perms: int = 0,
@@ -1893,6 +1923,8 @@ def weighted_unnormalized_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -1947,6 +1979,7 @@ def weighted_unnormalized_fp64_to_file(table: str,
                              'weighted_unnormalized_fp64',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -1964,6 +1997,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
                                        format: str = "hdf5",
                                        buf_dirname: str = "",
                                        n_substeps: int = 1,
+                                       n_subsamples: int = 1,
                                        subsample_depth: int = 0,
                                        subsample_with_replacement: bool = True,
                                        permanova_perms: int = 0,
@@ -1997,6 +2031,8 @@ def weighted_unnormalized_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -2051,6 +2087,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
                              'weighted_unnormalized_fp32',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
+                             n_subsamples,
                              subsample_depth, subsample_with_replacement,
                              pcoa_dims,
                              permanova_perms,
@@ -2069,6 +2106,7 @@ def generalized_to_file(table: str,
                         format: str = "hdf5",
                         buf_dirname: str = "",
                         n_substeps: int = 1,
+                        n_subsamples: int = 1,
                         subsample_depth: int = 0,
                         subsample_with_replacement: bool = True,
                         permanova_perms: int = 0,
@@ -2107,6 +2145,8 @@ def generalized_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -2172,6 +2212,7 @@ def generalized_to_file(table: str,
                                  'weighted_normalized',
                                  variance_adjusted, 1.0, bypass_tips,
                                  n_substeps, format,
+                                 n_subsamples,
                                  subsample_depth, subsample_with_replacement,
                                  pcoa_dims,
                                  permanova_perms,
@@ -2182,6 +2223,7 @@ def generalized_to_file(table: str,
                                  'generalized',
                                  variance_adjusted, alpha, bypass_tips,
                                  n_substeps, format,
+                                 n_subsamples,
                                  subsample_depth, subsample_with_replacement,
                                  pcoa_dims,
                                  permanova_perms,
@@ -2200,6 +2242,7 @@ def generalized_fp64_to_file(table: str,
                              format: str = "hdf5",
                              buf_dirname: str = "",
                              n_substeps: int = 1,
+                             n_subsamples: int = 1,
                              subsample_depth: int = 0,
                              subsample_with_replacement: bool = True,
                              permanova_perms: int = 0,
@@ -2238,6 +2281,8 @@ def generalized_fp64_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -2303,6 +2348,7 @@ def generalized_fp64_to_file(table: str,
                                  'weighted_normalized_fp64',
                                  variance_adjusted, 1.0, bypass_tips,
                                  n_substeps, format,
+                                 n_subsamples,
                                  subsample_depth, subsample_with_replacement,
                                  pcoa_dims,
                                  permanova_perms,
@@ -2313,6 +2359,7 @@ def generalized_fp64_to_file(table: str,
                                  'generalized_fp64',
                                  variance_adjusted, alpha, bypass_tips,
                                  n_substeps, format,
+                                 n_subsamples,
                                  subsample_depth, subsample_with_replacement,
                                  pcoa_dims,
                                  permanova_perms,
@@ -2331,6 +2378,7 @@ def generalized_fp32_to_file(table: str,
                              format: str = "hdf5",
                              buf_dirname: str = "",
                              n_substeps: int = 1,
+                             n_subsamples: int = 1,
                              subsample_depth: int = 0,
                              subsample_with_replacement: bool = True,
                              permanova_perms: int = 0,
@@ -2369,6 +2417,8 @@ def generalized_fp32_to_file(table: str,
         can be used to reduce the amount of memory needed.
     n_substeps : int, optional
         Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -2434,6 +2484,7 @@ def generalized_fp32_to_file(table: str,
                                  'weighted_normalized_fp32',
                                  variance_adjusted, 1.0, bypass_tips,
                                  n_substeps, format,
+                                 n_subsamples,
                                  subsample_depth, subsample_with_replacement,
                                  pcoa_dims,
                                  permanova_perms,
@@ -2444,6 +2495,7 @@ def generalized_fp32_to_file(table: str,
                                  'generalized_fp32',
                                  variance_adjusted, alpha, bypass_tips,
                                  n_substeps, format,
+                                 n_subsamples,
                                  subsample_depth, subsample_with_replacement,
                                  pcoa_dims,
                                  permanova_perms,

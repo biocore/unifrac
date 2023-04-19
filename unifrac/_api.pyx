@@ -30,6 +30,11 @@ def check_status(compute_status status):
         else:
             raise Exception("Unknown Error: {}".format(status))
 
+def set_random_seed(unsigned int new_seed):
+    """Set random seed used by this library"""
+    ssu_set_random_seed(new_seed)
+
+
 # 
 # Functions that compute Unifrac and return a memory object
 #
@@ -527,6 +532,7 @@ def faith_pd(str biom_filename, str tree_filename):
 def ssu_to_file_v2(str biom_filename, str tree_filename, str out_filename,
                    str unifrac_method, bool variance_adjust, double alpha,
                    bool bypass_tips, unsigned int n_substeps, str format,
+                   unsigned int n_subsamples,
                    unsigned int subsample_depth, bool subsample_with_replacement,
                    unsigned int pcoa_dims,
                    unsigned int permanova_perms,
@@ -560,7 +566,10 @@ def ssu_to_file_v2(str biom_filename, str tree_filename, str out_filename,
     n_substeps : int
         The number of substeps to use.
     format : str
-        Onput format to use; one of {hdf5, hdf5_fp32, hdf5_fp64}
+        Output format to use; one of {hdf5, hdf5_fp32, hdf5_fp64, hdf5_nodist}
+        If an empty string, use "hdf5" if n_subsamples<=1 else "hdf5_nodist"
+    n_subsamples : int
+        If >1, perform multiple subsamples.
     subsample_depth : int
         Depth of subsampling, if >0
     subsample_with_replacement : bool
@@ -615,11 +624,16 @@ def ssu_to_file_v2(str biom_filename, str tree_filename, str out_filename,
         char* dirbuf_c_string
         list ids
 
+    if format=="":
+      real_format = "hdf5" if n_subsamples<=1 else "hdf5_nodist"
+    else:
+      real_format = format
+
     biom_py_bytes = biom_filename.encode()
     tree_py_bytes = tree_filename.encode()
     out_py_bytes = out_filename.encode()
     met_py_bytes = unifrac_method.encode()
-    format_py_bytes = format.encode()
+    format_py_bytes = real_format.encode()
     grouping_filename_py_bytes = grouping_filename.encode()
     grouping_columns_py_bytes = grouping_columns.encode()
     dirbuf_py_bytes = buf_dirname.encode()
@@ -632,14 +646,29 @@ def ssu_to_file_v2(str biom_filename, str tree_filename, str out_filename,
     grouping_columns_c_string = grouping_columns_py_bytes
     dirbuf_c_string = dirbuf_py_bytes
 
-    status = unifrac_to_file_v2(biom_c_string, tree_c_string, out_c_string,
-                                met_c_string,
-                                variance_adjust, alpha, bypass_tips,
-                                n_substeps, format_c_string,
-                                subsample_depth, subsample_with_replacement,
-                                pcoa_dims,
-                                permanova_perms, grouping_filename_c_string, grouping_columns_c_string,
-                                dirbuf_c_string)
+    if n_subsamples>1:
+        if subsample_depth==0:
+            raise ValueError("subsample_depth cannot be 0 if n_subsamples>1")
+        status = unifrac_multi_to_file_v2(biom_c_string, tree_c_string, out_c_string,
+                                          met_c_string,
+                                          variance_adjust, alpha, bypass_tips,
+                                          n_substeps, format_c_string,
+                                          n_subsamples,
+                                          subsample_depth, subsample_with_replacement,
+                                          pcoa_dims,
+                                          permanova_perms,
+                                          grouping_filename_c_string, grouping_columns_c_string,
+                                          dirbuf_c_string)
+    else:
+        status = unifrac_to_file_v2(biom_c_string, tree_c_string, out_c_string,
+                                    met_c_string,
+                                    variance_adjust, alpha, bypass_tips,
+                                    n_substeps, format_c_string,
+                                    subsample_depth, subsample_with_replacement,
+                                    pcoa_dims,
+                                    permanova_perms,
+                                    grouping_filename_c_string, grouping_columns_c_string,
+                                    dirbuf_c_string)
     check_status(status)
 
     return out_filename
