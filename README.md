@@ -6,11 +6,11 @@
 The *de facto* repository for high-performance phylogenetic diversity calculations. The methods in this repository are based on an implementation of the [Strided State UniFrac](https://www.nature.com/articles/s41592-018-0187-8) algorithm which is faster, and uses less memory than [Fast UniFrac](http://www.nature.com/ismej/journal/v4/n1/full/ismej200997a.html). Strided State UniFrac supports [Unweighted UniFrac](http://aem.asm.org/content/71/12/8228.abstract), [Weighted UniFrac](http://aem.asm.org/content/73/5/1576), [Generalized UniFrac](https://academic.oup.com/bioinformatics/article/28/16/2106/324465/Associating-microbiome-composition-with), [Variance Adjusted UniFrac](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-118) and [meta UniFrac](http://www.pnas.org/content/105/39/15076.short), in both double and single precision (fp32).
 This repository also includes Stacked Faith (manuscript in preparation), a method for calculating Faith's PD that is faster and uses less memory than the Fast UniFrac-based [reference implementation](http://scikit-bio.org/).
 
-This repository produces a C API exposed via a shared library which can be linked against by any programming language. 
+This repository produces the Python interface against the C API exposed via a shared library provided by the [unifrac-binaries[(https://github.com/biocore/unifrac-binaries) repository.
 
 # Citation
 
-A detailed description of the Strided State UniFrac algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
+A original description of the Strided State UniFrac algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8) with further improvements avaialble in [Sfiligoi et al. mSystems 2022](https://www.doi.org/10.1128/msystems.00028-22). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
 
     ssu
     For UniFrac, please see:
@@ -31,9 +31,9 @@ A detailed description of the Strided State UniFrac algorithm can be found in [M
 
 # Install
 
-At this time, there are three primary ways to install the library. The first is through QIIME2, the second is through `bioconda`, and the third is via `pip`. It is also possible to clone the repository and install the C++ API with `sucpp/Makefile` or python bindings with `setup.py`. 
+At this time, there are three primary ways to install the library. The first is through QIIME2, the second is through `bioconda`, and the third is via `pip`. It is also possible to clone the repository and install the python bindings with `setup.py`. 
 
-Compilation has been performed on both LLVM 9.0.0 (OS X >= 10.12) or GCC 4.9.2 (Centos >= 6) and HDF5 >= 1.8.17. Python installation requires Python >= 3.5, NumPy >= 1.12.1, scikit-bio >= 0.5.1, and Cython >= 0.28.3. 
+Compilation has been performed on both clang 16.0 (OS X) or gcc 12.2 (Ubuntu) and HDF5 >= 1.8.17. Python installation requires Python >= 3.8, NumPy >= 1.12.1, scikit-bio >= 0.5.8, and Cython >= 0.28.3. 
 
 Installation time should be a few minutes at most.
 
