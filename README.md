@@ -10,7 +10,7 @@ This repository produces the Python interface against the C API exposed via a sh
 
 # Citation
 
-A original description of the Strided State UniFrac algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8) with further improvements avaialble in [Sfiligoi et al. mSystems 2022](https://www.doi.org/10.1128/msystems.00028-22). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
+A original description of the Strided State UniFrac algorithm can be found in [McDonald et al. 2018 Nature Methods](https://www.nature.com/articles/s41592-018-0187-8) with further improvements available in [Sfiligoi et al. mSystems 2022](https://www.doi.org/10.1128/msystems.00028-22). Please note that this package implements multiple UniFrac variants, which may have their own citation. Details can be found in the help output from the command line interface in the citations section, and is included immediately below:
 
     ssu
     For UniFrac, please see:
