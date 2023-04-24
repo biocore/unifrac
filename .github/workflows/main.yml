@@ -114,6 +114,13 @@ jobs:
         python -c "import h5py,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); f_u=h5py.File('ci/test2.dm.h5','r'); dm_u=skbio.stats.distance.DistanceMatrix(f_u['matrix'][:,:],f_u['order'][:]); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         python -c "import h5py; f_u=h5py.File('ci/test2.dm.h5','r'); print(f_u.keys()); assert len(f_u['stat_methods'][:]) == 1"
         python -c "import h5py; f_u=h5py.File('ci/test3.dm.h5','r'); print(f_u.keys()); assert len(f_u['pcoa_eigvals'][:]) == 2"
+        # repeat using unifrac's h5 interfaces
+        python -c "import unifrac; dm_u=unifrac.h5unifrac('ci/test.dm.h5'); dm_l=unifrac.h5unifrac_all('ci/test.dm.h5')"
+        python -c "import unifrac,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); dm_u=unifrac.h5unifrac('ci/test.dm.h5'); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
+        python -c "import unifrac,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); dm_u=unifrac.h5unifrac_all('ci/test.dm.h5')[0]; t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
+        python -c "import unifrac,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); dm_u=unifrac.h5unifrac('ci/test2.dm.h5'); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
+        python -c "import unifrac; st_l=unifrac.h5permanova_dict('ci/test2.dm.h5'); assert len(st_l) == 1"
+        python -c "import unifrac; pc=unifrac.h5pcoa('ci/test3.dm.h5'); print(pc); assert len(pc.eigvals) == 2"
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
           MD5=md5sum
