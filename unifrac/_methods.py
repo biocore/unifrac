@@ -2652,9 +2652,16 @@ def h5pcoa(h5file: str) -> skbio.OrdinationResults:
         order_index = [c.decode('ascii')
                        for c in f_u['order'][:]]
 
-        pc = _build_pcoa(f_u, long_method_name, order_index,
-                         'pcoa_eigvals', 'pcoa_samples',
-                         'pcoa_proportion_explained')
+        if 'pcoa_eigvals:0' in f_u.keys():
+            # multi interface
+            pc = _build_pcoa(f_u, long_method_name, order_index,
+                             'pcoa_eigvals:0', 'pcoa_samples:0',
+                             'pcoa_proportion_explained:0')
+        else:
+            # single interface
+            pc = _build_pcoa(f_u, long_method_name, order_index,
+                             'pcoa_eigvals', 'pcoa_samples',
+                             'pcoa_proportion_explained')
 
     return pc
 
