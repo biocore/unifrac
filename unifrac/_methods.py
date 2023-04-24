@@ -2508,7 +2508,7 @@ def generalized_fp32_to_file(table: str,
 
 
 def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
-    """Read UniFrac from a hdf5 file
+    """Read UniFrac distance matrix from a hdf5 file
 
     Parameters
     ----------
@@ -2538,11 +2538,66 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
     """
 
     with h5py.File(h5file, "r") as f_u:
-        dm = skbio.DistanceMatrix(
+        if 'matrix:0' in f_u.keys():
+            # multi format
+            dm = skbio.DistanceMatrix(
+               f_u['matrix:0'][:, :],
+               [c.decode('ascii') for c in f_u['order'][:]])
+        else:
+            # single format
+            dm = skbio.DistanceMatrix(
                f_u['matrix'][:, :],
                [c.decode('ascii') for c in f_u['order'][:]])
 
     return dm
+
+
+def h5unifrac_all(h5file: str) -> skbio.DistanceMatrix:
+    """Read all UniFrac distance matrices from a hdf5 file
+
+    Parameters
+    ----------
+    h5file : str
+        A filepath to a hdf5 file.
+
+    Returns
+    -------
+    tuple(skbio.DistanceMatrix)
+        The distance matrices.
+
+    Raises
+    ------
+    OSError
+        If the hdf5 file is not found
+    KeyError
+        If the hdf5 does not have the necessary fields
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+
+    with h5py.File(h5file, "r") as f_u:
+        order = [c.decode('ascii') for c in f_u['order'][:]]
+        if 'matrix' in f_u.keys():
+            # single format
+            dms = [skbio.DistanceMatrix(
+               f_u['matrix'][:, :], order)]
+        else:
+            # multi format
+            dms = []
+            i = 0
+            while 'matrix:%i' % i in f_u.keys():
+                dms.append(skbio.DistanceMatrix(
+                             f_u['matrix:%i' % i][:, :], order))
+                i = i + 1
+
+    return dms
 
 
 def _build_pcoa(f_u, long_method_name, order_index,
