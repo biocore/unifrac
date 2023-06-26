@@ -121,6 +121,8 @@ jobs:
         python -c "import unifrac,skbio; dm = skbio.DistanceMatrix.read('ci/test.dm'); dm_u=unifrac.h5unifrac('ci/test2.dm.h5'); t=abs(dm_u.data-dm.data).max(); print(t); assert t < 0.1"
         python -c "import unifrac; st_l=unifrac.h5permanova_dict('ci/test2.dm.h5'); assert len(st_l) == 1"
         python -c "import unifrac; pc=unifrac.h5pcoa('ci/test3.dm.h5'); print(pc); assert len(pc.eigvals) == 2"
+        ssu -i unifrac/tests/data/crawford.biom -t unifrac/tests/data/crawford.tre --pcoa 3 --mode multi --subsample-depth 2 --n-subsamples 10 -r hdf5 -o ci/test4.dm.h5 -m unweighted
+        python -c "import unifrac; dm_u=unifrac.h5unifrac_all('ci/test4.dm.h5'); assert len(dm_u) == 10; print(dm_u[0]); print(dm_u[4]); print(dm_u[9]); dm_u.close(); assert len(dm_u) == 0"
         if [[ "$(uname -s)" == "Linux" ]]; 
         then
           MD5=md5sum
