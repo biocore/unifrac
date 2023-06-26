@@ -2592,6 +2592,15 @@ class H5UnifracTuple(collections.abc.Sequence):
             self.nels = i
         return self.nels
 
+    def close(self):
+        """Explicitly close the underlying file descriptor"""
+        self.f_u.close()
+        # invalidate all other cache values
+        self.order = None
+        self.nels = 0
+        self.cached_idx = None
+        self.cached_el = None
+
 
 def h5unifrac_all(h5file: str) -> H5UnifracTuple:
     """Read all UniFrac distance matrices from a hdf5 file
