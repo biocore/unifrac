@@ -2575,14 +2575,14 @@ class H5UnifracTuple(collections.abc.Sequence):
             i = 0
             if 'matrix' in self.f_u.keys():
                 # single format
-                i= 1
+                i = 1
             else:
                 # multi format
                 while 'matrix:%i' % i in self.f_u.keys():
                     i = i + 1
             self.nels = i
         return self.nels
-    
+
 
 def h5unifrac_all(h5file: str) -> H5UnifracTuple:
     """Read all UniFrac distance matrices from a hdf5 file
