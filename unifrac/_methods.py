@@ -9,6 +9,7 @@ from warnings import warn
 from functools import reduce
 from operator import or_
 from typing import Union
+import collections.abc
 
 import numpy as np
 import pandas as pd
@@ -2552,7 +2553,38 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
     return dm
 
 
-def h5unifrac_all(h5file: str) -> skbio.DistanceMatrix:
+class H5UnifracTuple(collections.abc.Sequence):
+    """Read all UniFrac distance matrices from a hdf5 file"""
+
+    def __init__(self, h5file: str):
+        self.f_u = h5py.File(h5file, "r")
+        self.order = [c.decode('ascii') for c in self.f_u['order'][:]]
+        self.nels = None
+
+    def __getitem__(self, i: int) -> skbio.DistanceMatrix:
+        i_str = 'matrix:%i' % i
+        if i == 0:
+            if 'matrix' in self.f_u.keys():
+                # single format
+                i_str = 'matrix'
+        return skbio.DistanceMatrix(self.f_u[i_str][:, :],
+                                    self.order)
+
+    def __len__(self) -> int:
+        if self.nels is None:
+            i = 0
+            if 'matrix' in self.f_u.keys():
+                # single format
+                i= 1
+            else:
+                # multi format
+                while 'matrix:%i' % i in self.f_u.keys():
+                    i = i + 1
+            self.nels = i
+        return self.nels
+    
+
+def h5unifrac_all(h5file: str) -> H5UnifracTuple:
     """Read all UniFrac distance matrices from a hdf5 file
 
     Parameters
@@ -2562,8 +2594,8 @@ def h5unifrac_all(h5file: str) -> skbio.DistanceMatrix:
 
     Returns
     -------
-    tuple(skbio.DistanceMatrix)
-        The distance matrices.
+    H5UnifracTuple
+        A collection of distance matrices.
 
     Raises
     ------
@@ -2582,22 +2614,7 @@ def h5unifrac_all(h5file: str) -> skbio.DistanceMatrix:
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
 
-    with h5py.File(h5file, "r") as f_u:
-        order = [c.decode('ascii') for c in f_u['order'][:]]
-        if 'matrix' in f_u.keys():
-            # single format
-            dms = [skbio.DistanceMatrix(
-               f_u['matrix'][:, :], order)]
-        else:
-            # multi format
-            dms = []
-            i = 0
-            while 'matrix:%i' % i in f_u.keys():
-                dms.append(skbio.DistanceMatrix(
-                             f_u['matrix:%i' % i][:, :], order))
-                i = i + 1
-
-    return dms
+    return H5UnifracTuple(h5file)
 
 
 def _build_pcoa(f_u, long_method_name, order_index,
