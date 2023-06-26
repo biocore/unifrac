@@ -2559,16 +2559,25 @@ class H5UnifracTuple(collections.abc.Sequence):
     def __init__(self, h5file: str):
         self.f_u = h5py.File(h5file, "r")
         self.order = [c.decode('ascii') for c in self.f_u['order'][:]]
+        # cache some often used values
         self.nels = None
+        self.cached_idx = None
+        self.cached_el = None
 
     def __getitem__(self, i: int) -> skbio.DistanceMatrix:
+        if i == self.cached_idx:
+            return self.cached_el
         i_str = 'matrix:%i' % i
         if i == 0:
             if 'matrix' in self.f_u.keys():
                 # single format
                 i_str = 'matrix'
-        return skbio.DistanceMatrix(self.f_u[i_str][:, :],
-                                    self.order)
+        el = skbio.DistanceMatrix(self.f_u[i_str][:, :],
+                                  self.order)
+        # if it did not throw, cache
+        self.cached_idx = i
+        self.cached_el = el
+        return self.cached_el
 
     def __len__(self) -> int:
         if self.nels is None:
