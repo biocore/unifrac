@@ -7,6 +7,7 @@
 # ----------------------------------------------------------------------------
 import unittest
 import pkg_resources
+import os
 
 import h5py
 import biom
@@ -126,18 +127,10 @@ class StateUnifracTests(unittest.TestCase):
             os.unlink(tmpfile)
 
     def test_call_ssu_empty_biom(self):
-        tmpfile = '/tmp/fake.biom'
         empty = biom.Table([], [], [])
         tre = skbio.TreeNode()
-        try:
-            with h5py.File(tmpfile, 'w') as fp:
-                empty.to_hdf5(fp, 'asd')
-            fp = self.get_data_path(tmpfile)
-
-            with self.assertRaisesRegex(ValueError, "contain any samples"):
-                _validate(table, tre)
-        finally:
-            os.unlink(tmpfile)
+        with self.assertRaisesRegex(ValueError, "contain any samples"):
+            _validate(empty, tre)
 
 
 if __name__ == "__main__":
