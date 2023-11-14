@@ -77,7 +77,7 @@ def _validate(table, phylogeny, ids=None):
 def _call_ssu(table, phylogeny, *args):
     if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
         if table.is_empty():
-            return ValueError("Table does not contain any samples")
+            raise ValueError("Table does not contain any samples")
         return qsu.ssu_inmem(table, phylogeny, *args)
     elif isinstance(table, str) and isinstance(phylogeny, str):
         ids = []
