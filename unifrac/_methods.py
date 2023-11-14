@@ -356,7 +356,7 @@ def weighted_normalized(table: Union[str, Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    return _call_ssu(str(table), str(phylogeny), 'weighted_normalized',
+    return _call_ssu(table, phylogeny, 'weighted_normalized',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
@@ -423,7 +423,7 @@ def weighted_normalized_fp64(table: Union[str, Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    return _call_ssu(str(table), str(phylogeny), 'weighted_normalized_fp64',
+    return _call_ssu(table, phylogeny, 'weighted_normalized_fp64',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
@@ -490,7 +490,7 @@ def weighted_normalized_fp32(table: Union[str, Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    return _call_ssu(str(table), str(phylogeny), 'weighted_normalized_fp32',
+    return _call_ssu(table, phylogeny, 'weighted_normalized_fp32',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
@@ -557,7 +557,7 @@ def weighted_unnormalized(table: Union[str, Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized',
+    return _call_ssu(table, phylogeny, 'weighted_unnormalized',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
@@ -625,7 +625,7 @@ def weighted_unnormalized_fp64(table: Union[str, Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized_fp64',
+    return _call_ssu(table, phylogeny, 'weighted_unnormalized_fp64',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
@@ -693,7 +693,7 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
-    return _call_ssu(str(table), str(phylogeny), 'weighted_unnormalized_fp32',
+    return _call_ssu(table, phylogeny, 'weighted_unnormalized_fp32',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
@@ -779,7 +779,7 @@ def generalized(table: Union[str, Table],
         return weighted_normalized(table, phylogeny, threads,
                                    variance_adjusted, bypass_tips, n_substeps)
     else:
-        return _call_ssu(str(table), str(phylogeny), 'generalized',
+        return _call_ssu(table, phylogeny, 'generalized',
                          variance_adjusted, alpha, bypass_tips, n_substeps)
 
 
@@ -866,7 +866,7 @@ def generalized_fp64(table: Union[str, Table],
                                         variance_adjusted, bypass_tips,
                                         n_substeps)
     else:
-        return _call_ssu(str(table), str(phylogeny), 'generalized_fp64',
+        return _call_ssu(table, phylogeny, 'generalized_fp64',
                          variance_adjusted, alpha, bypass_tips, n_substeps)
 
 
@@ -953,7 +953,7 @@ def generalized_fp32(table: Union[str, Table],
                                         variance_adjusted, bypass_tips,
                                         n_substeps)
     else:
-        return _call_ssu(str(table), str(phylogeny), 'generalized_fp32',
+        return _call_ssu(table, phylogeny, 'generalized_fp32',
                          variance_adjusted, alpha, bypass_tips, n_substeps)
 
 
