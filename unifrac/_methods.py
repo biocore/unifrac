@@ -50,6 +50,16 @@ def is_biom_v210(f, ids=None):
     return True
 
 
+def has_samples_biom_v210(f):
+    # assumes this is already checked to be biom v210
+    import h5py
+    with h5py.File(f, 'r') as fp:
+        if len(fp['sample/ids']) == 0:
+            return False
+
+    return True
+
+
 def is_newick(f):
     sniffer = skbio.io.format.newick.newick.sniffer_function
     return sniffer(f)[0]
@@ -58,12 +68,16 @@ def is_newick(f):
 def _validate(table, phylogeny, ids=None):
     if not is_biom_v210(table, ids):
         raise ValueError("Table does not appear to be a BIOM-Format v2.1")
+    if not has_samples_biom_v210(table):
+        raise ValueError("Table does not contain any samples")
     if not is_newick(phylogeny):
         raise ValueError("The phylogeny does not appear to be newick")
 
 
 def _call_ssu(table, phylogeny, *args):
     if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
+        if table.is_empty():
+            return ValueError("Table does not contain any samples")
         return qsu.ssu_inmem(table, phylogeny, *args)
     elif isinstance(table, str) and isinstance(phylogeny, str):
         ids = []

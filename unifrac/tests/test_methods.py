@@ -8,10 +8,14 @@
 import unittest
 import pkg_resources
 
+import h5py
+import biom
+import skbio
 import numpy as np
 import numpy.testing as npt
 
 from unifrac import meta
+from unifrac._methods import _validate, has_samples_biom_v210
 
 
 class StateUnifracTests(unittest.TestCase):
@@ -106,6 +110,34 @@ class StateUnifracTests(unittest.TestCase):
                                     "The alpha parameter can"):
             meta((self.table1, ), (self.tree1, ), method='unweighted',
                  alpha=1, consolidation='skipping_missing_matrices')
+
+    def test_has_samples_biom_v210(self):
+        fp = self.get_data_path('crawford.biom')
+        self.assertTrue(has_samples_biom_v210(fp))
+
+        tmpfile = '/tmp/fake.biom'
+        empty = biom.Table([], [], [])
+        try:
+            with h5py.File(tmpfile, 'w') as fp:
+                empty.to_hdf5(fp, 'asd')
+            fp = self.get_data_path(tmpfile)
+            self.assertFalse(has_samples_biom_v210(fp))
+        finally:
+            os.unlink(tmpfile)
+
+    def test_call_ssu_empty_biom(self):
+        tmpfile = '/tmp/fake.biom'
+        empty = biom.Table([], [], [])
+        tre = skbio.TreeNode()
+        try:
+            with h5py.File(tmpfile, 'w') as fp:
+                empty.to_hdf5(fp, 'asd')
+            fp = self.get_data_path(tmpfile)
+
+            with self.assertRaisesRegex(ValueError, "contain any samples"):
+                _validate(table, tre)
+        finally:
+            os.unlink(tmpfile)
 
 
 if __name__ == "__main__":
