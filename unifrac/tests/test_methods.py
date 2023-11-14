@@ -16,7 +16,7 @@ import numpy as np
 import numpy.testing as npt
 
 from unifrac import meta
-from unifrac._methods import _validate, has_samples_biom_v210
+from unifrac._methods import _call_ssu, has_samples_biom_v210
 
 
 class StateUnifracTests(unittest.TestCase):
