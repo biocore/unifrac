@@ -37,7 +37,7 @@ class UnifracAPITests(unittest.TestCase):
         otu_ids = table.ids(axis='observation')
         cnts = table.matrix_data.astype(int).toarray().T
         exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
-                                             ids=ids, otu_ids=otu_ids,
+                                             ids=ids, taxa=otu_ids,
                                              tree=tree)
         obs = ssu_inmem(table, tree, 'unweighted', False, 1.0,
                         False, 1)
@@ -57,7 +57,7 @@ class UnifracAPITests(unittest.TestCase):
         otu_ids = table.ids(axis='observation')
         cnts = table.matrix_data.astype(int).toarray().T
         exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
-                                             ids=ids, otu_ids=otu_ids,
+                                             ids=ids, taxa=otu_ids,
                                              tree=tree)
         obs = ssu_inmem(table, tree, 'unweighted_fp32', False, 1.0,
                         False, 1)
@@ -77,7 +77,7 @@ class UnifracAPITests(unittest.TestCase):
         otu_ids = table.ids(axis='observation')
         cnts = table.matrix_data.astype(int).toarray().T
         exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
-                                             ids=ids, otu_ids=otu_ids,
+                                             ids=ids, taxa=otu_ids,
                                              tree=tree)
         obs = ssu_inmem(table, tree, 'unweighted_fp64', False, 1.0,
                         False, 1)
@@ -102,7 +102,7 @@ class UnifracAPITests(unittest.TestCase):
         otu_ids = table_inmem.ids(axis='observation')
         cnts = table_inmem.matrix_data.astype(int).toarray().T
         exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
-                                             ids=ids, otu_ids=otu_ids,
+                                             ids=ids, taxa=otu_ids,
                                              tree=tree_inmem)
         obs = ssu(table, tree, 'unweighted', False, 1.0, False, 1)
         npt.assert_almost_equal(obs.data, exp.data, decimal=6)
