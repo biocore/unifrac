@@ -18,7 +18,7 @@ import sys
 PREFIX = os.environ.get('PREFIX', "")
 
 base = ["cython >= 0.26", "biom-format", "numpy", "h5py >= 3.3.0",
-        "scikit-bio >= 0.5.8", "iow"]
+        "scikit-bio >= 0.6.0", "iow"]
 
 test = ["nose", "flake8"]
 
