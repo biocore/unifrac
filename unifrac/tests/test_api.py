@@ -26,6 +26,30 @@ from unifrac import unweighted_fp32, unweighted_fp64
 class UnifracAPITests(unittest.TestCase):
     package = 'unifrac.tests'
 
+    def test_csc_bug_161(self):
+        # segfault will occur of the table is in csc
+        tree_fp = self.get_data_path('crawford.tre')
+        table_fp = self.get_data_path('crawford.biom')
+
+        table = load_table(table_fp)
+        tree = skbio.TreeNode.read(tree_fp)
+
+        ids = table.ids()
+        otu_ids = table.ids(axis='observation')
+        cnts = table.matrix_data.astype(int).toarray().T
+        exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
+                                             ids=ids, taxa=otu_ids,
+                                             tree=tree)
+
+        # trigger bug
+        table._data = table._data.tocsc()
+        obs = ssu_inmem(table, tree, 'unweighted', False, 1.0,
+                        False, 1)
+        npt.assert_almost_equal(obs.data, exp.data, decimal=6)
+
+        obs2 = unweighted(table_fp, tree_fp)
+        npt.assert_almost_equal(obs2.data, exp.data, decimal=6)
+
     def test_unweighted_inmem(self):
         tree_fp = self.get_data_path('crawford.tre')
         table_fp = self.get_data_path('crawford.biom')
@@ -39,6 +63,7 @@ class UnifracAPITests(unittest.TestCase):
         exp = skbio.diversity.beta_diversity('unweighted_unifrac', cnts,
                                              ids=ids, taxa=otu_ids,
                                              tree=tree)
+
         obs = ssu_inmem(table, tree, 'unweighted', False, 1.0,
                         False, 1)
         npt.assert_almost_equal(obs.data, exp.data, decimal=6)
