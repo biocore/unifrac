@@ -708,7 +708,7 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
 
         actual = self.faith_pd_work([1, 1, 0, 0, 0], self.oids1, ['foo'], t2)
         expected = 1.0
-        self.assertAlmostEqual(actual[0], expected)
+        self.assertAlmostEqual(actual.iloc[0], expected)
 
     def test_faith_pd_none_observed(self):
         actual = self.faith_pd_work([0, 0, 0, 0, 0], self.oids1, ['foo'],
@@ -811,13 +811,13 @@ class FaithPDEdgeCasesTests(unittest.TestCase):
         # is considered observed
         actual = self.faith_pd_work([1, 1, 0, 0], otu_ids, ['foo'], tree)
         expected = 0.6
-        self.assertAlmostEqual(actual[0], expected)
+        self.assertAlmostEqual(actual.iloc[0], expected)
 
         # root node not observed, but branch between (OTU3, OTU4) and root
         # is considered observed
         actual = self.faith_pd_work([0, 0, 1, 1], otu_ids, ['foo'], tree)
         expected = 2.3
-        self.assertAlmostEqual(actual[0], expected)
+        self.assertAlmostEqual(actual.iloc[0], expected)
 
     def test_faith_pd_invalid_input(self):
         # tests are based of skbio tests, checking for duplicate ids,
