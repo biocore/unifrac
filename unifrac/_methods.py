@@ -3014,4 +3014,3 @@ def faith_pd(table: Union[str, Table],
        Genome Research 31(11):2131–2137
     """
     return _call_faith_pd(table, phylogeny)
-

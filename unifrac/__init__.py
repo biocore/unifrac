@@ -39,7 +39,7 @@ from unifrac._methods import (unweighted,
                               faith_pd)
 from unifrac._api import ssu, ssu_fast, set_random_seed
 from unifrac._api import ssu_to_file, ssu_to_file_v2, ssu_inmem
-from unifrac._api import faith_pd as _faith_pd
+from unifrac._api import faith_pd as _faith_pd  # noqa: F401
 
 __version__ = pkg_resources.get_distribution('unifrac').version
 __all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized',

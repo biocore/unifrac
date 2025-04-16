@@ -142,7 +142,8 @@ class StateUnifracTests(unittest.TestCase):
             os.unlink(tmpfile)
 
     def test_has_atleast_two_samples(self):
-        self.assertTrue(has_atleast_two_samples(self.get_data_path('crawford.biom')))
+        path = self.get_data_path('crawford.biom')
+        self.assertTrue(has_atleast_two_samples(path))
 
         tab = biom.Table([], [], [])
         tmpfile = '/tmp/fake.biom'
@@ -154,13 +155,11 @@ class StateUnifracTests(unittest.TestCase):
         finally:
             os.unlink(tmpfile)
 
-
     def test_call_ssu_empty_biom(self):
         empty = biom.Table([], [], [])
         tre = skbio.TreeNode()
         with self.assertRaisesRegex(ValueError, "contain any samples"):
             _call_ssu(empty, tre)
-
 
     def test_call_faith_pd(self):
         obs_1 = _call_faith_pd(self.get_data_path('crawford.biom'),
