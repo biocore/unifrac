@@ -1,8 +1,8 @@
 #cython: language_level=3
 
 from libc.stdint cimport uint32_t, uint8_t
+from libcpp cimport bool
 
-ctypedef uint8_t bool
 
 cdef extern from "status_enum.hpp":
     enum compute_status:
