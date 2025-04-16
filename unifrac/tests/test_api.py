@@ -18,7 +18,8 @@ from biom.util import biom_open
 from skbio import TreeNode
 import skbio.diversity
 
-from unifrac import ssu, faith_pd, ssu_inmem
+from unifrac import ssu, ssu_inmem
+from unifrac import _faith_pd as faith_pd
 from unifrac import unweighted, unweighted_to_file, h5unifrac
 from unifrac import unweighted_fp32, unweighted_fp64
 

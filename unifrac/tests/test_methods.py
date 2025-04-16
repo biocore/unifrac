@@ -14,10 +14,11 @@ import biom
 import skbio
 import numpy as np
 import numpy.testing as npt
+import pandas.testing as pdt
 
 from unifrac import meta
 from unifrac._methods import (_call_ssu, has_samples_biom_v210, has_negative,
-                              has_atleast_two_samples)
+                              has_atleast_two_samples, _call_faith_pd)
 
 
 class StateUnifracTests(unittest.TestCase):
@@ -159,6 +160,19 @@ class StateUnifracTests(unittest.TestCase):
         tre = skbio.TreeNode()
         with self.assertRaisesRegex(ValueError, "contain any samples"):
             _call_ssu(empty, tre)
+
+
+    def test_call_faith_pd(self):
+        obs_1 = _call_faith_pd(self.get_data_path('crawford.biom'),
+                               self.get_data_path('crawford.tre'))
+
+        tab = biom.load_table(self.get_data_path('crawford.biom'))
+        tre = skbio.TreeNode.read(self.get_data_path('crawford.tre'))
+
+        obs_2 = _call_faith_pd(tab, tre)
+
+        pdt.assert_series_equal(obs_1, obs_2)
+        self.assertEqual(len(tab.ids()), len(obs_1))
 
 
 if __name__ == "__main__":

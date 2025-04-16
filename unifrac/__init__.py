@@ -35,10 +35,11 @@ from unifrac._methods import (unweighted,
                               meta,
                               h5unifrac, h5unifrac_all,
                               h5pcoa, h5pcoa_all,
-                              h5permanova, h5permanova_dict)
-from unifrac._api import ssu, ssu_fast, faith_pd, set_random_seed
+                              h5permanova, h5permanova_dict,
+                              faith_pd)
+from unifrac._api import ssu, ssu_fast, set_random_seed
 from unifrac._api import ssu_to_file, ssu_to_file_v2, ssu_inmem
-
+from unifrac._api import faith_pd as _faith_pd
 
 __version__ = pkg_resources.get_distribution('unifrac').version
 __all__ = ['unweighted', 'weighted_normalized', 'weighted_unnormalized',
