@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2016-2017, QIIME 2 development team.
+# Copyright (c) 2016-, UniFrac development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -16,7 +16,8 @@ import numpy as np
 import numpy.testing as npt
 
 from unifrac import meta
-from unifrac._methods import _call_ssu, has_samples_biom_v210
+from unifrac._methods import (_call_ssu, has_samples_biom_v210, has_negative,
+                              has_atleast_two_samples)
 
 
 class StateUnifracTests(unittest.TestCase):
@@ -125,6 +126,33 @@ class StateUnifracTests(unittest.TestCase):
             self.assertFalse(has_samples_biom_v210(tmpfile))
         finally:
             os.unlink(tmpfile)
+
+    def test_has_negative(self):
+        self.assertFalse(has_negative(self.get_data_path('crawford.biom')))
+        tab = biom.load_table(self.get_data_path('crawford.biom'))
+        tab._data[1] *= -1
+        tmpfile = '/tmp/fake.biom'
+        try:
+            with h5py.File(tmpfile, 'w') as fp:
+                tab.to_hdf5(fp, 'asd')
+            fp = self.get_data_path(tmpfile)
+            self.assertTrue(has_negative(tmpfile))
+        finally:
+            os.unlink(tmpfile)
+
+    def test_has_atleast_two_samples(self):
+        self.assertTrue(has_atleast_two_samples(self.get_data_path('crawford.biom')))
+
+        tab = biom.Table([], [], [])
+        tmpfile = '/tmp/fake.biom'
+        try:
+            with h5py.File(tmpfile, 'w') as fp:
+                tab.to_hdf5(fp, 'asd')
+            fp = self.get_data_path(tmpfile)
+            self.assertFalse(has_atleast_two_samples(tmpfile))
+        finally:
+            os.unlink(tmpfile)
+
 
     def test_call_ssu_empty_biom(self):
         empty = biom.Table([], [], [])

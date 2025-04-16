@@ -25,7 +25,6 @@ from unifrac._meta import CONSOLIDATIONS
 
 
 def is_biom_v210(f, ids=None):
-    import h5py
     if not h5py.is_hdf5(f):
         return False
     with h5py.File(f, 'r') as fp:
@@ -52,7 +51,6 @@ def is_biom_v210(f, ids=None):
 
 def has_samples_biom_v210(f):
     # assumes this is already checked to be biom v210
-    import h5py
     with h5py.File(f, 'r') as fp:
         if len(fp['sample/ids']) == 0:
             return False
@@ -65,11 +63,27 @@ def is_newick(f):
     return sniffer(f)[0]
 
 
+def has_atleast_two_samples(f):
+    with h5py.File(f, 'r') as fp:
+        assert 'sample/ids' in fp
+        return len(fp['sample/ids']) >= 2
+
+
+def has_negative(f):
+    with h5py.File(f, 'r') as fp:
+        assert 'sample/matrix/data' in fp
+        return (fp['sample/matrix/data'][:] < 0).any()
+
+
 def _validate(table, phylogeny, ids=None):
     if not is_biom_v210(table, ids):
         raise ValueError("Table does not appear to be a BIOM-Format v2.1")
     if not has_samples_biom_v210(table):
         raise ValueError("Table does not contain any samples")
+    if not has_atleast_two_samples(table):
+        raise ValueError("Table must have at least two samples")
+    if has_negative(table):
+        raise ValueError("Table has negatives")
     if not is_newick(phylogeny):
         raise ValueError("The phylogeny does not appear to be newick")
 
