@@ -58,9 +58,13 @@ jobs:
         elif [[ "$(uname -m)" == "x86_64" ]];
         then
           conda install --yes -c conda-forge -c bioconda clangxx_osx-64 clangdev
+          xcrun --sdk macosx --show-sdk-path
+          export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
         elif [[ "$(uname -m)" == "arm64" ]];
         then
           conda install --yes -c conda-forge -c bioconda clangxx_osx-arm64 clangdev
+          xcrun --sdk macosx --show-sdk-path
+          export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
         else
           echo "$(uname -a)"
           exit 1
