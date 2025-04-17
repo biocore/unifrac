@@ -17,7 +17,7 @@ jobs:
     - name: flake8
       uses: actions/setup-python@v3
       with:
-        python-version: 3.9
+        python-version: 3.10
     - name: install dependencies
       run: python -m pip install --upgrade pip
     - name: lint
@@ -29,7 +29,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os: [ubuntu-latest, macos-latest, linux-gpu-cuda]
         exclude:
         - os: macos-latest
@@ -37,9 +37,9 @@ jobs:
         - os: macos-latest
           python-version: '3.10'
         - os: linux-gpu-cuda
-          python-version: '3.8'
-        - os: linux-gpu-cuda
           python-version: '3.9'
+        - os: linux-gpu-cuda
+          python-version: '3.10'
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
