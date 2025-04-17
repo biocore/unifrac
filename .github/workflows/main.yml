@@ -30,7 +30,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
-        os: [ubuntu-latest, macos-latest, linux-gpu-cuda]
+        os: [ubuntu-latest, linux-gpu-cuda]
         exclude:
         - os: macos-latest
           python-version: '3.9'
