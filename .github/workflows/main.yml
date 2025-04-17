@@ -55,10 +55,15 @@ jobs:
         if [[ "$(uname -s)" == "Linux" ]];
         then
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
+        elif [[ "$(uname -m)" == "x86_64" ]];
+        then
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-64 clangdev
+        elif [[ "$(uname -m)" == "arm64" ]];
+        then
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-arm64 clangdev
         else
-          conda install --yes -c conda-forge -c bioconda clangxx
-          export CXXFLAGS="${CXXFLAGS} -stdlib=libc++"
-          export CFLAGS="${CFLAGS} -stdlib=libc"
+          echo "$(uname -a)"
+          exit 1
         fi
         conda install --yes -c conda-forge -c bioconda "unifrac-binaries>=1.2"
         conda install --yes -c conda-forge -c bioconda cython biom-format numpy "h5py>3.3.0" "scikit-bio>=0.5.8" pytest
