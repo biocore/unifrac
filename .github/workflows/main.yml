@@ -57,6 +57,7 @@ jobs:
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
         else
           conda install --yes -c conda-forge -c bioconda clangxx
+          export CXXFLAGS="${CXXFLAGS} -stdlib=libc++"
         fi
         conda install --yes -c conda-forge -c bioconda "unifrac-binaries>=1.2"
         conda install --yes -c conda-forge -c bioconda cython biom-format numpy "h5py>3.3.0" "scikit-bio>=0.5.8" pytest
