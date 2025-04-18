@@ -30,7 +30,7 @@ jobs:
         run: |
           # set version from '${{ github.ref_name }}'
           export RELEASE_VERSION=${{ github.ref_name }}
-          pip install build
+          pip install build numpy cython
           python -m build -s
 
       - name: Publish a Python distribution to PyPI
