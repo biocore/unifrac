@@ -30,8 +30,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
-        #os: [macos-13, macos-14, ubuntu-latest, linux-gpu-cuda]
-        os: [macos-14, ]
+        os: [macos-13, macos-14, ubuntu-latest, linux-gpu-cuda]
         exclude:
         - os: linux-gpu-cuda
           python-version: '3.9'
@@ -55,14 +54,10 @@ jobs:
         if [[ "$(uname -s)" == "Linux" ]];
         then
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
-        elif [[ "$(uname -m)" == "x86_64" ]];
+        elif [[ "$(uname -s)" == "Darwin" ]];
         then
-          conda install --yes -c conda-forge -c bioconda clangxx_osx-64 clangdev
-          xcrun --sdk macosx --show-sdk-path
-          export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-        elif [[ "$(uname -m)" == "arm64" ]];
-        then
-        #conda install --yes -c conda-forge -c bioconda clangxx_osx-arm64 clangdev
+          # both arm64 and x86_64 need to be compiled with x86_64 it seems
+          # potentially due to rosetta?
           conda install --yes -c conda-forge -c bioconda clangxx_osx-64 clangdev
           xcrun --sdk macosx --show-sdk-path
           export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
