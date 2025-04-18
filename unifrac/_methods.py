@@ -10,22 +10,24 @@ from functools import reduce
 from operator import or_
 from typing import Union
 import collections.abc
+import tempfile
+import sys
 
 import numpy as np
 import pandas as pd
 import skbio
 import h5py
-from bp import BP
+from bp import BP, write_newick
 from skbio import TreeNode
 from skbio.stats.distance._base import _build_results as _build_stat
 from biom import Table
+from biom.util import biom_open
 
 import unifrac as qsu
 from unifrac._meta import CONSOLIDATIONS
 
 
 def is_biom_v210(f, ids=None):
-    import h5py
     if not h5py.is_hdf5(f):
         return False
     with h5py.File(f, 'r') as fp:
@@ -52,7 +54,6 @@ def is_biom_v210(f, ids=None):
 
 def has_samples_biom_v210(f):
     # assumes this is already checked to be biom v210
-    import h5py
     with h5py.File(f, 'r') as fp:
         if len(fp['sample/ids']) == 0:
             return False
@@ -65,11 +66,27 @@ def is_newick(f):
     return sniffer(f)[0]
 
 
+def has_atleast_two_samples(f):
+    with h5py.File(f, 'r') as fp:
+        assert 'sample/ids' in fp
+        return len(fp['sample/ids']) >= 2
+
+
+def has_negative(f):
+    with h5py.File(f, 'r') as fp:
+        assert 'sample/matrix/data' in fp
+        return (fp['sample/matrix/data'][:] < 0).any()
+
+
 def _validate(table, phylogeny, ids=None):
     if not is_biom_v210(table, ids):
         raise ValueError("Table does not appear to be a BIOM-Format v2.1")
     if not has_samples_biom_v210(table):
         raise ValueError("Table does not contain any samples")
+    if not has_atleast_two_samples(table):
+        raise ValueError("Table must have at least two samples")
+    if has_negative(table):
+        raise ValueError("Table has negatives")
     if not is_newick(phylogeny):
         raise ValueError("The phylogeny does not appear to be newick")
 
@@ -83,6 +100,72 @@ def _call_ssu(table, phylogeny, *args):
         ids = []
         _validate(table, phylogeny, ids)
         return qsu.ssu_fast(table, phylogeny, ids, *args)
+    else:
+        table_type = type(table)
+        tree_type = type(phylogeny)
+        raise ValueError(f"table ('{table_type}') and tree ('{tree_type}') "
+                         f"are incompatible with the library call")
+
+
+class _using_temp:
+    def __init__(self, table, phylogeny):
+        self._inmem_table = table
+        self._inmem_phy = phylogeny
+        self._tmpd = None
+        self.table = None
+        self.phylogeny = None
+
+    def __enter__(self):
+        if self._tmpd is not None:
+            raise IOError("already have tmp reference")
+
+        kwargs = {}
+        if sys.version_info.minor >= 10:
+            kwargs.update({"ignore_cleanup_errors": True})
+
+        self._tmpd = tempfile.TemporaryDirectory(**kwargs)
+        self.table = f"{self._tmpd.name}/table.biom"
+        self.phylogeny = f"{self._tmpd.name}/phylogeny.nwk"
+
+        with biom_open(self.table, 'w') as fp:
+            self._inmem_table.to_hdf5(fp, 'asd')
+
+        with open(self.phylogeny, 'w') as fp:
+            if isinstance(self._inmem_phy, TreeNode):
+                self._inmem_phy.write(fp)
+            elif isinstance(self._inmem_phy, BP):
+                write_newick(self._inmem_phy, fp, False)
+            else:
+                raise IOError("unknown phylogey type")
+
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self._cleanup()
+
+    def _cleanup(self):
+        if self._tmpd is not None:
+            self._tmpd.cleanup()
+            self._tmpd = None
+            self.table = None
+            self.phylogeny = None
+
+    def __del__(self):
+        self._cleanup()
+
+
+def _call_faith_pd(table, phylogeny):
+    if isinstance(table, Table) and isinstance(phylogeny, (TreeNode, BP)):
+        if table.is_empty():
+            raise ValueError("Table does not contain any samples")
+        with _using_temp(table, phylogeny) as tmp:
+            return qsu._faith_pd(tmp.table, tmp.phylogeny)
+
+    elif isinstance(table, str) and isinstance(phylogeny, str):
+        ids = []
+        _validate(table, phylogeny, ids)
+        return qsu._faith_pd(table, phylogeny)
+
     else:
         table_type = type(table)
         tree_type = type(phylogeny)
@@ -2890,3 +2973,44 @@ def h5permanova_dict(h5file: str) -> dict:
                                           n_permutations[i])
 
     return pmns
+
+
+def faith_pd(table: Union[str, Table],
+             phylogeny: Union[str, TreeNode, BP]) -> pd.Series:
+    """Compute Faith's Phylogenetic Diversity
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+
+    Returns
+    -------
+    pd.Series
+        The resulting diversity calculations
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Notes
+    -----
+    Faith's PD was originally described in [1]_. The implementation used here
+    was originally described in [2]_.
+
+    References
+    ----------
+    .. [1] Faith DP (1992) Conservation evaluation and phylogenetic diversity.
+       Biol Conserv 61:1–10
+    .. [2] Armstrong G, et al (2021) Efficient computation of Faith's
+       phylogenetic diversity with applications in characterizing microbiomes.
+       Genome Research 31(11):2131–2137
+    """
+    return _call_faith_pd(table, phylogeny)

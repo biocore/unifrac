@@ -90,6 +90,8 @@ def ssu_inmem(object table, object tree,
         np.ndarray[np.float32_t, ndim=2] numpy_arr_fp32
         np.ndarray[np.double_t, ndim=2] numpy_arr_fp64
 
+    table._data = table._data.tocsr()
+
     inmem_biom = construct_support_biom(table)
     inmem_tree = construct_support_bptree(tree)
 

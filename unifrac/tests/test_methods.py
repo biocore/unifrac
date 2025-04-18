@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2016-2017, QIIME 2 development team.
+# Copyright (c) 2016-, UniFrac development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -14,9 +14,11 @@ import biom
 import skbio
 import numpy as np
 import numpy.testing as npt
+import pandas.testing as pdt
 
 from unifrac import meta
-from unifrac._methods import _call_ssu, has_samples_biom_v210
+from unifrac._methods import (_call_ssu, has_samples_biom_v210, has_negative,
+                              has_atleast_two_samples, _call_faith_pd)
 
 
 class StateUnifracTests(unittest.TestCase):
@@ -126,11 +128,50 @@ class StateUnifracTests(unittest.TestCase):
         finally:
             os.unlink(tmpfile)
 
+    def test_has_negative(self):
+        self.assertFalse(has_negative(self.get_data_path('crawford.biom')))
+        tab = biom.load_table(self.get_data_path('crawford.biom'))
+        tab._data[1] *= -1
+        tmpfile = '/tmp/fake.biom'
+        try:
+            with h5py.File(tmpfile, 'w') as fp:
+                tab.to_hdf5(fp, 'asd')
+            fp = self.get_data_path(tmpfile)
+            self.assertTrue(has_negative(tmpfile))
+        finally:
+            os.unlink(tmpfile)
+
+    def test_has_atleast_two_samples(self):
+        path = self.get_data_path('crawford.biom')
+        self.assertTrue(has_atleast_two_samples(path))
+
+        tab = biom.Table([], [], [])
+        tmpfile = '/tmp/fake.biom'
+        try:
+            with h5py.File(tmpfile, 'w') as fp:
+                tab.to_hdf5(fp, 'asd')
+            fp = self.get_data_path(tmpfile)
+            self.assertFalse(has_atleast_two_samples(tmpfile))
+        finally:
+            os.unlink(tmpfile)
+
     def test_call_ssu_empty_biom(self):
         empty = biom.Table([], [], [])
         tre = skbio.TreeNode()
         with self.assertRaisesRegex(ValueError, "contain any samples"):
             _call_ssu(empty, tre)
+
+    def test_call_faith_pd(self):
+        obs_1 = _call_faith_pd(self.get_data_path('crawford.biom'),
+                               self.get_data_path('crawford.tre'))
+
+        tab = biom.load_table(self.get_data_path('crawford.biom'))
+        tre = skbio.TreeNode.read(self.get_data_path('crawford.tre'))
+
+        obs_2 = _call_faith_pd(tab, tre)
+
+        pdt.assert_series_equal(obs_1, obs_2)
+        self.assertEqual(len(tab.ids()), len(obs_1))
 
 
 if __name__ == "__main__":
