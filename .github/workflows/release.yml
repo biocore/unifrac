@@ -1,0 +1,41 @@
+# derived from https://github.com/biocore/biom-format/blob/master/.github/workflows/release.yml
+name: Build and upload to PyPI
+
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  earliest_python: "3.9"
+  latest_python: "3.12"
+  miniforge_version: "23.11.0-0"
+  miniforge_variant: "Mambaforge"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/micov
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Build distribution
+        run: |
+          # set version from '${{ github.ref_name }}'
+          export RELEASE_VERSION=${{ github.ref_name }}
+          pip install build
+          python -m build -s
+
+      - name: Publish a Python distribution to PyPI
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
