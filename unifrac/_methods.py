@@ -242,7 +242,8 @@ def unweighted(table: Union[str, Table],
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -252,6 +253,7 @@ def unweighted(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'unweighted', variance_adjusted, 1.0,
                      bypass_tips, n_substeps)
@@ -309,7 +311,8 @@ def unweighted_fp64(table: Union[str, Table],
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -319,6 +322,7 @@ def unweighted_fp64(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'unweighted_fp64', variance_adjusted,
                      1.0, bypass_tips, n_substeps)
@@ -376,7 +380,8 @@ def unweighted_fp32(table: Union[str, Table],
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -386,6 +391,7 @@ def unweighted_fp32(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'unweighted_fp32', variance_adjusted,
                      1.0, bypass_tips, n_substeps)
@@ -443,7 +449,8 @@ def unweighted_unnormalized(table: Union[str, Table],
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -453,6 +460,7 @@ def unweighted_unnormalized(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'unweighted_unnormalized', variance_adjusted, 1.0,
                      bypass_tips, n_substeps)
@@ -510,7 +518,8 @@ def unweighted_unnormalized_fp64(table: Union[str, Table],
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -520,6 +529,7 @@ def unweighted_unnormalized_fp64(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp64', variance_adjusted,
                      1.0, bypass_tips, n_substeps)
@@ -577,7 +587,8 @@ def unweighted_unnormalized_fp32(table: Union[str, Table],
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -587,6 +598,7 @@ def unweighted_unnormalized_fp32(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp32', variance_adjusted,
                      1.0, bypass_tips, n_substeps)
@@ -642,7 +654,8 @@ def weighted_normalized(table: Union[str, Table],
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -653,6 +666,7 @@ def weighted_normalized(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'weighted_normalized',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
@@ -709,7 +723,8 @@ def weighted_normalized_fp64(table: Union[str, Table],
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -720,6 +735,7 @@ def weighted_normalized_fp64(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'weighted_normalized_fp64',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
@@ -776,7 +792,8 @@ def weighted_normalized_fp32(table: Union[str, Table],
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -787,6 +804,7 @@ def weighted_normalized_fp32(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'weighted_normalized_fp32',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
@@ -843,7 +861,8 @@ def weighted_unnormalized(table: Union[str, Table],
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -854,6 +873,7 @@ def weighted_unnormalized(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'weighted_unnormalized',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
@@ -911,7 +931,8 @@ def weighted_unnormalized_fp64(table: Union[str, Table],
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -922,6 +943,7 @@ def weighted_unnormalized_fp64(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'weighted_unnormalized_fp64',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
@@ -979,7 +1001,8 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -990,6 +1013,7 @@ def weighted_unnormalized_fp32(table: Union[str, Table],
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu(table, phylogeny, 'weighted_unnormalized_fp32',
                      variance_adjusted, 1.0, bypass_tips, n_substeps)
@@ -1510,7 +1534,8 @@ def unweighted_to_file(table: str,
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -1520,6 +1545,7 @@ def unweighted_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted',
@@ -1619,7 +1645,8 @@ def unweighted_fp64_to_file(table: str,
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -1629,6 +1656,7 @@ def unweighted_fp64_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_fp64',
@@ -1728,7 +1756,8 @@ def unweighted_fp32_to_file(table: str,
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -1738,6 +1767,7 @@ def unweighted_fp32_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_fp32',
@@ -1838,7 +1868,8 @@ def unweighted_unnormalized_to_file(table: str,
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -1848,6 +1879,7 @@ def unweighted_unnormalized_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_unnormalized',
@@ -1947,7 +1979,8 @@ def unweighted_unnormalized_fp64_to_file(table: str,
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -1957,6 +1990,7 @@ def unweighted_unnormalized_fp64_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_unnormalized_fp64',
@@ -2056,7 +2090,8 @@ def unweighted_unnormalized_fp32_to_file(table: str,
     Unweighted UniFrac was originally described in [1]_. Variance Adjusted
     UniFrac was originally described in [2]_, and while its application to
     Unweighted UniFrac was not described, factoring in the variance adjustment
-    is still feasible and so it is exposed.
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
 
     References
     ----------
@@ -2066,6 +2101,7 @@ def unweighted_unnormalized_fp32_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_unnormalized_fp32',
@@ -2163,7 +2199,8 @@ def weighted_normalized_to_file(table: str,
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -2174,6 +2211,7 @@ def weighted_normalized_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized',
@@ -2271,7 +2309,8 @@ def weighted_normalized_fp64_to_file(table: str,
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -2282,6 +2321,7 @@ def weighted_normalized_fp64_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized_fp64',
@@ -2379,7 +2419,8 @@ def weighted_normalized_fp32_to_file(table: str,
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -2390,6 +2431,7 @@ def weighted_normalized_fp32_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_normalized_fp32',
@@ -2487,7 +2529,8 @@ def weighted_unnormalized_to_file(table: str,
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -2498,6 +2541,7 @@ def weighted_unnormalized_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized',
@@ -2595,7 +2639,8 @@ def weighted_unnormalized_fp64_to_file(table: str,
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -2606,6 +2651,7 @@ def weighted_unnormalized_fp64_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized_fp64',
@@ -2703,7 +2749,8 @@ def weighted_unnormalized_fp32_to_file(table: str,
     Notes
     -----
     Weighted UniFrac was originally described in [1]_. Variance Adjusted
-    Weighted UniFrac was originally described in [2]_.
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
 
     References
     ----------
@@ -2714,6 +2761,7 @@ def weighted_unnormalized_fp32_to_file(table: str,
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'weighted_unnormalized_fp32',
@@ -3167,6 +3215,7 @@ def h5unifrac(h5file: str) -> skbio.DistanceMatrix:
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
 
     with h5py.File(h5file, "r") as f_u:
@@ -3261,6 +3310,7 @@ def h5unifrac_all(h5file: str) -> H5UnifracTuple:
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
 
     return H5UnifracTuple(h5file)
@@ -3360,6 +3410,7 @@ def h5pcoa_all(h5file: str) -> tuple:
     .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
        powerful beta diversity measure for comparing communities based on
        phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
 
     with h5py.File(h5file, "r") as f_u:
