@@ -196,7 +196,7 @@ def unweighted(table: Union[str, Table],
                variance_adjusted: bool = False,
                bypass_tips: bool = False,
                n_substeps: int = 1) -> skbio.DistanceMatrix:
-    """Compute Unweighted UniFrac
+    """Compute unweighted UniFrac
 
     Parameters
     ----------
@@ -263,7 +263,7 @@ def unweighted_fp64(table: Union[str, Table],
                     variance_adjusted: bool = False,
                     bypass_tips: bool = False,
                     n_substeps: int = 1) -> skbio.DistanceMatrix:
-    """Compute Unweighted UniFrac using fp64 math
+    """Compute unweighted UniFrac using fp64 math
 
     Parameters
     ----------
@@ -330,7 +330,7 @@ def unweighted_fp32(table: Union[str, Table],
                     variance_adjusted: bool = False,
                     bypass_tips: bool = False,
                     n_substeps: int = 1) -> skbio.DistanceMatrix:
-    """Compute Unweighted UniFrac using fp32 math
+    """Compute unweighted UniFrac using fp32 math
 
     Parameters
     ----------
@@ -388,6 +388,207 @@ def unweighted_fp32(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     """
     return _call_ssu(table, phylogeny, 'unweighted_fp32', variance_adjusted,
+                     1.0, bypass_tips, n_substeps)
+
+
+def unweighted_unnormalized(table: Union[str, Table],
+                            phylogeny: Union[str, TreeNode, BP],
+                            threads: int = 1,
+                            variance_adjusted: bool = False,
+                            bypass_tips: bool = False,
+                            n_substeps: int = 1) -> skbio.DistanceMatrix:
+    """Compute unweighted unnormalized UniFrac
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        Deprecated, no-op.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    return _call_ssu(table, phylogeny, 'unweighted_unnormalized', variance_adjusted, 1.0,
+                     bypass_tips, n_substeps)
+
+
+def unweighted_unnormalized_fp64(table: Union[str, Table],
+                                 phylogeny: Union[str, TreeNode, BP],
+                                 threads: int = 1,
+                                 variance_adjusted: bool = False,
+                                 bypass_tips: bool = False,
+                                 n_substeps: int = 1) -> skbio.DistanceMatrix:
+    """Compute unweighted unnormalized UniFrac using fp64 math
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        Deprecated, no-op.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp64', variance_adjusted,
+                     1.0, bypass_tips, n_substeps)
+
+
+def unweighted_unnormalized_fp32(table: Union[str, Table],
+                                 phylogeny: Union[str, TreeNode, BP],
+                                 threads: int = 1,
+                                 variance_adjusted: bool = False,
+                                 bypass_tips: bool = False,
+                                 n_substeps: int = 1) -> skbio.DistanceMatrix:
+    """Compute unweighted unnormalized UniFrac using fp32 math
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    threads : int, optional
+        Deprecated, no-op.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
+
+    Returns
+    -------
+    skbio.DistanceMatrix
+        The resulting distance matrix.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp32', variance_adjusted,
                      1.0, bypass_tips, n_substeps)
 
 
@@ -1055,14 +1256,17 @@ def generalized_fp32(table: Union[str, Table],
 
 
 METHODS = {'unweighted': unweighted,
+           'unweighted_unnormalized': unweighted_unnormalized,
            'weighted_normalized': weighted_normalized,
            'weighted_unnormalized': weighted_unnormalized,
            'generalized': generalized,
            'unweighted_fp64': unweighted_fp64,
+           'unweighted_unnormalized_fp64': unweighted_unnormalized_fp64,
            'weighted_normalized_fp64': weighted_normalized_fp64,
            'weighted_unnormalized_fp64': weighted_unnormalized_fp64,
            'generalized_fp64': generalized_fp64,
            'unweighted_fp32': unweighted_fp32,
+           'unweighted_unnormalized_fp32': unweighted_unnormalized_fp32,
            'weighted_normalized_fp32': weighted_normalized_fp32,
            'weighted_unnormalized_fp32': weighted_unnormalized_fp32,
            'generalized_fp32': generalized_fp32}
@@ -1095,6 +1299,8 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     method : str
         The UniFrac method to use. The available choices are:
         'unweighted', 'unweighted_fp64', 'unweighted_fp32',
+        'unweighted_unnormalized', 'unweighted_unnormalized_fp64',
+        'unweighted_unnormalized_fp32',
         'weighted_unnormalized', 'weighted_unnormalized_fp64',
         'weighted_unnormalized_fp32',
         'weighted_normalized', 'weighted_normalized_fp64',
@@ -1233,7 +1439,7 @@ def unweighted_to_file(table: str,
                        permanova_perms: int = 0,
                        grouping_filename: str = "",
                        grouping_columns: str = "") -> str:
-    """Compute Unweighted UniFrac and write to file
+    """Compute unweighted UniFrac and write to file
 
     Parameters
     ----------
@@ -1343,7 +1549,7 @@ def unweighted_fp64_to_file(table: str,
                             permanova_perms: int = 0,
                             grouping_filename: str = "",
                             grouping_columns: str = "") -> str:
-    """Compute Unweighted UniFrac using fp64 math and write to file
+    """Compute unweighted UniFrac using fp64 math and write to file
 
     Parameters
     ----------
@@ -1452,7 +1658,7 @@ def unweighted_fp32_to_file(table: str,
                             permanova_perms: int = 0,
                             grouping_filename: str = "",
                             grouping_columns: str = "") -> str:
-    """Compute Unweighted UniFrac using fp32 math and write to file
+    """Compute unweighted UniFrac using fp32 math and write to file
 
     Parameters
     ----------
@@ -1535,6 +1741,334 @@ def unweighted_fp32_to_file(table: str,
     """
     return _call_ssu_to_file(table, phylogeny, out_filename,
                              'unweighted_fp32',
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             n_subsamples,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
+
+
+def unweighted_unnormalized_to_file(table: str,
+                                    phylogeny: str,
+                                    out_filename: str,
+                                    pcoa_dims: int = 10,
+                                    threads: int = 1,
+                                    variance_adjusted: bool = False,
+                                    bypass_tips: bool = False,
+                                    format: str = "",
+                                    buf_dirname: str = "",
+                                    n_substeps: int = 1,
+                                    n_subsamples: int = 1,
+                                    subsample_depth: int = 0,
+                                    subsample_with_replacement: bool = True,
+                                    permanova_perms: int = 0,
+                                    grouping_filename: str = "",
+                                    grouping_columns: str = "") -> str:
+    """Compute unweighted unnormalizec UniFrac and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed.
+        Defaults of 10.
+    threads : int, optional
+        Deprecated, no-op.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use.
+        Defaults to "hdf5" if n_subsamples<=1 else "hdf5_nodist"
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'unweighted_unnormalized',
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             n_subsamples,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
+
+
+def unweighted_unnormalized_fp64_to_file(table: str,
+                                         phylogeny: str,
+                                         out_filename: str,
+                                         pcoa_dims: int = 10,
+                                         threads: int = 1,
+                                         variance_adjusted: bool = False,
+                                         bypass_tips: bool = False,
+                                         format: str = "hdf5",
+                                         buf_dirname: str = "",
+                                         n_substeps: int = 1,
+                                         n_subsamples: int = 1,
+                                         subsample_depth: int = 0,
+                                         subsample_with_replacement: bool = True,
+                                         permanova_perms: int = 0,
+                                         grouping_filename: str = "",
+                                         grouping_columns: str = "") -> str:
+    """Compute unweighted unnormalizec UniFrac using fp64 math and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed.
+        Defaults of 10.
+    threads : int, optional
+        Deprecated, no-op.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'unweighted_unnormalized_fp64',
+                             variance_adjusted, 1.0, bypass_tips,
+                             n_substeps, format,
+                             n_subsamples,
+                             subsample_depth, subsample_with_replacement,
+                             pcoa_dims,
+                             permanova_perms,
+                             grouping_filename, grouping_columns,
+                             buf_dirname)
+
+
+def unweighted_unnormalized_fp32_to_file(table: str,
+                                         phylogeny: str,
+                                         out_filename: str,
+                                         pcoa_dims: int = 10,
+                                         threads: int = 1,
+                                         variance_adjusted: bool = False,
+                                         bypass_tips: bool = False,
+                                         format: str = "hdf5",
+                                         buf_dirname: str = "",
+                                         n_substeps: int = 1,
+                                         n_subsamples: int = 1,
+                                         subsample_depth: int = 0,
+                                         subsample_with_replacement: bool = True,
+                                         permanova_perms: int = 0,
+                                         grouping_filename: str = "",
+                                         grouping_columns: str = "") -> str:
+    """Compute unweighted unnormalized UniFrac using fp32 math and write to file
+
+    Parameters
+    ----------
+    table : str
+        A filepath to a BIOM-Format 2.1 file.
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    out_filename : str
+        A filepath to the output file.
+    pcoa_dims : int, optional
+        Number of dimensions to use for PCoA compute.
+        if set to 0, no PCoA is computed.
+        Defaults of 10.
+    threads : int, optional
+        Deprecated, no-op.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+    format : str, optional
+        Output format to use. Defaults to "hdf5".
+    buf_dirname : str, optional
+        If set, the directory where the disk buffer is hosted,
+        can be used to reduce the amount of memory needed.
+    n_substeps : int, optional
+        Internally split the problem in substeps for reduced memory footprint.
+    n_subsamples : int
+        If >1, perform multiple subsamples.
+    subsample_depth : int
+        Depth of subsampling, if >0
+    subsample_with_replacement : bool
+        Use subsampling with replacement? (only True supported in 1.3)
+    permanova_perms : int
+        If not 0, compute PERMANOVA using that many permutations
+    grouping_filename : str
+        The TSV filename containing grouping information
+    grouping_columns : str
+        The columns to use for grouping
+
+    Returns
+    -------
+    str
+        A filepath to the output file.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+        If the table is not found
+        If the output file cannot be created
+    ValueError
+        If the table does not appear to be BIOM-Format v2.1.
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    return _call_ssu_to_file(table, phylogeny, out_filename,
+                             'unweighted_unnormalized_fp32',
                              variance_adjusted, 1.0, bypass_tips,
                              n_substeps, format,
                              n_subsamples,
