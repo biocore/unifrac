@@ -195,6 +195,28 @@ cdef np.ndarray _ssu_inmem_fp32(support_biom *inmem_biom,
     return numpy_arr
 
 
+cdef double _ssu_dense_pair(int n_ids, const char** ids,
+                            double* sample1, double* sample2,
+                            support_bptree *inmem_tree,
+                            char* met_c_string,
+                            bool variance_adjust, double alpha,
+                            bool bypass_tips):
+    cdef:
+        compute_status status
+        double result
+
+    status = one_dense_pair_v2(n_ids, ids, sample1, sample2,
+                               inmem_tree,
+                               met_c_string,
+                               variance_adjust,
+                               alpha,
+                               bypass_tips,
+                               &result)
+    check_status(status)
+
+    return result
+
+
 def ssu_fast(str biom_filename, str tree_filename, object ids,
              str unifrac_method, bool variance_adjust, double alpha,
              bool bypass_tips, unsigned int n_substeps):
@@ -466,6 +488,102 @@ cdef object result_to_skbio_distance_matrix(mat *result):
     destroy_mat(&result)
 
     return skbio.DistanceMatrix(numpy_arr, ids)
+
+
+def ssu_dense_pair(object ids, object sample1, object sample2,
+                   object tree,
+                   str unifrac_method, bool variance_adjust, double alpha,
+                   bool bypass_tips):
+    """Execute a call to Strided State UniFrac via the direct API
+
+    Parameters
+    ----------
+    ids : tuple or list of str
+        Obeservation IDss
+    sample1 : tuple or list of float
+        First sample counts
+    sample2 : tuple or list of float
+        Second sample counts
+    tree : bp.BP or skbio.TreeNode
+        A phylogeny corresponding to the samples
+    unifrac_method : str
+        The requested UniFrac method, one of {unweighted,
+        unweighted_unnormalized, weighted_normalized, weighted_unnormalized,
+        generalized, unweighted_fp64, unweighted_unnormalized_fp64,
+        weighted_normalized_fp64, weighted_unnormalized_fp64, generalized_fp64,
+        unweighted_fp32, unweighted_unnormalized_fp32,
+        weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32}
+    variance_adjust : bool
+        Whether to perform Variance Adjusted UniFrac
+    alpha : float
+        The value of alpha for Generalized UniFrac; only applies to
+        Generalized UniFraca
+    bypass_tips : bool
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    float
+        The resulting unifrac distance
+
+    Raises
+    ------
+    ValueError
+        If an unknown method is requested.
+    Exception
+        If an unkown error is experienced
+    """
+    cdef:
+        int length
+        int n
+        double uval
+        char** cids
+        const char** cids_const
+        support_bptree* inmem_tree
+        bytes met_py_bytes
+        char* tree_c_string
+        char* met_c_string
+        double [:] sample1_as_bp
+        double [:] sample2_as_bp
+
+
+    inmem_tree = construct_support_bptree(tree)
+
+    length = ids.__len__()
+    if sample1.__len__()!=length:
+        raise ValueError("Length mismatch between ids and sample1")
+    if sample2.__len__()!=length:
+        raise ValueError("Length mismatch between ids and sample2")
+
+    cids = <char**>malloc(length * sizeof(char*))
+    if not cids:
+        raise Exception("Memory allocation error")
+    for i in range(length):
+        n = len(ids[i]) + 1  # for \0
+        if n<2:
+            raise ValueError("Empty ID found")
+        cids[i] = <char*>malloc(n * sizeof(char))
+        strcpy(cids[i], ids[i].encode('ascii'))
+
+    met_py_bytes = unifrac_method.encode()
+    met_c_string = met_py_bytes
+
+    sample1_as_bp = sample1
+    sample2_as_bp = sample2
+    # need this workaround, due to C weird handling of const string arrays
+    cids_const =  <const char**>cids
+    uval = _ssu_dense_pair(length, cids_const, &sample1_as_bp[0], &sample2_as_bp[0],
+                           inmem_tree, met_c_string,
+                           variance_adjust, alpha, bypass_tips)
+    cids_const = NULL
+
+    for i in range(length):
+        free(cids[i])
+    free(cids)
+    destroy_support_bptree(inmem_tree)
+
+    return uval
 
 
 def faith_pd(str biom_filename, str tree_filename):

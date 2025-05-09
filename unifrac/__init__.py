@@ -43,7 +43,7 @@ from unifrac._methods import (unweighted,
                               h5pcoa, h5pcoa_all,
                               h5permanova, h5permanova_dict,
                               faith_pd)
-from unifrac._api import ssu, ssu_fast, set_random_seed
+from unifrac._api import ssu, ssu_fast, set_random_seed, ssu_dense_pair
 from unifrac._api import ssu_to_file, ssu_to_file_v2, ssu_inmem
 from unifrac._api import faith_pd as _faith_pd  # noqa: F401
 
@@ -74,4 +74,4 @@ __all__ = ['unweighted', 'unweighted_unnormalized',
            'h5permanova', 'h5permanova_dict',
            'ssu', 'ssu_fast', 'faith_pd',
            'ssu_to_file', 'ssu_to_file_v2',
-           'ssu_inmem']
+           'ssu_inmem', 'ssu_dense_pair']

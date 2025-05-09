@@ -79,6 +79,12 @@ cdef extern from "api.hpp":
                                       const char* unifrac_method, bool variance_adjust, double alpha,
                                       bool bypass_tips, unsigned int n_substeps, mat_full_fp32** result)
 
+    compute_status one_dense_pair_v2(unsigned int n_obs, const char ** obs_ids, const double* sample1, const double* sample2,
+                                       const support_bptree *tree,
+                                       const char* unifrac_method, bool variance_adjust, double alpha,
+                                       bool bypass_tips, double* result);
+
+
     compute_status faith_pd_one_off(const char* biom_filename, const char* tree_filename,
                                     results_vec** result)
 
