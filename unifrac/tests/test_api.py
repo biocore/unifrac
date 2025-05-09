@@ -209,14 +209,14 @@ class EdgeCasesTests(unittest.TestCase):
     def weighted_unifrac(self, u_counts, v_counts, otu_ids, tree,
                          normalized=False):
         if normalized:
-            method = 'weighted_normalized'
+            method = 'weighted_normalized_fp64'
         else:
-            method = 'weighted_unnormalized'
+            method = 'weighted_unnormalized_fp64'
         return self._work(u_counts, v_counts, otu_ids, tree, method)
 
     def unweighted_unifrac(self, u_counts, v_counts, otu_ids, tree,
                            normalized=False):
-        return self._work(u_counts, v_counts, otu_ids, tree, 'unweighted')
+        return self._work(u_counts, v_counts, otu_ids, tree, 'unweighted_fp64')
 
     def setUp(self):
         self.b1 = np.array(

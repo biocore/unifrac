@@ -89,6 +89,7 @@ jobs:
         # and a weird number to potentially catch potential bugs
         export OMP_NUM_THREADS=3
         # diagnostic messages for debugging, if needed
+        export UNIFRAC_CPU_INFO=Y
         export UNIFRAC_GPU_INFO=Y
         ls -lrt $CONDA_PREFIX/lib/libhdf5_cpp*
         pytest
