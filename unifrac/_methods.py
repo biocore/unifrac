@@ -462,8 +462,8 @@ def unweighted_unnormalized(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
-    return _call_ssu(table, phylogeny, 'unweighted_unnormalized', variance_adjusted, 1.0,
-                     bypass_tips, n_substeps)
+    return _call_ssu(table, phylogeny, 'unweighted_unnormalized',
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def unweighted_unnormalized_fp64(table: Union[str, Table],
@@ -531,8 +531,8 @@ def unweighted_unnormalized_fp64(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
-    return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp64', variance_adjusted,
-                     1.0, bypass_tips, n_substeps)
+    return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp64',
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def unweighted_unnormalized_fp32(table: Union[str, Table],
@@ -600,8 +600,8 @@ def unweighted_unnormalized_fp32(table: Union[str, Table],
        phylogeny. BMC Bioinformatics 12:118 (2011).
     .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     """
-    return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp32', variance_adjusted,
-                     1.0, bypass_tips, n_substeps)
+    return _call_ssu(table, phylogeny, 'unweighted_unnormalized_fp32',
+                     variance_adjusted, 1.0, bypass_tips, n_substeps)
 
 
 def weighted_normalized(table: Union[str, Table],
@@ -1797,7 +1797,7 @@ def unweighted_unnormalized_to_file(table: str,
                                     permanova_perms: int = 0,
                                     grouping_filename: str = "",
                                     grouping_columns: str = "") -> str:
-    """Compute unweighted unnormalizec UniFrac and write to file
+    """Compute unweighted unnormalized UniFrac and write to file
 
     Parameters
     ----------
@@ -1905,11 +1905,13 @@ def unweighted_unnormalized_fp64_to_file(table: str,
                                          n_substeps: int = 1,
                                          n_subsamples: int = 1,
                                          subsample_depth: int = 0,
-                                         subsample_with_replacement: bool = True,
+                                         subsample_with_replacement:
+                                         bool = True,
                                          permanova_perms: int = 0,
                                          grouping_filename: str = "",
                                          grouping_columns: str = "") -> str:
-    """Compute unweighted unnormalizec UniFrac using fp64 math and write to file
+    """Compute unweighted unnormalized UniFrac using fp64 math
+    and write to file
 
     Parameters
     ----------
@@ -2016,11 +2018,13 @@ def unweighted_unnormalized_fp32_to_file(table: str,
                                          n_substeps: int = 1,
                                          n_subsamples: int = 1,
                                          subsample_depth: int = 0,
-                                         subsample_with_replacement: bool = True,
+                                         subsample_with_replacement:
+                                         bool = True,
                                          permanova_perms: int = 0,
                                          grouping_filename: str = "",
                                          grouping_columns: str = "") -> str:
-    """Compute unweighted unnormalized UniFrac using fp32 math and write to file
+    """Compute unweighted unnormalized UniFrac using fp32 math
+    and write to file
 
     Parameters
     ----------
