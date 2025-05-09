@@ -135,22 +135,27 @@ To use Stacked Faith through QIIME2, given similar artifacts, you can use:
 The library can be accessed directly from within Python. If operating in this mode, the API methods are expecting a filepath to a BIOM-Format V2.1.0 table, and a filepath to a Newick formatted phylogeny.
 
     $ python
-    Python 3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:23:14) [GCC 10.4.0] on linux
+    Python 3.12.10 | packaged by conda-forge | (main, Apr 10 2025, 22:21:13) [GCC 13.3.0] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
     ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__',
-     '__package__', '__path__', '__spec__', '__version__', '_api', '_meta', '_methods',
-     'faith_pd', 'generalized', 'generalized_fp32', 'generalized_fp32_to_file', 'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file',
-     'h5pcoa', 'h5pcoa_all', 'h5permanova', 'h5permanova_dict', 'h5unifrac', 'h5unifrac_all', 'meta', 'pkg_resources',
-     'set_random_seed', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 'ssu_to_file_v2', 'unweighted', 'unweighted_fp32',
-     'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file', 'weighted_normalized',
-     'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file', 'weighted_normalized_fp64', 'weighted_normalized_fp64_to_file',
-     'weighted_normalized_to_file', 'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file', 
+     '__package__', '__path__', '__spec__', '__version__', '__warningregistry__', '_api',
+     '_faith_pd', '_meta', '_methods', 'faith_pd',
+     'generalized', 'generalized_fp32', 'generalized_fp32_to_file',
+     'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file',
+     'h5pcoa', 'h5pcoa_all', 'h5permanova', 'h5permanova_dict', 'h5unifrac', 'h5unifrac_all',
+     'meta', 'pkg_resources', 'set_random_seed', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 'ssu_to_file_v2',
+     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file',
+     'unweighted_unnormalized', 'unweighted_unnormalized_fp32', 'unweighted_unnormalized_fp32_to_file',
+     'unweighted_unnormalized_fp64', 'unweighted_unnormalized_fp64_to_file', 'unweighted_unnormalized_to_file',
+     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file',
+     'weighted_normalized_fp64', 'weighted_normalized_fp64_to_file', 'weighted_normalized_to_file',
+     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file',
      'weighted_unnormalized_fp64', 'weighted_unnormalized_fp64_to_file', 'weighted_unnormalized_to_file']
     >>> print(unifrac.unweighted.__doc__)
-    Compute Unweighted UniFrac
-    
+    Compute unweighted UniFrac
+
         Parameters
         ----------
         table : str
@@ -166,12 +171,12 @@ The library can be accessed directly from within Python. If operating in this mo
             by about 50%, but is an approximation.
         n_substeps : int, optional
             Internally split the problem in substeps for reduced memory footprint.
-    
+
         Returns
         -------
         skbio.DistanceMatrix
             The resulting distance matrix.
-    
+
         Raises
         ------
         IOError
@@ -180,7 +185,7 @@ The library can be accessed directly from within Python. If operating in this mo
         ValueError
             If the table does not appear to be BIOM-Format v2.1.
             If the phylogeny does not appear to be in Newick format.
-    
+
         Environment variables
         ---------------------
         OMP_NUM_THREADS
@@ -189,14 +194,15 @@ The library can be accessed directly from within Python. If operating in this mo
             Enable or disable GPU offload. If not defined, autodetect.
         ACC_DEVICE_NUM
             The GPU to use. If not defined, the first GPU will be used.
-    
+
         Notes
         -----
         Unweighted UniFrac was originally described in [1]_. Variance Adjusted
         UniFrac was originally described in [2]_, and while its application to
         Unweighted UniFrac was not described, factoring in the variance adjustment
-        is still feasible and so it is exposed.
-    
+        is still feasible and so it is exposed. Current implementation is
+        described in [3]_.
+
         References
         ----------
         .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
@@ -205,91 +211,9 @@ The library can be accessed directly from within Python. If operating in this mo
         .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
            powerful beta diversity measure for comparing communities based on
            phylogeny. BMC Bioinformatics 12:118 (2011).
-        
-    >>> print(unifrac.unweighted_to_file.__doc__)
-    Compute Unweighted UniFrac and write to file
+        .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
     
-        Parameters
-        ----------
-        table : str
-            A filepath to a BIOM-Format 2.1 file.
-        phylogeny : str
-            A filepath to a Newick formatted tree.
-        out_filename : str
-            A filepath to the output file.
-        pcoa_dims : int, optional
-            Number of dimensions to use for PCoA compute.
-            if set to 0, no PCoA is computed.
-            Defaults of 10.
-        threads : int, optional
-            Deprecated, no-op.
-        variance_adjusted : bool, optional
-            Adjust for varianace or not. Default is False.
-        bypass_tips : bool, optional
-            Bypass the tips of the tree in the computation. This reduces compute
-            by about 50%, but is an approximation.
-        format : str, optional
-            Output format to use.
-            Defaults to "hdf5" if n_subsamples<=1 else "hdf5_nodist"
-        buf_dirname : str, optional
-            If set, the directory where the disk buffer is hosted,
-            can be used to reduce the amount of memory needed.
-        n_substeps : int, optional
-            Internally split the problem in substeps for reduced memory footprint.
-        n_subsamples : int
-            If >1, perform multiple subsamples.
-        subsample_depth : int
-            Depth of subsampling, if >0
-        subsample_with_replacement : bool
-            Use subsampling with replacement? (only True supported in 1.3)
-        permanova_perms : int
-            If not 0, compute PERMANOVA using that many permutations
-        grouping_filename : str
-            The TSV filename containing grouping information
-        grouping_columns : str
-            The columns to use for grouping
-    
-        Returns
-        -------
-        str
-            A filepath to the output file.
-    
-        Raises
-        ------
-        IOError
-            If the tree file is not found
-            If the table is not found
-            If the output file cannot be created
-        ValueError
-            If the table does not appear to be BIOM-Format v2.1.
-            If the phylogeny does not appear to be in Newick format.
-    
-        Environment variables
-        ---------------------
-        OMP_NUM_THREADS
-            Number of CPU cores to use. If not defined, use all detected cores.
-        UNIFRAC_USE_GPU
-            Enable or disable GPU offload. If not defined, autodetect.
-        ACC_DEVICE_NUM
-            The GPU to use. If not defined, the first GPU will be used.
-    
-        Notes
-        -----
-        Unweighted UniFrac was originally described in [1]_. Variance Adjusted
-        UniFrac was originally described in [2]_, and while its application to
-        Unweighted UniFrac was not described, factoring in the variance adjustment
-        is still feasible and so it is exposed.
-    
-        References
-        ----------
-        .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
-           comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
-           (2005).
-        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
-           powerful beta diversity measure for comparing communities based on
-           phylogeny. BMC Bioinformatics 12:118 (2011).
-    
-	>>> print(unifrac.faith_pd.__doc__)
+    >>> print(unifrac.faith_pd.__doc__)
 	Execute a call to the Stacked Faith API in the UniFrac package
 
 		Parameters
@@ -310,7 +234,90 @@ The library can be accessed directly from within Python. If operating in this mo
 			If the tree file is not found
 			If the table is not found
 			If the table is empty
-	
+
+    >>> print(unifrac.weighted_normalized_to_file.__doc__)
+    Compute weighted normalized UniFrac and write to file
+
+        Parameters
+        ----------
+        table : str
+            A filepath to a BIOM-Format 2.1 file.
+        phylogeny : str
+            A filepath to a Newick formatted tree.
+        out_filename : str
+            A filepath to the output file.
+        pcoa_dims : int, optional
+            Number of dimensions to use for PCoA compute.
+            if set to 0, no PCoA is computed.
+            Defaults of 10.
+        threads : int, optional
+            Deprecated, no-op.
+        variance_adjusted : bool, optional
+            Adjust for varianace or not. Default is False.
+        bypass_tips : bool, optional
+            Bypass the tips of the tree in the computation. This reduces compute
+            by about 50%, but is an approximation.
+        format : str, optional
+            Output format to use. Defaults to "hdf5".
+        buf_dirname : str, optional
+            If set, the directory where the disk buffer is hosted,
+            can be used to reduce the amount of memory needed.
+        n_substeps : int, optional
+            Internally split the problem in substeps for reduced memory footprint.
+        n_subsamples : int
+            If >1, perform multiple subsamples.
+        subsample_depth : int
+            Depth of subsampling, if >0
+        subsample_with_replacement : bool
+            Use subsampling with replacement? (only True supported in 1.3)
+        permanova_perms : int
+            If not 0, compute PERMANOVA using that many permutations
+        grouping_filename : str
+            The TSV filename containing grouping information
+        grouping_columns : str
+            The columns to use for grouping
+
+        Returns
+        -------
+        str
+            A filepath to the output file.
+
+        Raises
+        ------
+        IOError
+            If the tree file is not found
+            If the table is not found
+            If the output file cannot be created
+        ValueError
+            If the table does not appear to be BIOM-Format v2.1.
+            If the phylogeny does not appear to be in Newick format.
+
+        Environment variables
+        ---------------------
+        OMP_NUM_THREADS
+            Number of CPU cores to use. If not defined, use all detected cores.
+        UNIFRAC_USE_GPU
+            Enable or disable GPU offload. If not defined, autodetect.
+        ACC_DEVICE_NUM
+            The GPU to use. If not defined, the first GPU will be used.
+
+        Notes
+        -----
+        Weighted UniFrac was originally described in [1]_. Variance Adjusted
+        Weighted UniFrac was originally described in [2]_. Current implementation
+        is described in [3]_.
+
+        References
+        ----------
+        .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+           and qualitative beta diversity measures lead to different insights into
+           factors that structure microbial communities. Appl. Environ. Microbiol.
+           73, 1576-1585 (2007).
+        .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+           powerful beta diversity measure for comparing communities based on
+           phylogeny. BMC Bioinformatics 12:118 (2011).
+        .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
+
     >>> print(unifrac.h5unifrac.__doc__)
     Read UniFrac from a hdf5 file
     
