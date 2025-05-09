@@ -56,16 +56,17 @@ jobs:
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
         elif [[ "$(uname -s)" == "Darwin" ]];
         then
-          # both arm64 and x86_64 need to be compiled with x86_64 it seems
-          # potentially due to rosetta?
-          conda install --yes -c conda-forge -c bioconda clangxx_osx-64 clangdev
-          xcrun --sdk macosx --show-sdk-path
-          export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+         if [[ "x`conda info |awk '/platform/{print $3}'`" == "xosx-64" ]];
+         then
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-64
+         else
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-arm64
+         fi
         else
           echo "$(uname -a)"
           exit 1
         fi
-        conda install --yes -c conda-forge -c bioconda "unifrac-binaries>=1.2"
+        conda install --yes -c conda-forge -c bioconda "unifrac-binaries>=1.5"
         conda install --yes -c conda-forge -c bioconda cython biom-format numpy "h5py>3.3.0" "scikit-bio>=0.5.8" pytest
         echo "$(uname -s)"
         if [[ "$(uname -s)" == "Linux" ]];
@@ -78,7 +79,6 @@ jobs:
           clang -v
         fi
         which h5c++
-        pip install iow
         pip install -e .   
             
     - name: Tests
@@ -89,6 +89,7 @@ jobs:
         # and a weird number to potentially catch potential bugs
         export OMP_NUM_THREADS=3
         # diagnostic messages for debugging, if needed
+        export UNIFRAC_CPU_INFO=Y
         export UNIFRAC_GPU_INFO=Y
         ls -lrt $CONDA_PREFIX/lib/libhdf5_cpp*
         pytest

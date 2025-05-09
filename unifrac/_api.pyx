@@ -51,11 +51,11 @@ def ssu_inmem(object table, object tree,
         A phylogeny corresponding to the table
     unifrac_method : str
         The requested UniFrac method, one of {unweighted,
-        weighted_normalized, weighted_unnormalized, generalized,
-        unweighted_fp64, weighted_normalized_fp64, 
-        weighted_unnormalized_fp64, generalized_fp64,
-        unweighted_fp32, weighted_normalized_fp32, 
-        weighted_unnormalized_fp32, generalized_fp32}
+        unweighted_unnormalized, weighted_normalized, weighted_unnormalized,
+        generalized, unweighted_fp64, unweighted_unnormalized_fp64,
+        weighted_normalized_fp64, weighted_unnormalized_fp64, generalized_fp64,
+        unweighted_fp32, unweighted_unnormalized_fp32,
+        weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32}
     variance_adjust : bool
         Whether to perform Variance Adjusted UniFrac
     alpha : float
@@ -210,11 +210,11 @@ def ssu_fast(str biom_filename, str tree_filename, object ids,
         Ids as present in biom_filename file
     unifrac_method : str
         The requested UniFrac method, one of {unweighted,
-        weighted_normalized, weighted_unnormalized, generalized,
-        unweighted_fp64, weighted_normalized_fp64, 
-        weighted_unnormalized_fp64, generalized_fp64,
-        unweighted_fp32, weighted_normalized_fp32, 
-        weighted_unnormalized_fp32, generalized_fp32}
+        unweighted_unnormalized, weighted_normalized, weighted_unnormalized,
+        generalized, unweighted_fp64, unweighted_unnormalized_fp64,
+        weighted_normalized_fp64, weighted_unnormalized_fp64, generalized_fp64,
+        unweighted_fp32, unweighted_unnormalized_fp32,
+        weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32}
     variance_adjust : bool
         Whether to perform Variance Adjusted UniFrac
     alpha : float
@@ -381,11 +381,11 @@ def ssu(str biom_filename, str tree_filename,
         A filepath to a Newick formatted tree
     unifrac_method : str
         The requested UniFrac method, one of {unweighted,
-        weighted_normalized, weighted_unnormalized, generalized,
-        unweighted_fp64, weighted_normalized_fp64, 
-        weighted_unnormalized_fp64, generalized_fp64,
-        unweighted_fp32, weighted_normalized_fp32, 
-        weighted_unnormalized_fp32, generalized_fp32}
+        unweighted_unnormalized, weighted_normalized, weighted_unnormalized,
+        generalized, unweighted_fp64, unweighted_unnormalized_fp64,
+        weighted_normalized_fp64, weighted_unnormalized_fp64, generalized_fp64,
+        unweighted_fp32, unweighted_unnormalized_fp32,
+        weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32}
     variance_adjust : bool
         Whether to perform Variance Adjusted UniFrac
     alpha : float
@@ -552,11 +552,11 @@ def ssu_to_file_v2(str biom_filename, str tree_filename, str out_filename,
         A filepath to the output file.
     unifrac_method : str
         The requested UniFrac method, one of {unweighted,
-        weighted_normalized, weighted_unnormalized, generalized,
-        unweighted_fp64, weighted_normalized_fp64, 
-        weighted_unnormalized_fp64, generalized_fp64,
-        unweighted_fp32, weighted_normalized_fp32, 
-        weighted_unnormalized_fp32, generalized_fp32}
+        unweighted_unnormalized, weighted_normalized, weighted_unnormalized,
+        generalized, unweighted_fp64, unweighted_unnormalized_fp64,
+        weighted_normalized_fp64, weighted_unnormalized_fp64, generalized_fp64,
+        unweighted_fp32, unweighted_unnormalized_fp32,
+        weighted_normalized_fp32, weighted_unnormalized_fp32, generalized_fp32}
     variance_adjust : bool
         Whether to perform Variance Adjusted UniFrac
     alpha : float
