@@ -56,11 +56,12 @@ jobs:
           conda install --yes -c conda-forge -c bioconda gxx_linux-64
         elif [[ "$(uname -s)" == "Darwin" ]];
         then
-          # both arm64 and x86_64 need to be compiled with x86_64 it seems
-          # potentially due to rosetta?
-          conda install --yes -c conda-forge -c bioconda clangxx_osx-64 clangdev
-          xcrun --sdk macosx --show-sdk-path
-          export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+         if [[ "x`conda info |awk '/platform/{print $3}'`" == "xosx-64" ]];
+         then
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-64
+         else
+          conda install --yes -c conda-forge -c bioconda clangxx_osx-arm64
+         fi
         else
           echo "$(uname -a)"
           exit 1
