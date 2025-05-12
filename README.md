@@ -139,20 +139,22 @@ The library can be accessed directly from within Python. If operating in this mo
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import unifrac
     >>> dir(unifrac)
-    ['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__',
-     '__package__', '__path__', '__spec__', '__version__', '__warningregistry__', '_api',
-     '_faith_pd', '_meta', '_methods', 'faith_pd',
-     'generalized', 'generalized_fp32', 'generalized_fp32_to_file',
-     'generalized_fp64', 'generalized_fp64_to_file', 'generalized_to_file',
+    ['__all__', '__builtins__',
+     ...
+     'faith_pd',
+     'generalized', 'generalized_fp32', 'generalized_fp64',
+     'generalized_dense_pair', 'generalized_to_file',
+     ...
      'h5pcoa', 'h5pcoa_all', 'h5permanova', 'h5permanova_dict', 'h5unifrac', 'h5unifrac_all',
-     'meta', 'pkg_resources', 'set_random_seed', 'ssu', 'ssu_fast', 'ssu_inmem', 'ssu_to_file', 'ssu_to_file_v2',
-     'unweighted', 'unweighted_fp32', 'unweighted_fp32_to_file', 'unweighted_fp64', 'unweighted_fp64_to_file', 'unweighted_to_file',
-     'unweighted_unnormalized', 'unweighted_unnormalized_fp32', 'unweighted_unnormalized_fp32_to_file',
-     'unweighted_unnormalized_fp64', 'unweighted_unnormalized_fp64_to_file', 'unweighted_unnormalized_to_file',
-     'weighted_normalized', 'weighted_normalized_fp32', 'weighted_normalized_fp32_to_file',
-     'weighted_normalized_fp64', 'weighted_normalized_fp64_to_file', 'weighted_normalized_to_file',
-     'weighted_unnormalized', 'weighted_unnormalized_fp32', 'weighted_unnormalized_fp32_to_file',
-     'weighted_unnormalized_fp64', 'weighted_unnormalized_fp64_to_file', 'weighted_unnormalized_to_file']
+     'meta', 'set_random_seed',
+     ...
+     'unweighted', 'unweighted_fp32', 'unweighted_fp64',
+     'unweighted_dense_pair', 'unweighted_to_file', 'unweighted_fp64_to_file',
+     ...
+     'weighted_normalized', 'weighted_normalized_dense_pair', 'weighted_unnormalized_to_file',
+     ...
+     'unweighted_unnormalized', 'unweighted_unnormalized_dense_pair', 'unweighted_unnormalized_to_file',
+     'weighted_unnormalized', 'unweighted_unnormalized_dense_pair', 'unweighted_unnormalized_to_file']
     >>> print(unifrac.unweighted.__doc__)
     Compute unweighted UniFrac
 
@@ -473,7 +475,7 @@ The methods can also be used directly through the command line after install of 
             
 ## Minor test dataset
 
-A small test `.biom` and `.tre` can be found in `unifrac/tests/data/`. An example with expected output is below, and should execute in 10s of milliseconds:
+A small test `.biom` and `.tre` can be found in `unifrac/tests/data/`. An example with expected output is below, and should execute in a fraction of a second:
 
     $ python
     Python 3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:23:14) [GCC 10.4.0] on linux
@@ -499,4 +501,12 @@ A small test `.biom` and `.tre` can be found in `unifrac/tests/data/`. An exampl
             0.71283615, 0.6920076 , 0.        , 0.7151408 ],
            [0.7360605 , 0.7613893 , 0.7924903 , 0.72959894, 0.7894437 ,
             0.5831464 , 0.6897206 , 0.7151408 , 0.        ]], dtype=float32)
+    >>> import biom
+    >>> table=biom.load_table('unifrac/tests/data/crawford.biom')
+    >>> ids=table.ids('observation')
+    >>> samp1=table[:,0].toarray().flatten()
+    >>> samp2=table[:,1].toarray().flatten()
+    >>> val=unifrac.unweighted_dense_pair(ids,samp1,samp2,'unifrac/tests/data/crawford.tre')
+    >>> print(val)
+    0.7183606658636769
 
