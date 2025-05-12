@@ -17,6 +17,11 @@ import numpy.testing as npt
 import pandas.testing as pdt
 
 from unifrac import meta
+from unifrac import (unweighted, weighted_normalized, weighted_unnormalized,
+                     unweighted_fp64, weighted_normalized_fp64,
+                     weighted_unnormalized_fp64,
+                     unweighted_dense_pair, weighted_normalized_dense_pair,
+                     weighted_unnormalized_dense_pair)
 from unifrac._methods import (_call_ssu, has_samples_biom_v210, has_negative,
                               has_atleast_two_samples, _call_faith_pd)
 
@@ -172,6 +177,81 @@ class StateUnifracTests(unittest.TestCase):
 
         pdt.assert_series_equal(obs_1, obs_2)
         self.assertEqual(len(tab.ids()), len(obs_1))
+
+    def test_unifrac_unweighted(self):
+        cbf = self.get_data_path('crawford.biom')
+        ctf = self.get_data_path('crawford.tre')
+
+        tab = biom.load_table(cbf)
+        tre = skbio.TreeNode.read(ctf)
+
+        mat1 = unweighted(cbf, ctf)
+        mat2 = unweighted_fp64(tab, tre)
+
+        ids = tab.ids('observation')
+        samp1 = tab[:, 0].toarray().flatten()
+        samp2 = tab[:, 1].toarray().flatten()
+        val1 = unweighted_dense_pair(ids, samp1, samp2, ctf)
+        val2 = unweighted_dense_pair(ids, samp1, samp2, tre)
+
+        exp = 0.71836066
+
+        npt.assert_almost_equal(mat1[0, 1], mat2[0, 1], decimal=6)
+        npt.assert_almost_equal(val1, val2, decimal=6)
+        npt.assert_almost_equal(mat1[0, 1], val1, decimal=6)
+        npt.assert_almost_equal(mat2[0, 1], exp, decimal=6)
+        # the matricess are symmetric
+        npt.assert_almost_equal(mat1[2, 5], mat2[5, 2], decimal=6)
+
+    def test_unifrac_weighted(self):
+        cbf = self.get_data_path('crawford.biom')
+        ctf = self.get_data_path('crawford.tre')
+
+        tab = biom.load_table(cbf)
+        tre = skbio.TreeNode.read(ctf)
+
+        mat1 = weighted_normalized_fp64(cbf, ctf)
+        mat2 = weighted_normalized(tab, tre)
+
+        ids = tab.ids('observation')
+        samp1 = tab[:, 3].toarray().flatten()
+        samp2 = tab[:, 8].toarray().flatten()
+        val1 = weighted_normalized_dense_pair(ids, samp1, samp2, ctf)
+        val2 = weighted_normalized_dense_pair(ids, samp1, samp2, tre)
+
+        exp = 0.31249154
+
+        npt.assert_almost_equal(mat1[3, 8], mat2[3, 8], decimal=6)
+        npt.assert_almost_equal(val1, val2, decimal=6)
+        npt.assert_almost_equal(mat1[3, 8], val1, decimal=6)
+        npt.assert_almost_equal(mat2[3, 8], exp, decimal=6)
+        # the matricess are symmetric
+        npt.assert_almost_equal(mat1[0, 1], mat2[1, 0], decimal=6)
+
+    def test_unifrac_weighted_unnormalized(self):
+        cbf = self.get_data_path('crawford.biom')
+        ctf = self.get_data_path('crawford.tre')
+
+        tab = biom.load_table(cbf)
+        tre = skbio.TreeNode.read(ctf)
+
+        mat1 = weighted_unnormalized(cbf, ctf)
+        mat2 = weighted_unnormalized_fp64(tab, tre)
+
+        ids = tab.ids('observation')
+        samp1 = tab[:, 1].toarray().flatten()
+        samp2 = tab[:, 7].toarray().flatten()
+        val1 = weighted_unnormalized_dense_pair(ids, samp1, samp2, ctf)
+        val2 = weighted_unnormalized_dense_pair(ids, samp1, samp2, tre)
+
+        exp = 0.28318668
+
+        npt.assert_almost_equal(mat1[1, 7], mat2[1, 7], decimal=6)
+        npt.assert_almost_equal(val1, val2, decimal=6)
+        npt.assert_almost_equal(mat1[1, 7], val1, decimal=6)
+        npt.assert_almost_equal(mat2[1, 7], exp, decimal=6)
+        # the matricess are symmetric
+        npt.assert_almost_equal(mat1[0, 8], mat2[8, 0], decimal=6)
 
 
 if __name__ == "__main__":
