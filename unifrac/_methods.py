@@ -107,6 +107,19 @@ def _call_ssu(table, phylogeny, *args):
                          f"are incompatible with the library call")
 
 
+def _call_ssu_dense_pair(ids, sample1, sample2,
+                         phylogeny, *args):
+    if isinstance(phylogeny, (TreeNode, BP)):
+        tree = phylogeny
+    elif isinstance(phylogeny, str):
+        tree = TreeNode.read(phylogeny)
+    else:
+        tree_type = type(phylogeny)
+        raise ValueError(f"tree ('{tree_type}') "
+                         f"is incompatible with the library call")
+    return qsu.ssu_dense_pair(ids, sample1, sample2, tree, *args)
+
+
 class _using_temp:
     def __init__(self, table, phylogeny):
         self._inmem_table = table
@@ -1441,6 +1454,371 @@ def meta(tables: tuple, phylogenies: tuple, weights: tuple = None,
     dm = consolidation_(dms, [dm.ids for dm in dms], weights, all_ids)
 
     return skbio.DistanceMatrix(dm, ids=all_ids)
+
+
+#
+# Functions that compute Unifrac on a single dense pair
+#
+def unweighted_dense_pair(ids,
+                          sample1,
+                          sample2,
+                          phylogeny: Union[str, TreeNode, BP],
+                          variance_adjusted: bool = False,
+                          bypass_tips: bool = False) -> float:
+    """Compute unweighted UniFrac
+
+    Parameters
+    ----------
+    ids : tuple or list of str
+        Obeservation IDss
+    sample1 : tuple or list of float
+        First sample counts
+    sample2 : tuple or list of float
+        Second sample counts
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    float
+        The resulting distance value.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+    ValueError
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
+    """
+    # Use the FP64 version, since the
+    # other overheads hide any difference in performance
+    return _call_ssu_dense_pair(ids, sample1, sample2,
+                                phylogeny, 'unweighted_fp64',
+                                variance_adjusted, 1.0,
+                                bypass_tips)
+
+
+def unweighted_unnormalized_dense_pair(ids,
+                                       sample1,
+                                       sample2,
+                                       phylogeny: Union[str, TreeNode, BP],
+                                       variance_adjusted: bool = False,
+                                       bypass_tips: bool = False) -> float:
+    """Compute unweighted unnormalized UniFrac
+
+    Parameters
+    ----------
+    ids : tuple or list of str
+        Obeservation IDss
+    sample1 : tuple or list of float
+        First sample counts
+    sample2 : tuple or list of float
+        Second sample counts
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    float
+        The resulting distance value.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+    ValueError
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Unweighted UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, and while its application to
+    Unweighted UniFrac was not described, factoring in the variance adjustment
+    is still feasible and so it is exposed. Current implementation is
+    described in [3]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. & Knight, R. UniFrac: a new phylogenetic method for
+       comparing microbial communities. Appl. Environ. Microbiol. 71, 8228-8235
+       (2005).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
+    """
+    # Use the FP64 version, since the
+    # other overheads hide any difference in performance
+    return _call_ssu_dense_pair(ids, sample1, sample2,
+                                phylogeny, 'unweighted_unnormalized_fp64',
+                                variance_adjusted, 1.0,
+                                bypass_tips)
+
+
+def weighted_normalized_dense_pair(ids,
+                                   sample1,
+                                   sample2,
+                                   phylogeny: Union[str, TreeNode, BP],
+                                   variance_adjusted: bool = False,
+                                   bypass_tips: bool = False) -> float:
+    """Compute weighted normalized UniFrac
+
+    Parameters
+    ----------
+    ids : tuple or list of str
+        Obeservation IDss
+    sample1 : tuple or list of float
+        First sample counts
+    sample2 : tuple or list of float
+        Second sample counts
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    float
+        The resulting distance value.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+    ValueError
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
+    """
+    # Use the FP64 version, since the
+    # other overheads hide any difference in performance
+    return _call_ssu_dense_pair(ids, sample1, sample2,
+                                phylogeny, 'weighted_normalized_fp64',
+                                variance_adjusted, 1.0,
+                                bypass_tips)
+
+
+def weighted_unnormalized_dense_pair(ids,
+                                     sample1,
+                                     sample2,
+                                     phylogeny: Union[str, TreeNode, BP],
+                                     variance_adjusted: bool = False,
+                                     bypass_tips: bool = False) -> float:
+    """Compute weighted unnormalized UniFrac
+
+    Parameters
+    ----------
+    ids : tuple or list of str
+        Obeservation IDss
+    sample1 : tuple or list of float
+        First sample counts
+    sample2 : tuple or list of float
+        Second sample counts
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    float
+        The resulting distance value.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+    ValueError
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Weighted UniFrac was originally described in [1]_. Variance Adjusted
+    Weighted UniFrac was originally described in [2]_. Current implementation
+    is described in [3]_.
+
+    References
+    ----------
+    .. [1] Lozupone, C. A., Hamady, M., Kelley, S. T. & Knight, R. Quantitative
+       and qualitative beta diversity measures lead to different insights into
+       factors that structure microbial communities. Appl. Environ. Microbiol.
+       73, 1576-1585 (2007).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    .. [3] Sfiligoi, I. et al. mSystems 2022; DOI: 10.1128/msystems.00028-22
+    """
+    # Use the FP64 version, since the
+    # other overheads hide any difference in performance
+    return _call_ssu_dense_pair(ids, sample1, sample2,
+                                phylogeny, 'weighted_unnormalized_fp64',
+                                variance_adjusted, 1.0,
+                                bypass_tips)
+
+
+def generalized_dense_pair(ids,
+                           sample1,
+                           sample2,
+                           phylogeny: Union[str, TreeNode, BP],
+                           alpha: float = 1.0,
+                           variance_adjusted: bool = False,
+                           bypass_tips: bool = False) -> float:
+    """Compute unweighted UniFrac
+
+    Parameters
+    ----------
+    ids : tuple or list of str
+        Obeservation IDss
+    sample1 : tuple or list of float
+        First sample counts
+    sample2 : tuple or list of float
+        Second sample counts
+    phylogeny : str
+        A filepath to a Newick formatted tree.
+    alpha : float, optional
+        The level of contribution of high abundance branches. Higher alpha
+        increases the contribution of from high abundance branches while lower
+        alpha reduces the contribution. Alpha was originally defined over the
+        range [0, 1]. Default is 1.0.
+    variance_adjusted : bool, optional
+        Adjust for varianace or not. Default is False.
+    bypass_tips : bool, optional
+        Bypass the tips of the tree in the computation. This reduces compute
+        by about 50%, but is an approximation.
+
+    Returns
+    -------
+    float
+        The resulting distance value.
+
+    Raises
+    ------
+    IOError
+        If the tree file is not found
+    ValueError
+        If the phylogeny does not appear to be in Newick format.
+
+    Environment variables
+    ---------------------
+    OMP_NUM_THREADS
+        Number of CPU cores to use. If not defined, use all detected cores.
+    UNIFRAC_USE_GPU
+        Enable or disable GPU offload. If not defined, autodetect.
+    ACC_DEVICE_NUM
+        The GPU to use. If not defined, the first GPU will be used.
+
+    Notes
+    -----
+    Generalized UniFrac was originally described in [1]_. Variance Adjusted
+    UniFrac was originally described in [2]_, but was not described in as
+    applied to Generalized UniFrac. It is feasible to do, so it is exposed
+    here.
+
+    An alpha of 1.0 is Weighted normalized UniFrac. An alpha of 0.0 is
+    approximately Unweighted UniFrac, and is if the proportions are
+    dichotomized.
+
+    References
+    ----------
+    .. [1] Chen, J., Bittinger, K., Charlson, E. S., Hoffmann C., Lewis, J.,
+       Wu, G. D., Collman R. G., Bushman, F. D. & Hongzhe L. Associating
+       microbiome composition with environmental covariates using generalized
+       UniFrac distances. Bioinformatics 28(16), 2106–2113 (2012).
+    .. [2] Chang, Q., Luan, Y. & Sun, F. Variance adjusted weighted UniFrac: a
+       powerful beta diversity measure for comparing communities based on
+       phylogeny. BMC Bioinformatics 12:118 (2011).
+    """
+    # Use the FP64 version, since the
+    # other overheads hide any difference in performance
+    return _call_ssu_dense_pair(ids, sample1, sample2,
+                                phylogeny, 'generalized_fp64',
+                                variance_adjusted, alpha,
+                                bypass_tips)
 
 
 #
